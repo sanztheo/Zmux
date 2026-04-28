@@ -73555,6 +73555,29 @@
         }
       }
     },
+    "shortcut.openFileExplorer.label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open File Explorer"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ファイルエクスプローラーを開く"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "파일 탐색기 열기"
+          }
+        }
+      }
+    },
     "fileExplorer.empty": {
       "extractionState": "manual",
       "localizations": {

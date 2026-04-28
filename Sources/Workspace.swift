@@ -10456,6 +10456,95 @@ final class Workspace: Identifiable, ObservableObject {
         return markdownPanel
     }
 
+    // MARK: - File Explorer Panel
+
+    @discardableResult
+    func newFileExplorerSurface(
+        inPane paneId: PaneID,
+        rootPath: String? = nil,
+        filePath: String? = nil,
+        focus: Bool? = nil
+    ) -> FileExplorerPanel? {
+        let resolvedRoot: String
+        if let rootPath, !rootPath.isEmpty {
+            resolvedRoot = rootPath
+        } else if let focusedId = focusedPanelId,
+                  let dir = panelDirectories[focusedId]?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !dir.isEmpty {
+            resolvedRoot = dir
+        } else {
+            resolvedRoot = NSHomeDirectory()
+        }
+
+        let shouldFocusNewTab = focus ?? (bonsplitController.focusedPaneId == paneId)
+        let previousFocusedPanelId = focusedPanelId
+        let previousHostedView = focusedTerminalPanel?.hostedView
+
+        let panel = FileExplorerPanel(workspaceId: id, rootPath: resolvedRoot)
+        panels[panel.id] = panel
+        panelTitles[panel.id] = panel.displayTitle
+
+        guard let newTabId = bonsplitController.createTab(
+            title: panel.displayTitle,
+            icon: panel.displayIcon,
+            kind: SurfaceKind.fileExplorer,
+            isDirty: panel.isDirty,
+            isLoading: false,
+            isPinned: false,
+            inPane: paneId
+        ) else {
+            panels.removeValue(forKey: panel.id)
+            panelTitles.removeValue(forKey: panel.id)
+            return nil
+        }
+
+        surfaceIdToPanelId[newTabId] = panel.id
+
+        if shouldFocusNewTab {
+            bonsplitController.focusPane(paneId)
+            bonsplitController.selectTab(newTabId)
+            applyTabSelection(tabId: newTabId, inPane: paneId)
+        } else {
+            preserveFocusAfterNonFocusSplit(
+                preferredPanelId: previousFocusedPanelId,
+                splitPanelId: panel.id,
+                previousHostedView: previousHostedView
+            )
+        }
+
+        installFileExplorerPanelSubscription(panel)
+
+        if let filePath {
+            panel.openFile(filePath)
+        }
+
+        return panel
+    }
+
+    private func installFileExplorerPanelSubscription(_ panel: FileExplorerPanel) {
+        let subscription = panel.$displayTitle
+            .removeDuplicates()
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self, weak panel] newTitle in
+                guard let self,
+                      let panel,
+                      let tabId = self.surfaceIdFromPanelId(panel.id) else { return }
+                guard let existing = self.bonsplitController.tab(tabId) else { return }
+
+                if self.panelTitles[panel.id] != newTitle {
+                    self.panelTitles[panel.id] = newTitle
+                }
+                let resolvedTitle = self.resolvedPanelTitle(panelId: panel.id, fallback: newTitle)
+                guard existing.title != resolvedTitle else { return }
+                self.bonsplitController.updateTab(
+                    tabId,
+                    title: resolvedTitle,
+                    hasCustomTitle: self.panelCustomTitles[panel.id] != nil
+                )
+            }
+        panelSubscriptions[panel.id] = subscription
+    }
+
     /// Tear down all panels in this workspace, freeing their Ghostty surfaces.
     /// Called before the workspace is removed from TabManager to ensure child
     /// processes receive SIGHUP even if ARC deallocation is delayed.

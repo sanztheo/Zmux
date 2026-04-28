@@ -2544,6 +2544,10 @@ class TerminalController {
         case "markdown.open":
             return v2Result(id: id, self.v2MarkdownOpen(params: params))
 
+        // File Explorer
+        case "file_explorer.open":
+            return v2Result(id: id, self.v2FileExplorerOpen(params: params))
+
         case "surface.read_text":
             return v2Result(id: id, self.v2SurfaceReadText(params: params))
 
@@ -2708,6 +2712,7 @@ class TerminalController {
             "app.focus_override.set",
             "app.simulate_active",
             "markdown.open",
+            "file_explorer.open",
             "browser.open_split",
             "browser.navigate",
             "browser.back",
@@ -8189,6 +8194,77 @@ class TerminalController {
                 "target_pane_id": v2OrNull(targetPaneUUID?.uuidString),
                 "target_pane_ref": v2Ref(kind: .pane, uuid: targetPaneUUID),
                 "path": filePath
+            ])
+        }
+        return result
+    }
+
+    // MARK: - File Explorer
+
+    private func v2FileExplorerOpen(params: [String: Any]) -> V2CallResult {
+        guard let tabManager = v2ResolveTabManager(params: params) else {
+            return .err(code: "unavailable", message: "TabManager not available", data: nil)
+        }
+
+        let rawRootPath = v2String(params, "root_path")
+        let rawFilePath = v2String(params, "file_path")
+
+        let rootPath: String? = rawRootPath.map {
+            NSString(string: NSString(string: $0).expandingTildeInPath).standardizingPath
+        }
+        let filePath: String? = rawFilePath.map {
+            NSString(string: NSString(string: $0).expandingTildeInPath).standardizingPath
+        }
+
+        if let rootPath {
+            var isDir: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: rootPath, isDirectory: &isDir), isDir.boolValue else {
+                return .err(code: "invalid_params", message: "root_path is not a directory: \(rootPath)", data: ["root_path": rootPath])
+            }
+        }
+
+        if let filePath {
+            guard FileManager.default.fileExists(atPath: filePath) else {
+                return .err(code: "not_found", message: "File not found: \(filePath)", data: ["file_path": filePath])
+            }
+        }
+
+        var result: V2CallResult = .err(code: "internal_error", message: "Failed to create file explorer panel", data: nil)
+        v2MainSync {
+            guard let ws = v2ResolveWorkspace(params: params, tabManager: tabManager) else {
+                result = .err(code: "not_found", message: "Workspace not found", data: nil)
+                return
+            }
+            v2MaybeFocusWindow(for: tabManager)
+            v2MaybeSelectWorkspace(tabManager, workspace: ws)
+
+            guard let paneId = ws.bonsplitController.focusedPaneId ?? ws.bonsplitController.allPaneIds.first else {
+                result = .err(code: "not_found", message: "No pane available", data: nil)
+                return
+            }
+
+            guard let panel = ws.newFileExplorerSurface(
+                inPane: paneId,
+                rootPath: rootPath,
+                filePath: filePath,
+                focus: v2FocusAllowed()
+            ) else {
+                result = .err(code: "internal_error", message: "Failed to create file explorer panel", data: nil)
+                return
+            }
+
+            let targetPaneUUID = ws.paneId(forPanelId: panel.id)?.id
+            let windowId = v2ResolveWindowId(tabManager: tabManager)
+            result = .ok([
+                "window_id": v2OrNull(windowId?.uuidString),
+                "window_ref": v2Ref(kind: .window, uuid: windowId),
+                "workspace_id": ws.id.uuidString,
+                "workspace_ref": v2Ref(kind: .workspace, uuid: ws.id),
+                "pane_id": v2OrNull(targetPaneUUID?.uuidString),
+                "pane_ref": v2Ref(kind: .pane, uuid: targetPaneUUID),
+                "surface_id": panel.id.uuidString,
+                "surface_ref": v2Ref(kind: .surface, uuid: panel.id),
+                "root_path": panel.rootPath
             ])
         }
         return result

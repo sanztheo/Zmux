@@ -5781,6 +5781,24 @@ class TabManager: ObservableObject {
         )
     }
 
+    @discardableResult
+    func openFileExplorer(rootPath: String? = nil, filePath: String? = nil) -> UUID? {
+        guard let workspace = selectedWorkspace,
+              let paneId = workspace.bonsplitController.focusedPaneId ?? workspace.bonsplitController.allPaneIds.first,
+              let panel = workspace.newFileExplorerSurface(
+                  inPane: paneId,
+                  rootPath: rootPath,
+                  filePath: filePath,
+                  focus: true
+              ) else {
+            return nil
+        }
+        if let tabId = selectedTabId {
+            rememberFocusedSurface(tabId: tabId, surfaceId: panel.id)
+        }
+        return panel.id
+    }
+
     /// Reopen the most recently closed browser panel (Cmd+Shift+T).
     /// No-op when no browser panel restore snapshot is available.
     @discardableResult

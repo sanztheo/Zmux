@@ -10395,6 +10395,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             return true
         }
 
+        if matchConfiguredShortcut(event: event, action: .openFileExplorer) {
+            _ = tabManager?.openFileExplorer()
+            return true
+        }
+
         if matchConfiguredShortcut(event: event, action: .focusRightSidebar) {
             let preferredWindow = mainWindowForShortcutEvent(event)
 #if DEBUG
