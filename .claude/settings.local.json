@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mv .git/modules/homebrew-cmux .git/modules/homebrew-zmux)",
+      "Bash(echo 'gitdir: ../.git/modules/homebrew-zmux')",
+      "Bash(sed -i '' 's|homebrew-cmux|homebrew-zmux|g' .git/modules/homebrew-zmux/config)"
+    ]
+  }
+}
