@@ -11821,6 +11821,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
                     preferredWindow: event.window ?? NSApp.keyWindow ?? NSApp.mainWindow
                 )
                 return true
+            case .newFileExplorer:
+                tabManager?.openFileExplorer()
+                return true
             case .splitDown:
                 if shouldSuppressSplitShortcutForTransientTerminalFocusState(direction: .down) {
                     return true

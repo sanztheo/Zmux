@@ -127,6 +127,7 @@ struct ZmuxConfigFile: Codable, Sendable {
 enum ZmuxSurfaceTabBarBuiltInAction: String, Codable, Sendable, CaseIterable, Hashable {
     case newTerminal = "zmux.newTerminal"
     case newBrowser = "zmux.newBrowser"
+    case newFileExplorer = "zmux.newFileExplorer"
     case splitRight = "zmux.splitRight"
     case splitDown = "zmux.splitDown"
 
@@ -136,6 +137,8 @@ enum ZmuxSurfaceTabBarBuiltInAction: String, Codable, Sendable, CaseIterable, Ha
             self = .newTerminal
         case "zmux.newBrowser", "newBrowser":
             self = .newBrowser
+        case "zmux.newFileExplorer", "newFileExplorer":
+            self = .newFileExplorer
         case "zmux.splitRight", "splitRight":
             self = .splitRight
         case "zmux.splitDown", "splitDown":
@@ -155,6 +158,8 @@ enum ZmuxSurfaceTabBarBuiltInAction: String, Codable, Sendable, CaseIterable, Ha
             return "terminal"
         case .newBrowser:
             return "globe"
+        case .newFileExplorer:
+            return "folder"
         case .splitRight:
             return "square.split.2x1"
         case .splitDown:
@@ -168,6 +173,8 @@ enum ZmuxSurfaceTabBarBuiltInAction: String, Codable, Sendable, CaseIterable, Ha
             return .newTerminal
         case .newBrowser:
             return .newBrowser
+        case .newFileExplorer:
+            return .custom("fileExplorer")
         case .splitRight:
             return .splitRight
         case .splitDown:
@@ -1073,12 +1080,14 @@ struct ZmuxSurfaceTabBarButton: Codable, Sendable, Hashable, Identifiable {
 
     static let newTerminal = actionReference(ZmuxSurfaceTabBarBuiltInAction.newTerminal.configID)
     static let newBrowser = actionReference(ZmuxSurfaceTabBarBuiltInAction.newBrowser.configID)
+    static let newFileExplorer = actionReference(ZmuxSurfaceTabBarBuiltInAction.newFileExplorer.configID)
     static let splitRight = actionReference(ZmuxSurfaceTabBarBuiltInAction.splitRight.configID)
     static let splitDown = actionReference(ZmuxSurfaceTabBarBuiltInAction.splitDown.configID)
 
     static let defaults: [ZmuxSurfaceTabBarButton] = [
         .newTerminal,
         .newBrowser,
+        .newFileExplorer,
         .splitRight,
         .splitDown
     ]
@@ -1459,6 +1468,9 @@ struct ZmuxResolvedConfigAction: Identifiable, Sendable, Hashable {
         case .splitRight:
             title = String(localized: "command.terminalSplitRight.title", defaultValue: "Split Right")
             keywords = ["terminal", "split", "right"]
+        case .newFileExplorer:
+            title = String(localized: "command.newFileExplorerTab.title", defaultValue: "New File Explorer Tab")
+            keywords = ["new", "file", "explorer", "tab", "browse"]
         case .splitDown:
             title = String(localized: "command.terminalSplitDown.title", defaultValue: "Split Down")
             keywords = ["terminal", "split", "down"]

@@ -13737,6 +13737,10 @@ extension Workspace: BonsplitDelegate {
             "pane=\(pane.id.uuidString.prefix(5)) identifier=\(identifier)"
         )
 #endif
+        if identifier == "fileExplorer" {
+            newFileExplorerSurface(inPane: pane, focus: true)
+            return
+        }
         executeSurfaceTabBarCommandButton(identifier: identifier, inPane: pane)
     }
 
