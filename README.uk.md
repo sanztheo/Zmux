@@ -1,11 +1,11 @@
 > Цей переклад було згенеровано за допомогою Claude. Якщо у вас є пропозиції щодо покращень, відкрийте PR.
 
-<h1 align="center">cmux</h1>
+<h1 align="center">zmux</h1>
 <p align="center">Термінал macOS на базі Ghostty з вертикальними вкладками та сповіщеннями для AI-агентів програмування</p>
 
 <p align="center">
-  <a href="https://github.com/manaflow-ai/cmux/releases/latest/download/cmux-macos.dmg">
-    <img src="./docs/assets/macos-badge.png" alt="Завантажити cmux для macOS" width="180" />
+  <a href="https://github.com/manaflow-ai/zmux/releases/latest/download/zmux-macos.dmg">
+    <img src="./docs/assets/macos-badge.png" alt="Завантажити zmux для macOS" width="180" />
   </a>
 </p>
 
@@ -16,15 +16,15 @@
 <p align="center">
   <a href="https://x.com/manaflowai"><img src="https://img.shields.io/badge/@manaflow-555?logo=x" alt="X / Twitter" /></a>
   <a href="https://discord.gg/xsgFEVrWCZ"><img src="https://img.shields.io/badge/Discord-555?logo=discord" alt="Discord" /></a>
-  <a href="https://github.com/manaflow-ai/cmux"><img src="https://img.shields.io/github/stars/manaflow-ai/cmux?style=flat&logo=github&label=stars&color=4c71f2" alt="GitHub stars" /></a>
+  <a href="https://github.com/manaflow-ai/zmux"><img src="https://img.shields.io/github/stars/manaflow-ai/zmux?style=flat&logo=github&label=stars&color=4c71f2" alt="GitHub stars" /></a>
 </p>
 
 <p align="center">
-  <img src="./docs/assets/main-first-image.png" alt="Скріншот cmux" width="900" />
+  <img src="./docs/assets/main-first-image.png" alt="Скріншот zmux" width="900" />
 </p>
 
 <p align="center">
-  <a href="https://www.youtube.com/watch?v=i-WxO5YUTOs">▶ Демо-відео</a> · <a href="https://cmux.com/blog/zen-of-cmux">Філософія cmux</a>
+  <a href="https://www.youtube.com/watch?v=i-WxO5YUTOs">▶ Демо-відео</a> · <a href="https://zmux.com/blog/zen-of-zmux">Філософія zmux</a>
 </p>
 
 ## Можливості
@@ -69,16 +69,16 @@
 <tr>
 <td width="40%" valign="middle">
 <h3>SSH</h3>
-<code>cmux ssh user@remote</code> створює робочий простір для віддаленої машини. Панелі браузера маршрутизуються через віддалену мережу, тому localhost працює одразу. Перетягніть зображення у віддалену сесію, щоб завантажити через scp.
+<code>zmux ssh user@remote</code> створює робочий простір для віддаленої машини. Панелі браузера маршрутизуються через віддалену мережу, тому localhost працює одразу. Перетягніть зображення у віддалену сесію, щоб завантажити через scp.
 </td>
 <td width="60%">
-<img src="./docs/assets/ssh.png" alt="cmux SSH" width="100%" />
+<img src="./docs/assets/ssh.png" alt="zmux SSH" width="100%" />
 </td>
 </tr>
 <tr>
 <td width="40%" valign="middle">
 <h3>Claude Code Teams</h3>
-<code>cmux claude-teams</code> запускає режим teammate Claude Code однією командою. Учасники команди з'являються як нативні розділення з метаданими у бічній панелі та сповіщеннями. tmux не потрібен.
+<code>zmux claude-teams</code> запускає режим teammate Claude Code однією командою. Учасники команди з'являються як нативні розділення з метаданими у бічній панелі та сповіщеннями. tmux не потрібен.
 </td>
 <td width="60%">
 <img src="./docs/assets/claude-code-teams.png" alt="Claude Code Teams" width="100%" />
@@ -87,7 +87,7 @@
 </table>
 
 - **Імпорт браузера** — Імпортуйте кукі, історію та сесії з Chrome, Firefox, Arc та понад 20 інших браузерів, щоб панелі браузера запускалися автентифікованими
-- **Користувацькі команди** — Визначте дії для конкретного проєкту у [`cmux.json`](https://cmux.com/docs/custom-commands), які запускаються з палітри команд
+- **Користувацькі команди** — Визначте дії для конкретного проєкту у [`zmux.json`](https://zmux.com/docs/custom-commands), які запускаються з палітри команд
 - **Скриптований** — CLI та socket API для створення робочих просторів, розділення панелей, надсилання натискань клавіш та автоматизації браузера
 - **Нативний додаток macOS** — Побудований на Swift та AppKit, не Electron. Швидкий запуск, мало пам'яті.
 - **Сумісний з Ghostty** — Читає вашу існуючу конфігурацію `~/.config/ghostty/config` для тем, шрифтів та кольорів
@@ -97,44 +97,44 @@
 
 ### DMG (рекомендовано)
 
-<a href="https://github.com/manaflow-ai/cmux/releases/latest/download/cmux-macos.dmg">
-  <img src="./docs/assets/macos-badge.png" alt="Завантажити cmux для macOS" width="180" />
+<a href="https://github.com/manaflow-ai/zmux/releases/latest/download/zmux-macos.dmg">
+  <img src="./docs/assets/macos-badge.png" alt="Завантажити zmux для macOS" width="180" />
 </a>
 
-Відкрийте `.dmg` та перетягніть cmux до папки Applications. cmux автоматично оновлюється через Sparkle, тому завантажити потрібно лише один раз.
+Відкрийте `.dmg` та перетягніть zmux до папки Applications. zmux автоматично оновлюється через Sparkle, тому завантажити потрібно лише один раз.
 
 ### Homebrew
 
 ```bash
-brew tap manaflow-ai/cmux
-brew install --cask cmux
+brew tap manaflow-ai/zmux
+brew install --cask zmux
 ```
 
 Для оновлення пізніше:
 
 ```bash
-brew upgrade --cask cmux
+brew upgrade --cask zmux
 ```
 
 При першому запуску macOS може попросити підтвердити відкриття програми від ідентифікованого розробника. Натисніть **Відкрити**, щоб продовжити.
 
-## Чому cmux?
+## Чому zmux?
 
 Я запускаю багато сесій Claude Code та Codex паралельно. Я використовував Ghostty з купою розділених панелей і покладався на нативні сповіщення macOS, щоб знати, коли агенту потрібна моя увага. Але тіло сповіщення Claude Code завжди було просто "Claude is waiting for your input" без контексту, і з достатньою кількістю вкладок я навіть не міг прочитати заголовки.
 
-Я спробував кілька оркестраторів програмування, але більшість з них були додатками на Electron/Tauri, і продуктивність мене турбувала. Я також просто віддаю перевагу терміналу, оскільки GUI-оркестратори прив'язують вас до свого робочого процесу. Тому я створив cmux як нативний додаток macOS на Swift/AppKit. Він використовує libghostty для рендерингу терміналу та читає вашу існуючу конфігурацію Ghostty для тем, шрифтів та кольорів.
+Я спробував кілька оркестраторів програмування, але більшість з них були додатками на Electron/Tauri, і продуктивність мене турбувала. Я також просто віддаю перевагу терміналу, оскільки GUI-оркестратори прив'язують вас до свого робочого процесу. Тому я створив zmux як нативний додаток macOS на Swift/AppKit. Він використовує libghostty для рендерингу терміналу та читає вашу існуючу конфігурацію Ghostty для тем, шрифтів та кольорів.
 
-Основні доповнення — це бічна панель та система сповіщень. Бічна панель має вертикальні вкладки, які показують гілку git, статус/номер пов'язаного PR, робочу директорію, порти прослуховування та текст останнього сповіщення для кожного робочого простору. Система сповіщень підхоплює термінальні послідовності (OSC 9/99/777) та має CLI (`cmux notify`), який можна підключити до хуків агентів для Claude Code, OpenCode тощо. Коли агент чекає, його панель отримує синє кільце, а вкладка підсвічується у бічній панелі, тому я бачу, який саме потребує мене серед розділень та вкладок. Cmd+Shift+U переходить до останнього непрочитаного.
+Основні доповнення — це бічна панель та система сповіщень. Бічна панель має вертикальні вкладки, які показують гілку git, статус/номер пов'язаного PR, робочу директорію, порти прослуховування та текст останнього сповіщення для кожного робочого простору. Система сповіщень підхоплює термінальні послідовності (OSC 9/99/777) та має CLI (`zmux notify`), який можна підключити до хуків агентів для Claude Code, OpenCode тощо. Коли агент чекає, його панель отримує синє кільце, а вкладка підсвічується у бічній панелі, тому я бачу, який саме потребує мене серед розділень та вкладок. Cmd+Shift+U переходить до останнього непрочитаного.
 
 Вбудований браузер має скриптовий API, портований з [agent-browser](https://github.com/vercel-labs/agent-browser). Агенти можуть робити знімок дерева доступності, отримувати посилання на елементи, клікати, заповнювати форми та виконувати JS. Ви можете розділити панель браузера поруч із терміналом і дозволити Claude Code взаємодіяти з вашим dev-сервером напряму.
 
 Все скриптується через CLI та socket API — створення робочих просторів/вкладок, розділення панелей, надсилання натискань клавіш, відкриття URL у браузері.
 
-## Філософія cmux
+## Філософія zmux
 
-cmux не нав'язує розробникам, як використовувати їхні інструменти. Це термінал і браузер із CLI, а решта — за вами.
+zmux не нав'язує розробникам, як використовувати їхні інструменти. Це термінал і браузер із CLI, а решта — за вами.
 
-cmux — це примітив, а не рішення. Він дає вам термінал, браузер, сповіщення, робочі простори, розділення, вкладки та CLI для керування всім цим. cmux не змушує вас дотримуватися нав'язаного способу використання агентів програмування. Те, що ви створите з цих примітивів — ваше.
+zmux — це примітив, а не рішення. Він дає вам термінал, браузер, сповіщення, робочі простори, розділення, вкладки та CLI для керування всім цим. zmux не змушує вас дотримуватися нав'язаного способу використання агентів програмування. Те, що ви створите з цих примітивів — ваше.
 
 Найкращі розробники завжди створювали власні інструменти. Ніхто ще не з'ясував найкращий спосіб роботи з агентами, і команди, що створюють закриті продукти, точно цього не зробили. Розробники, які найближче до своїх кодових баз, з'ясують це першими.
 
@@ -142,7 +142,7 @@ cmux — це примітив, а не рішення. Він дає вам т�
 
 ## Документація
 
-Для додаткової інформації про налаштування cmux [перейдіть до нашої документації](https://cmux.com/docs/getting-started?utm_source=readme).
+Для додаткової інформації про налаштування zmux [перейдіть до нашої документації](https://zmux.com/docs/getting-started?utm_source=readme).
 
 ## Клавіатурні скорочення
 
@@ -232,29 +232,29 @@ cmux — це примітив, а не рішення. Він дає вам т�
 
 ## Нічні збірки
 
-[Завантажити cmux NIGHTLY](https://github.com/manaflow-ai/cmux/releases/download/nightly/cmux-nightly-macos.dmg)
+[Завантажити zmux NIGHTLY](https://github.com/manaflow-ai/zmux/releases/download/nightly/zmux-nightly-macos.dmg)
 
-cmux NIGHTLY — це окремий додаток з власним bundle ID, тому він працює поруч зі стабільною версією. Збирається автоматично з останнього коміту `main` та автоматично оновлюється через власний канал Sparkle.
+zmux NIGHTLY — це окремий додаток з власним bundle ID, тому він працює поруч зі стабільною версією. Збирається автоматично з останнього коміту `main` та автоматично оновлюється через власний канал Sparkle.
 
-Повідомляйте про помилки нічних збірок на [GitHub Issues](https://github.com/manaflow-ai/cmux/issues) або в [#nightly-bugs у Discord](https://discord.gg/xsgFEVrWCZ).
+Повідомляйте про помилки нічних збірок на [GitHub Issues](https://github.com/manaflow-ai/zmux/issues) або в [#nightly-bugs у Discord](https://discord.gg/xsgFEVrWCZ).
 
 ## Відновлення сесії (поточна поведінка)
 
-При перезапуску cmux наразі відновлює лише макет та метадані додатку:
+При перезапуску zmux наразі відновлює лише макет та метадані додатку:
 - Макет вікон/робочих просторів/панелей
 - Робочі директорії
 - Буфер прокрутки терміналу (наскільки можливо)
 - URL браузера та історію навігації
 
-cmux **не** відновлює стан активних процесів усередині термінальних додатків. Наприклад, активні сесії Claude Code/tmux/vim поки що не відновлюються після перезапуску.
+zmux **не** відновлює стан активних процесів усередині термінальних додатків. Наприклад, активні сесії Claude Code/tmux/vim поки що не відновлюються після перезапуску.
 
 ## Історія зірок
 
-<a href="https://star-history.com/#manaflow-ai/cmux&Date">
+<a href="https://star-history.com/#manaflow-ai/zmux&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=manaflow-ai/cmux&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=manaflow-ai/cmux&type=Date" />
-   <img alt="Діаграма історії зірок" src="https://api.star-history.com/svg?repos=manaflow-ai/cmux&type=Date" width="600" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=manaflow-ai/zmux&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=manaflow-ai/zmux&type=Date" />
+   <img alt="Діаграма історії зірок" src="https://api.star-history.com/svg?repos=manaflow-ai/zmux&type=Date" width="600" />
  </picture>
 </a>
 
@@ -264,26 +264,26 @@ cmux **не** відновлює стан активних процесів ус
 
 - Підписуйтесь на нас у X для оновлень [@manaflowai](https://x.com/manaflowai), [@lawrencecchen](https://x.com/lawrencecchen) та [@austinywang](https://x.com/austinywang)
 - Приєднуйтесь до обговорень у [Discord](https://discord.gg/xsgFEVrWCZ)
-- Створюйте та беріть участь у [GitHub issues](https://github.com/manaflow-ai/cmux/issues) та [обговореннях](https://github.com/manaflow-ai/cmux/discussions)
-- Розкажіть нам, що ви створюєте з cmux
+- Створюйте та беріть участь у [GitHub issues](https://github.com/manaflow-ai/zmux/issues) та [обговореннях](https://github.com/manaflow-ai/zmux/discussions)
+- Розкажіть нам, що ви створюєте з zmux
 
 ## Спільнота
 
 - [Discord](https://discord.gg/xsgFEVrWCZ)
-- [GitHub](https://github.com/manaflow-ai/cmux)
+- [GitHub](https://github.com/manaflow-ai/zmux)
 - [X / Twitter](https://twitter.com/manaflowai)
 - [YouTube](https://www.youtube.com/channel/UCAa89_j-TWkrXfk9A3CbASw)
 - [LinkedIn](https://www.linkedin.com/company/manaflow-ai/)
-- [Reddit](https://www.reddit.com/r/cmux/)
+- [Reddit](https://www.reddit.com/r/zmux/)
 
 ## Founder's Edition
 
-cmux є безкоштовним, з відкритим кодом і завжди буде таким. Якщо ви хочете підтримати розробку та отримати ранній доступ до того, що буде далі:
+zmux є безкоштовним, з відкритим кодом і завжди буде таким. Якщо ви хочете підтримати розробку та отримати ранній доступ до того, що буде далі:
 
 **[Отримати Founder's Edition](https://buy.stripe.com/3cI00j2Ld0it5OU33r5EY0q)**
 
 - **Пріоритетні запити на функції/виправлення помилок**
-- **Ранній доступ: cmux AI, що надає контекст для кожного робочого простору, вкладки та панелі**
+- **Ранній доступ: zmux AI, що надає контекст для кожного робочого простору, вкладки та панелі**
 - **Ранній доступ: додаток iOS з терміналами, синхронізованими між комп'ютером та телефоном**
 - **Ранній доступ: хмарні VM**
 - **Ранній доступ: голосовий режим**
@@ -291,6 +291,6 @@ cmux є безкоштовним, з відкритим кодом і завжд
 
 ## Ліцензія
 
-cmux є відкритим програмним забезпеченням під ліцензією [GPL-3.0-or-later](LICENSE).
+zmux є відкритим програмним забезпеченням під ліцензією [GPL-3.0-or-later](LICENSE).
 
 Якщо ваша організація не може дотримуватися GPL, доступна комерційна ліцензія. Зв'яжіться з [founders@manaflow.com](mailto:founders@manaflow.com) для деталей.

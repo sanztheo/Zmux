@@ -9,18 +9,18 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from cmux import cmux, cmuxError
+from zmux import zmux, zmuxError
 
 
-SOCKET_PATH = os.environ.get("CMUX_SOCKET", "/tmp/cmux-debug.sock")
+SOCKET_PATH = os.environ.get("ZMUX_SOCKET", "/tmp/zmux-debug.sock")
 
 
 def _must(cond: bool, msg: str) -> None:
     if not cond:
-        raise cmuxError(msg)
+        raise zmuxError(msg)
 
 
-def _focused_pane_id(client: cmux, workspace_id: str) -> str:
+def _focused_pane_id(client: zmux, workspace_id: str) -> str:
     payload = client._call("pane.list", {"workspace_id": workspace_id}) or {}
     for row in payload.get("panes") or []:
         if bool(row.get("focused")):
@@ -32,7 +32,7 @@ def main() -> int:
     created_workspaces: list[str] = []
 
     try:
-        with cmux(SOCKET_PATH) as client:
+        with zmux(SOCKET_PATH) as client:
             workspace_id = client.new_workspace()
             created_workspaces.append(workspace_id)
             client.select_workspace(workspace_id)
@@ -81,7 +81,7 @@ def main() -> int:
                 "pane.break should preserve the selected workspace when invoked over the socket",
             )
     finally:
-        with cmux(SOCKET_PATH) as cleanup_client:
+        with zmux(SOCKET_PATH) as cleanup_client:
             for workspace_id in reversed(created_workspaces):
                 try:
                     cleanup_client.close_workspace(workspace_id)

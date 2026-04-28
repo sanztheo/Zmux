@@ -1043,7 +1043,7 @@ final class FileExplorerContainerView: NSView {
         AppDelegate.shared?.keyboardFocusCoordinator(for: window)?.registerFileExplorerHost(self)
 #if DEBUG
         dlog(
-            "file.focus.host.attach win=\(window.windowNumber) canAccept=\(cmuxCanAcceptRightSidebarKeyboardFocus ? 1 : 0) " +
+            "file.focus.host.attach win=\(window.windowNumber) canAccept=\(zmuxCanAcceptRightSidebarKeyboardFocus ? 1 : 0) " +
             "rows=\(outlineView.numberOfRows) hidden=\(isHiddenOrHasHiddenAncestor ? 1 : 0) " +
             "fr=\(fileExplorerDebugResponder(window.firstResponder))"
         )
@@ -1109,7 +1109,7 @@ final class FileExplorerContainerView: NSView {
 
     @discardableResult
     func focusSearchField() -> Bool {
-        guard let window, cmuxCanAcceptRightSidebarKeyboardFocus else {
+        guard let window, zmuxCanAcceptRightSidebarKeyboardFocus else {
 #if DEBUG
             dlog(
                 "file.focus.search.end result=0 reason=unavailable " +
@@ -1137,14 +1137,14 @@ final class FileExplorerContainerView: NSView {
 #if DEBUG
         dlog(
             "file.focus.outline.begin win=\(window?.windowNumber ?? -1) " +
-            "canAccept=\(cmuxCanAcceptRightSidebarKeyboardFocus ? 1 : 0) " +
+            "canAccept=\(zmuxCanAcceptRightSidebarKeyboardFocus ? 1 : 0) " +
             "hostHidden=\(isHiddenOrHasHiddenAncestor ? 1 : 0) scrollHidden=\(scrollView.isHidden ? 1 : 0) " +
             "outlineHidden=\(outlineView.isHiddenOrHasHiddenAncestor ? 1 : 0) " +
             "rows=\(outlineView.numberOfRows) selected=\(outlineView.selectedRow) " +
             "fr=\(fileExplorerDebugResponder(window?.firstResponder))"
         )
 #endif
-        guard let window, cmuxCanAcceptRightSidebarKeyboardFocus else {
+        guard let window, zmuxCanAcceptRightSidebarKeyboardFocus else {
 #if DEBUG
             dlog(
                 "file.focus.outline.end result=0 reason=unavailable " +

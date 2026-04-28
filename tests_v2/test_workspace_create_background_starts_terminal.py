@@ -11,15 +11,15 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from cmux import cmux, cmuxError
+from zmux import zmux, zmuxError
 
 
-SOCKET_PATH = os.environ.get("CMUX_SOCKET", "/tmp/cmux-debug.sock")
+SOCKET_PATH = os.environ.get("ZMUX_SOCKET", "/tmp/zmux-debug.sock")
 
 
 def _must(cond: bool, msg: str) -> None:
     if not cond:
-        raise cmuxError(msg)
+        raise zmuxError(msg)
 
 
 def _wait_for_file_text(path: Path, needle: str, timeout_s: float = 8.0) -> str:
@@ -31,16 +31,16 @@ def _wait_for_file_text(path: Path, needle: str, timeout_s: float = 8.0) -> str:
         if needle in last_text:
             return last_text
         time.sleep(0.1)
-    raise cmuxError(f"Timed out waiting for {needle!r} in background workspace file: {last_text!r}")
+    raise zmuxError(f"Timed out waiting for {needle!r} in background workspace file: {last_text!r}")
 
 
 def main() -> int:
-    with cmux(SOCKET_PATH) as c:
+    with zmux(SOCKET_PATH) as c:
         baseline_workspace = c.current_workspace()
         created_workspace = ""
-        marker_path = Path(tempfile.gettempdir()) / f"cmux-bg-start-{int(time.time() * 1000)}.txt"
+        marker_path = Path(tempfile.gettempdir()) / f"zmux-bg-start-{int(time.time() * 1000)}.txt"
         try:
-            token = f"CMUX_BG_START_{int(time.time() * 1000)}"
+            token = f"ZMUX_BG_START_{int(time.time() * 1000)}"
             initial_command = (
                 "python3 -c " +
                 shlex.quote(

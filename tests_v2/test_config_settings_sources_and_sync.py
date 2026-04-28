@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Regression test: unified config settings resolves the right files and renders
-the synced preview with cmux overrides on top of Ghostty base values.
+the synced preview with zmux overrides on top of Ghostty base values.
 """
 
 from __future__ import annotations
@@ -59,10 +59,10 @@ def expect(condition: bool, message: str) -> None:
         raise AssertionError(message)
 
 
-def test_prefers_dotconfig_ghostty_and_overlays_cmux(executable: Path) -> None:
-    with tempfile.TemporaryDirectory(prefix="cmux-config-settings-") as tmp:
+def test_prefers_dotconfig_ghostty_and_overlays_zmux(executable: Path) -> None:
+    with tempfile.TemporaryDirectory(prefix="zmux-config-settings-") as tmp:
         home = Path(tmp)
-        cmux_config = home / "Library" / "Application Support" / "com.cmuxterm.app" / "config"
+        zmux_config = home / "Library" / "Application Support" / "com.zmuxterm.app" / "config"
         ghostty_config = home / ".config" / "ghostty" / "config"
 
         write_text(
@@ -70,13 +70,13 @@ def test_prefers_dotconfig_ghostty_and_overlays_cmux(executable: Path) -> None:
             "theme = Solarized Light\nbackground = #111111\nfont-size = 13\n",
         )
         write_text(
-            cmux_config,
+            zmux_config,
             "background = #222222\ncopy-on-select = clipboard\n",
         )
 
         payload = run_probe(executable, home)
 
-        expect(payload["cmux"]["path"] == str(cmux_config), f"unexpected cmux path: {payload}")
+        expect(payload["zmux"]["path"] == str(zmux_config), f"unexpected zmux path: {payload}")
         expect(payload["ghostty"]["path"] == str(ghostty_config), f"unexpected ghostty path: {payload}")
 
         synced_path = Path(payload["synced"]["path"])
@@ -88,14 +88,14 @@ def test_prefers_dotconfig_ghostty_and_overlays_cmux(executable: Path) -> None:
             f"synced preview should keep Ghostty-only keys with provenance: {synced_contents}",
         )
         expect(
-            "background = #222222  # from: ~/Library/Application Support/com.cmuxterm.app/config:1"
+            "background = #222222  # from: ~/Library/Application Support/com.zmuxterm.app/config:1"
             in synced_contents,
-            f"synced preview should use cmux override for duplicate keys: {synced_contents}",
+            f"synced preview should use zmux override for duplicate keys: {synced_contents}",
         )
         expect(
-            "copy-on-select = clipboard  # from: ~/Library/Application Support/com.cmuxterm.app/config:2"
+            "copy-on-select = clipboard  # from: ~/Library/Application Support/com.zmuxterm.app/config:2"
             in synced_contents,
-            f"synced preview should include cmux-only keys: {synced_contents}",
+            f"synced preview should include zmux-only keys: {synced_contents}",
         )
         expect(
             "background = #111111" not in synced_contents,
@@ -104,9 +104,9 @@ def test_prefers_dotconfig_ghostty_and_overlays_cmux(executable: Path) -> None:
 
 
 def test_falls_back_to_app_support_ghostty_when_dotconfig_missing(executable: Path) -> None:
-    with tempfile.TemporaryDirectory(prefix="cmux-config-settings-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="zmux-config-settings-") as tmp:
         home = Path(tmp)
-        cmux_config = home / "Library" / "Application Support" / "com.cmuxterm.app" / "config"
+        zmux_config = home / "Library" / "Application Support" / "com.zmuxterm.app" / "config"
         ghostty_app_support = (
             home
             / "Library"
@@ -116,7 +116,7 @@ def test_falls_back_to_app_support_ghostty_when_dotconfig_missing(executable: Pa
         )
 
         write_text(ghostty_app_support, "font-size = 14\nselection-background = #333333\n")
-        write_text(cmux_config, "font-size = 17\n")
+        write_text(zmux_config, "font-size = 17\n")
 
         payload = run_probe(executable, home)
 
@@ -127,9 +127,9 @@ def test_falls_back_to_app_support_ghostty_when_dotconfig_missing(executable: Pa
 
         synced_contents = str(payload["synced"]["contents"])
         expect(
-            "font-size = 17  # from: ~/Library/Application Support/com.cmuxterm.app/config:1"
+            "font-size = 17  # from: ~/Library/Application Support/com.zmuxterm.app/config:1"
             in synced_contents,
-            f"cmux override should win over Ghostty base font-size: {synced_contents}",
+            f"zmux override should win over Ghostty base font-size: {synced_contents}",
         )
         expect(
             "selection-background = #333333  # from: ~/Library/Application Support/com.mitchellh.ghostty/config:2"
@@ -140,13 +140,13 @@ def test_falls_back_to_app_support_ghostty_when_dotconfig_missing(executable: Pa
 
 def main() -> int:
     repo_root = get_repo_root()
-    with tempfile.TemporaryDirectory(prefix="cmux-config-source-probe-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="zmux-config-source-probe-") as tmp:
         executable = Path(tmp) / "config_source_probe"
         compile_probe(repo_root, executable)
-        test_prefers_dotconfig_ghostty_and_overlays_cmux(executable)
+        test_prefers_dotconfig_ghostty_and_overlays_zmux(executable)
         test_falls_back_to_app_support_ghostty_when_dotconfig_missing(executable)
 
-    print("PASS: config settings resolves cmux/ghostty paths and synced preview precedence correctly")
+    print("PASS: config settings resolves zmux/ghostty paths and synced preview precedence correctly")
     return 0
 
 

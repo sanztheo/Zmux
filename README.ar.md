@@ -1,11 +1,11 @@
 > تمت هذه الترجمة بواسطة Claude. إذا كانت لديك اقتراحات للتحسين، يرجى فتح PR.
 
-<h1 align="center">cmux</h1>
+<h1 align="center">zmux</h1>
 <p align="center">تطبيق طرفية لنظام macOS مبني على Ghostty مع علامات تبويب عمودية وإشعارات لوكلاء البرمجة بالذكاء الاصطناعي</p>
 
 <p align="center">
-  <a href="https://github.com/manaflow-ai/cmux/releases/latest/download/cmux-macos.dmg">
-    <img src="./docs/assets/macos-badge.png" alt="تحميل cmux لنظام macOS" width="180" />
+  <a href="https://github.com/manaflow-ai/zmux/releases/latest/download/zmux-macos.dmg">
+    <img src="./docs/assets/macos-badge.png" alt="تحميل zmux لنظام macOS" width="180" />
   </a>
 </p>
 
@@ -16,15 +16,15 @@
 <p align="center">
   <a href="https://x.com/manaflowai"><img src="https://img.shields.io/badge/@manaflow-555?logo=x" alt="X / Twitter" /></a>
   <a href="https://discord.gg/xsgFEVrWCZ"><img src="https://img.shields.io/badge/Discord-555?logo=discord" alt="Discord" /></a>
-  <a href="https://github.com/manaflow-ai/cmux"><img src="https://img.shields.io/github/stars/manaflow-ai/cmux?style=flat&logo=github&label=stars&color=4c71f2" alt="GitHub stars" /></a>
+  <a href="https://github.com/manaflow-ai/zmux"><img src="https://img.shields.io/github/stars/manaflow-ai/zmux?style=flat&logo=github&label=stars&color=4c71f2" alt="GitHub stars" /></a>
 </p>
 
 <p align="center">
-  <img src="./docs/assets/main-first-image.png" alt="لقطة شاشة cmux" width="900" />
+  <img src="./docs/assets/main-first-image.png" alt="لقطة شاشة zmux" width="900" />
 </p>
 
 <p align="center">
-  <a href="https://www.youtube.com/watch?v=i-WxO5YUTOs">▶ فيديو توضيحي</a> · <a href="https://cmux.com/blog/zen-of-cmux">فلسفة cmux</a>
+  <a href="https://www.youtube.com/watch?v=i-WxO5YUTOs">▶ فيديو توضيحي</a> · <a href="https://zmux.com/blog/zen-of-zmux">فلسفة zmux</a>
 </p>
 
 ## الميزات
@@ -69,16 +69,16 @@
 <tr>
 <td width="40%" valign="middle">
 <h3>SSH</h3>
-<code>cmux ssh user@remote</code> ينشئ مساحة عمل لجهاز بعيد. تُوجَّه أجزاء المتصفح عبر الشبكة البعيدة بحيث يعمل localhost مباشرة. اسحب صورة إلى جلسة بعيدة لرفعها عبر scp.
+<code>zmux ssh user@remote</code> ينشئ مساحة عمل لجهاز بعيد. تُوجَّه أجزاء المتصفح عبر الشبكة البعيدة بحيث يعمل localhost مباشرة. اسحب صورة إلى جلسة بعيدة لرفعها عبر scp.
 </td>
 <td width="60%">
-<img src="./docs/assets/ssh.png" alt="cmux SSH" width="100%" />
+<img src="./docs/assets/ssh.png" alt="zmux SSH" width="100%" />
 </td>
 </tr>
 <tr>
 <td width="40%" valign="middle">
 <h3>Claude Code Teams</h3>
-<code>cmux claude-teams</code> يشغّل وضع الفريق في Claude Code بأمر واحد. يظهر أعضاء الفريق كأقسام أصلية مع بيانات وصفية في الشريط الجانبي وإشعارات. لا حاجة لـ tmux.
+<code>zmux claude-teams</code> يشغّل وضع الفريق في Claude Code بأمر واحد. يظهر أعضاء الفريق كأقسام أصلية مع بيانات وصفية في الشريط الجانبي وإشعارات. لا حاجة لـ tmux.
 </td>
 <td width="60%">
 <img src="./docs/assets/claude-code-teams.png" alt="Claude Code Teams" width="100%" />
@@ -87,7 +87,7 @@
 </table>
 
 - **استيراد المتصفح** — استيراد ملفات تعريف الارتباط والسجل والجلسات من Chrome وFirefox وArc وأكثر من 20 متصفحًا آخر حتى تبدأ أجزاء المتصفح مع تسجيل الدخول
-- **أوامر مخصصة** — حدد إجراءات خاصة بالمشروع في [`cmux.json`](https://cmux.com/docs/custom-commands) يتم تشغيلها من لوحة الأوامر
+- **أوامر مخصصة** — حدد إجراءات خاصة بالمشروع في [`zmux.json`](https://zmux.com/docs/custom-commands) يتم تشغيلها من لوحة الأوامر
 - **قابل للبرمجة** — CLI وsocket API لإنشاء مساحات العمل وتقسيم الأجزاء وإرسال ضغطات المفاتيح وأتمتة المتصفح
 - **تطبيق macOS أصلي** — مبني بـ Swift وAppKit، وليس Electron. بدء تشغيل سريع واستهلاك ذاكرة منخفض.
 - **متوافق مع Ghostty** — يقرأ إعداداتك الحالية من `~/.config/ghostty/config` للسمات والخطوط والألوان
@@ -97,44 +97,44 @@
 
 ### DMG (مستحسن)
 
-<a href="https://github.com/manaflow-ai/cmux/releases/latest/download/cmux-macos.dmg">
-  <img src="./docs/assets/macos-badge.png" alt="تحميل cmux لنظام macOS" width="180" />
+<a href="https://github.com/manaflow-ai/zmux/releases/latest/download/zmux-macos.dmg">
+  <img src="./docs/assets/macos-badge.png" alt="تحميل zmux لنظام macOS" width="180" />
 </a>
 
-افتح ملف `.dmg` واسحب cmux إلى مجلد التطبيقات. يتم تحديث cmux تلقائيًا عبر Sparkle، لذا تحتاج للتحميل مرة واحدة فقط.
+افتح ملف `.dmg` واسحب zmux إلى مجلد التطبيقات. يتم تحديث zmux تلقائيًا عبر Sparkle، لذا تحتاج للتحميل مرة واحدة فقط.
 
 ### Homebrew
 
 ```bash
-brew tap manaflow-ai/cmux
-brew install --cask cmux
+brew tap manaflow-ai/zmux
+brew install --cask zmux
 ```
 
 للتحديث لاحقًا:
 
 ```bash
-brew upgrade --cask cmux
+brew upgrade --cask zmux
 ```
 
 عند التشغيل الأول، قد يطلب منك macOS تأكيد فتح تطبيق من مطور معروف. انقر **فتح** للمتابعة.
 
-## لماذا cmux؟
+## لماذا zmux؟
 
 أقوم بتشغيل الكثير من جلسات Claude Code وCodex بالتوازي. كنت أستخدم Ghostty مع مجموعة من الأجزاء المقسمة، وأعتمد على إشعارات macOS الأصلية لمعرفة متى يحتاجني وكيل ما. لكن نص إشعار Claude Code يكون دائمًا مجرد "Claude is waiting for your input" بدون أي سياق، ومع فتح عدد كافٍ من علامات التبويب لم أعد قادرًا حتى على قراءة العناوين.
 
-جربت بعض منظمات البرمجة لكن معظمها كانت تطبيقات Electron/Tauri وأداؤها كان يزعجني. كما أنني أفضل الطرفية لأن منظمات GUI تحبسك في سير عملها. لذا بنيت cmux كتطبيق macOS أصلي بـ Swift/AppKit. يستخدم libghostty لعرض الطرفية ويقرأ إعدادات Ghostty الحالية للسمات والخطوط والألوان.
+جربت بعض منظمات البرمجة لكن معظمها كانت تطبيقات Electron/Tauri وأداؤها كان يزعجني. كما أنني أفضل الطرفية لأن منظمات GUI تحبسك في سير عملها. لذا بنيت zmux كتطبيق macOS أصلي بـ Swift/AppKit. يستخدم libghostty لعرض الطرفية ويقرأ إعدادات Ghostty الحالية للسمات والخطوط والألوان.
 
-الإضافات الرئيسية هي الشريط الجانبي ونظام الإشعارات. يحتوي الشريط الجانبي على علامات تبويب عمودية تعرض فرع git وحالة/رقم طلب السحب المرتبط ومجلد العمل والمنافذ المستمعة وآخر نص إشعار لكل مساحة عمل. يلتقط نظام الإشعارات تسلسلات الطرفية (OSC 9/99/777) ولديه CLI (`cmux notify`) يمكنك ربطه بخطافات الوكلاء لـ Claude Code وOpenCode وغيرها. عندما ينتظر وكيل ما، يحصل جزؤه على حلقة زرقاء وتضيء علامة التبويب في الشريط الجانبي، حتى أتمكن من معرفة أيها يحتاجني عبر الأقسام وعلامات التبويب. Cmd+Shift+U ينتقل إلى أحدث إشعار غير مقروء.
+الإضافات الرئيسية هي الشريط الجانبي ونظام الإشعارات. يحتوي الشريط الجانبي على علامات تبويب عمودية تعرض فرع git وحالة/رقم طلب السحب المرتبط ومجلد العمل والمنافذ المستمعة وآخر نص إشعار لكل مساحة عمل. يلتقط نظام الإشعارات تسلسلات الطرفية (OSC 9/99/777) ولديه CLI (`zmux notify`) يمكنك ربطه بخطافات الوكلاء لـ Claude Code وOpenCode وغيرها. عندما ينتظر وكيل ما، يحصل جزؤه على حلقة زرقاء وتضيء علامة التبويب في الشريط الجانبي، حتى أتمكن من معرفة أيها يحتاجني عبر الأقسام وعلامات التبويب. Cmd+Shift+U ينتقل إلى أحدث إشعار غير مقروء.
 
 المتصفح المدمج لديه API قابل للبرمجة مأخوذ من [agent-browser](https://github.com/vercel-labs/agent-browser). يمكن للوكلاء التقاط شجرة إمكانية الوصول والحصول على مراجع العناصر والنقر وملء النماذج وتنفيذ JS. يمكنك تقسيم جزء متصفح بجانب الطرفية وجعل Claude Code يتفاعل مع خادم التطوير مباشرة.
 
 كل شيء قابل للبرمجة عبر CLI وsocket API — إنشاء مساحات العمل/علامات التبويب، تقسيم الأجزاء، إرسال ضغطات المفاتيح، فتح عناوين URL في المتصفح.
 
-## فلسفة cmux
+## فلسفة zmux
 
-cmux لا يفرض على المطورين طريقة استخدام أدواتهم. إنه طرفية ومتصفح مع واجهة سطر أوامر، والباقي متروك لك.
+zmux لا يفرض على المطورين طريقة استخدام أدواتهم. إنه طرفية ومتصفح مع واجهة سطر أوامر، والباقي متروك لك.
 
-cmux هو لبنة أساسية وليس حلًا جاهزًا. يمنحك طرفية ومتصفحًا وإشعارات ومساحات عمل وأقسامًا وعلامات تبويب وواجهة سطر أوامر للتحكم في كل ذلك. cmux لا يجبرك على طريقة محددة لاستخدام وكلاء البرمجة. ما تبنيه باستخدام هذه اللبنات الأساسية هو ملكك.
+zmux هو لبنة أساسية وليس حلًا جاهزًا. يمنحك طرفية ومتصفحًا وإشعارات ومساحات عمل وأقسامًا وعلامات تبويب وواجهة سطر أوامر للتحكم في كل ذلك. zmux لا يجبرك على طريقة محددة لاستخدام وكلاء البرمجة. ما تبنيه باستخدام هذه اللبنات الأساسية هو ملكك.
 
 أفضل المطورين دائمًا ما بنوا أدواتهم الخاصة. لم يكتشف أحد بعد أفضل طريقة للعمل مع الوكلاء، والفرق التي تبني منتجات مغلقة لم تكتشفها أيضًا بالتأكيد. المطورون الأقرب لقواعد بياناتهم الخاصة سيكتشفونها أولًا.
 
@@ -142,7 +142,7 @@ cmux هو لبنة أساسية وليس حلًا جاهزًا. يمنحك طر�
 
 ## التوثيق
 
-لمزيد من المعلومات حول كيفية إعداد cmux، [توجه إلى وثائقنا](https://cmux.com/docs/getting-started?utm_source=readme).
+لمزيد من المعلومات حول كيفية إعداد zmux، [توجه إلى وثائقنا](https://zmux.com/docs/getting-started?utm_source=readme).
 
 ## اختصارات لوحة المفاتيح
 
@@ -232,27 +232,27 @@ cmux هو لبنة أساسية وليس حلًا جاهزًا. يمنحك طر�
 
 ## الإصدارات الليلية
 
-[تحميل cmux NIGHTLY](https://github.com/manaflow-ai/cmux/releases/download/nightly/cmux-nightly-macos.dmg)
+[تحميل zmux NIGHTLY](https://github.com/manaflow-ai/zmux/releases/download/nightly/zmux-nightly-macos.dmg)
 
-cmux NIGHTLY هو تطبيق منفصل بمعرّف حزمة خاص به، لذا يعمل بجانب الإصدار المستقر. يُبنى تلقائيًا من أحدث commit على فرع `main` ويتم تحديثه تلقائيًا عبر Sparkle الخاص به.
+zmux NIGHTLY هو تطبيق منفصل بمعرّف حزمة خاص به، لذا يعمل بجانب الإصدار المستقر. يُبنى تلقائيًا من أحدث commit على فرع `main` ويتم تحديثه تلقائيًا عبر Sparkle الخاص به.
 
 ## استعادة الجلسة (السلوك الحالي)
 
-عند إعادة التشغيل، يستعيد cmux حاليًا تخطيط التطبيق والبيانات الوصفية فقط:
+عند إعادة التشغيل، يستعيد zmux حاليًا تخطيط التطبيق والبيانات الوصفية فقط:
 - تخطيط النوافذ/مساحات العمل/الأجزاء
 - مجلدات العمل
 - سجل تمرير الطرفية (أفضل جهد)
 - عنوان URL للمتصفح وسجل التنقل
 
-cmux **لا** يستعيد حالة العمليات الحية داخل تطبيقات الطرفية. على سبيل المثال، جلسات Claude Code/tmux/vim النشطة لا يتم استئنافها بعد إعادة التشغيل بعد.
+zmux **لا** يستعيد حالة العمليات الحية داخل تطبيقات الطرفية. على سبيل المثال، جلسات Claude Code/tmux/vim النشطة لا يتم استئنافها بعد إعادة التشغيل بعد.
 
 ## تاريخ النجوم
 
-<a href="https://star-history.com/#manaflow-ai/cmux&Date">
+<a href="https://star-history.com/#manaflow-ai/zmux&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=manaflow-ai/cmux&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=manaflow-ai/cmux&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=manaflow-ai/cmux&type=Date" width="600" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=manaflow-ai/zmux&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=manaflow-ai/zmux&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=manaflow-ai/zmux&type=Date" width="600" />
  </picture>
 </a>
 
@@ -262,26 +262,26 @@ cmux **لا** يستعيد حالة العمليات الحية داخل تطب�
 
 - تابعنا على X للتحديثات [@manaflowai](https://x.com/manaflowai)، [@lawrencecchen](https://x.com/lawrencecchen)، و[@austinywang](https://x.com/austinywang)
 - انضم إلى المحادثة على [Discord](https://discord.gg/xsgFEVrWCZ)
-- أنشئ وشارك في [قضايا GitHub](https://github.com/manaflow-ai/cmux/issues) و[المناقشات](https://github.com/manaflow-ai/cmux/discussions)
-- أخبرنا بما تبنيه باستخدام cmux
+- أنشئ وشارك في [قضايا GitHub](https://github.com/manaflow-ai/zmux/issues) و[المناقشات](https://github.com/manaflow-ai/zmux/discussions)
+- أخبرنا بما تبنيه باستخدام zmux
 
 ## المجتمع
 
 - [Discord](https://discord.gg/xsgFEVrWCZ)
-- [GitHub](https://github.com/manaflow-ai/cmux)
+- [GitHub](https://github.com/manaflow-ai/zmux)
 - [X / Twitter](https://twitter.com/manaflowai)
 - [YouTube](https://www.youtube.com/channel/UCAa89_j-TWkrXfk9A3CbASw)
 - [LinkedIn](https://www.linkedin.com/company/manaflow-ai/)
-- [Reddit](https://www.reddit.com/r/cmux/)
+- [Reddit](https://www.reddit.com/r/zmux/)
 
 ## إصدار المؤسسين
 
-cmux مجاني ومفتوح المصدر وسيظل كذلك دائمًا. إذا كنت ترغب في دعم التطوير والحصول على وصول مبكر لما هو قادم:
+zmux مجاني ومفتوح المصدر وسيظل كذلك دائمًا. إذا كنت ترغب في دعم التطوير والحصول على وصول مبكر لما هو قادم:
 
 **[احصل على إصدار المؤسسين](https://buy.stripe.com/3cI00j2Ld0it5OU33r5EY0q)**
 
 - **أولوية لطلبات الميزات/إصلاح الأخطاء**
-- **وصول مبكر: ذكاء اصطناعي لـ cmux يمنحك سياقًا عن كل مساحة عمل وعلامة تبويب ولوحة**
+- **وصول مبكر: ذكاء اصطناعي لـ zmux يمنحك سياقًا عن كل مساحة عمل وعلامة تبويب ولوحة**
 - **وصول مبكر: تطبيق iOS مع مزامنة الطرفيات بين سطح المكتب والهاتف**
 - **وصول مبكر: أجهزة افتراضية سحابية**
 - **وصول مبكر: وضع الصوت**
@@ -289,6 +289,6 @@ cmux مجاني ومفتوح المصدر وسيظل كذلك دائمًا. إذ
 
 ## الرخصة
 
-cmux مفتوح المصدر بموجب [GPL-3.0-or-later](LICENSE).
+zmux مفتوح المصدر بموجب [GPL-3.0-or-later](LICENSE).
 
 إذا لم تستطع مؤسستك الامتثال لـ GPL، فهناك ترخيص تجاري متاح. تواصل مع [founders@manaflow.com](mailto:founders@manaflow.com) للتفاصيل.

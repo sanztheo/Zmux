@@ -1,28 +1,28 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_NAME="cmux DEV"
-BUNDLE_ID="com.cmuxterm.app.debug"
-BASE_APP_NAME="cmux DEV"
+APP_NAME="zmux DEV"
+BUNDLE_ID="com.zmuxterm.app.debug"
+BASE_APP_NAME="zmux DEV"
 DERIVED_DATA=""
 NAME_SET=0
 BUNDLE_SET=0
 DERIVED_SET=0
 TAG=""
 LAUNCH=0
-CMUX_DEBUG_LOG=""
-CMUX_DEV_PORT=""
-CMUX_DEV_PORT_END=""
-CMUX_DEV_PORT_RANGE=""
-CMUX_DEV_ORIGIN=""
+ZMUX_DEBUG_LOG=""
+ZMUX_DEV_PORT=""
+ZMUX_DEV_PORT_END=""
+ZMUX_DEV_PORT_RANGE=""
+ZMUX_DEV_ORIGIN=""
 CLI_PATH=""
-LAST_SOCKET_PATH_DIR="$HOME/Library/Application Support/cmux"
+LAST_SOCKET_PATH_DIR="$HOME/Library/Application Support/zmux"
 LAST_SOCKET_PATH_FILE="${LAST_SOCKET_PATH_DIR}/last-socket-path"
 AUTO_SKIP_ZIG_BUILD_REASON=""
 
 should_skip_ghostty_cli_helper_zig_build() {
-  if [[ "${CMUX_SKIP_ZIG_BUILD:-}" == "1" ]]; then
-    AUTO_SKIP_ZIG_BUILD_REASON="CMUX_SKIP_ZIG_BUILD=1"
+  if [[ "${ZMUX_SKIP_ZIG_BUILD:-}" == "1" ]]; then
+    AUTO_SKIP_ZIG_BUILD_REASON="ZMUX_SKIP_ZIG_BUILD=1"
     return 0
   fi
 
@@ -46,10 +46,10 @@ write_dev_cli_shim() {
   mkdir -p "$(dirname "$target")"
   cat > "$target" <<EOF
 #!/usr/bin/env bash
-# cmux dev shim (managed by scripts/reload.sh)
+# zmux dev shim (managed by scripts/reload.sh)
 set -euo pipefail
 
-CLI_PATH_FILE="/tmp/cmux-last-cli-path"
+CLI_PATH_FILE="/tmp/zmux-last-cli-path"
 CLI_PATH_OWNER="\$(stat -f '%u' "\$CLI_PATH_FILE" 2>/dev/null || stat -c '%u' "\$CLI_PATH_FILE" 2>/dev/null || echo -1)"
 if [[ -r "\$CLI_PATH_FILE" ]] && [[ ! -L "\$CLI_PATH_FILE" ]] && [[ "\$CLI_PATH_OWNER" == "\$(id -u)" ]]; then
   CLI_PATH="\$(cat "\$CLI_PATH_FILE")"
@@ -62,15 +62,15 @@ if [[ -x "$fallback_bin" ]]; then
   exec "$fallback_bin" "\$@"
 fi
 
-echo "error: no reload-selected dev cmux CLI found. Run ./scripts/reload.sh --tag <name> first." >&2
+echo "error: no reload-selected dev zmux CLI found. Run ./scripts/reload.sh --tag <name> first." >&2
 exit 1
 EOF
   chmod +x "$target"
 }
 
-select_cmux_shim_target() {
-  local app_cli_dir="/Applications/cmux.app/Contents/Resources/bin"
-  local marker="cmux dev shim (managed by scripts/reload.sh)"
+select_zmux_shim_target() {
+  local app_cli_dir="/Applications/zmux.app/Contents/Resources/bin"
+  local marker="zmux dev shim (managed by scripts/reload.sh)"
   local target=""
   local path_entry=""
   local candidate=""
@@ -85,7 +85,7 @@ select_cmux_shim_target() {
       break
     fi
     [[ -d "$path_entry" && -w "$path_entry" ]] || continue
-    candidate="$path_entry/cmux"
+    candidate="$path_entry/zmux"
     if [[ ! -e "$candidate" ]]; then
       target="$candidate"
       break
@@ -104,7 +104,7 @@ select_cmux_shim_target() {
   # Fallback for PATH layouts where app CLI isn't listed or no earlier entries were writable.
   for path_entry in /opt/homebrew/bin /usr/local/bin "$HOME/.local/bin" "$HOME/bin"; do
     [[ -d "$path_entry" && -w "$path_entry" ]] || continue
-    candidate="$path_entry/cmux"
+    candidate="$path_entry/zmux"
     if [[ ! -e "$candidate" ]]; then
       echo "$candidate"
       return 0
@@ -122,7 +122,7 @@ write_last_socket_path() {
   local socket_path="$1"
   mkdir -p "$LAST_SOCKET_PATH_DIR"
   echo "$socket_path" > "$LAST_SOCKET_PATH_FILE" || true
-  echo "$socket_path" > /tmp/cmux-last-socket-path || true
+  echo "$socket_path" > /tmp/zmux-last-socket-path || true
 }
 
 usage() {
@@ -177,9 +177,9 @@ is_positive_integer() {
   (( numeric > 0 ))
 }
 
-choose_cmux_dev_port() {
-  if is_valid_port "${CMUX_PORT:-}"; then
-    echo "$CMUX_PORT"
+choose_zmux_dev_port() {
+  if is_valid_port "${ZMUX_PORT:-}"; then
+    echo "$ZMUX_PORT"
     return 0
   fi
   if is_valid_port "${PORT:-}"; then
@@ -189,19 +189,19 @@ choose_cmux_dev_port() {
   echo "3777"
 }
 
-choose_cmux_dev_port_range() {
-  if is_positive_integer "${CMUX_PORT_RANGE:-}"; then
-    echo "$CMUX_PORT_RANGE"
+choose_zmux_dev_port_range() {
+  if is_positive_integer "${ZMUX_PORT_RANGE:-}"; then
+    echo "$ZMUX_PORT_RANGE"
     return 0
   fi
   echo "1"
 }
 
-choose_cmux_dev_port_end() {
+choose_zmux_dev_port_end() {
   local start="$1"
   local range="$2"
-  if is_valid_port "${CMUX_PORT_END:-}"; then
-    echo "$CMUX_PORT_END"
+  if is_valid_port "${ZMUX_PORT_END:-}"; then
+    echo "$ZMUX_PORT_END"
     return 0
   fi
   local start_num=$((10#$start))
@@ -223,7 +223,7 @@ set_plist_env() {
 
 tagged_derived_data_path() {
   local slug="$1"
-  echo "$HOME/Library/Developer/Xcode/DerivedData/cmux-${slug}"
+  echo "$HOME/Library/Developer/Xcode/DerivedData/zmux-${slug}"
 }
 
 print_tag_cleanup_reminder() {
@@ -234,10 +234,10 @@ print_tag_cleanup_reminder() {
   local -a stale_tags=()
 
   while IFS= read -r -d '' path; do
-    if [[ "$path" == /tmp/cmux-* ]]; then
-      tag="${path#/tmp/cmux-}"
-    elif [[ "$path" == "$HOME/Library/Developer/Xcode/DerivedData/cmux-"* ]]; then
-      tag="${path#$HOME/Library/Developer/Xcode/DerivedData/cmux-}"
+    if [[ "$path" == /tmp/zmux-* ]]; then
+      tag="${path#/tmp/zmux-}"
+    elif [[ "$path" == "$HOME/Library/Developer/Xcode/DerivedData/zmux-"* ]]; then
+      tag="${path#$HOME/Library/Developer/Xcode/DerivedData/zmux-}"
     else
       continue
     fi
@@ -254,8 +254,8 @@ print_tag_cleanup_reminder() {
     seen="${seen}${tag} "
     stale_tags+=("$tag")
   done < <(
-    find /tmp -maxdepth 1 -name 'cmux-*' -print0 2>/dev/null
-    find "$HOME/Library/Developer/Xcode/DerivedData" -maxdepth 1 -type d -name 'cmux-*' -print0 2>/dev/null
+    find /tmp -maxdepth 1 -name 'zmux-*' -print0 2>/dev/null
+    find "$HOME/Library/Developer/Xcode/DerivedData" -maxdepth 1 -type d -name 'zmux-*' -print0 2>/dev/null
   )
 
   echo
@@ -271,17 +271,17 @@ print_tag_cleanup_reminder() {
     done
     echo "Cleanup stale tags only:"
     for tag in "${stale_tags[@]}"; do
-      echo "  pkill -f \"cmux DEV ${tag}.app/Contents/MacOS/cmux DEV\""
-      echo "  rm -rf \"$(tagged_derived_data_path "$tag")\" \"/tmp/cmux-${tag}\" \"/tmp/cmux-debug-${tag}.sock\""
-      echo "  rm -f \"/tmp/cmux-debug-${tag}.log\""
-      echo "  rm -f \"$HOME/Library/Application Support/cmux/cmuxd-dev-${tag}.sock\""
+      echo "  pkill -f \"zmux DEV ${tag}.app/Contents/MacOS/zmux DEV\""
+      echo "  rm -rf \"$(tagged_derived_data_path "$tag")\" \"/tmp/zmux-${tag}\" \"/tmp/zmux-debug-${tag}.sock\""
+      echo "  rm -f \"/tmp/zmux-debug-${tag}.log\""
+      echo "  rm -f \"$HOME/Library/Application Support/zmux/zmuxd-dev-${tag}.sock\""
     done
   fi
   echo "After you verify current tag, cleanup command:"
-  echo "  pkill -f \"cmux DEV ${current_slug}.app/Contents/MacOS/cmux DEV\""
-  echo "  rm -rf \"$(tagged_derived_data_path "$current_slug")\" \"/tmp/cmux-${current_slug}\" \"/tmp/cmux-debug-${current_slug}.sock\""
-  echo "  rm -f \"/tmp/cmux-debug-${current_slug}.log\""
-  echo "  rm -f \"$HOME/Library/Application Support/cmux/cmuxd-dev-${current_slug}.sock\""
+  echo "  pkill -f \"zmux DEV ${current_slug}.app/Contents/MacOS/zmux DEV\""
+  echo "  rm -rf \"$(tagged_derived_data_path "$current_slug")\" \"/tmp/zmux-${current_slug}\" \"/tmp/zmux-debug-${current_slug}.sock\""
+  echo "  rm -f \"/tmp/zmux-debug-${current_slug}.log\""
+  echo "  rm -f \"$HOME/Library/Application Support/zmux/zmuxd-dev-${current_slug}.sock\""
 }
 
 while [[ $# -gt 0 ]]; do
@@ -347,25 +347,25 @@ if [[ -n "$TAG" ]]; then
   TAG_ID="$(sanitize_bundle "$TAG")"
   TAG_SLUG="$(sanitize_path "$TAG")"
   if [[ "$NAME_SET" -eq 0 ]]; then
-    APP_NAME="cmux DEV ${TAG}"
+    APP_NAME="zmux DEV ${TAG}"
   fi
   if [[ "$BUNDLE_SET" -eq 0 ]]; then
-    BUNDLE_ID="com.cmuxterm.app.debug.${TAG_ID}"
+    BUNDLE_ID="com.zmuxterm.app.debug.${TAG_ID}"
   fi
   if [[ "$DERIVED_SET" -eq 0 ]]; then
     DERIVED_DATA="$(tagged_derived_data_path "$TAG_SLUG")"
   fi
 fi
 
-CMUX_DEV_PORT="$(choose_cmux_dev_port)"
-CMUX_DEV_PORT_RANGE="$(choose_cmux_dev_port_range)"
-CMUX_DEV_PORT_END="$(choose_cmux_dev_port_end "$CMUX_DEV_PORT" "$CMUX_DEV_PORT_RANGE")"
-CMUX_DEV_ORIGIN="http://localhost:${CMUX_DEV_PORT}"
+ZMUX_DEV_PORT="$(choose_zmux_dev_port)"
+ZMUX_DEV_PORT_RANGE="$(choose_zmux_dev_port_range)"
+ZMUX_DEV_PORT_END="$(choose_zmux_dev_port_end "$ZMUX_DEV_PORT" "$ZMUX_DEV_PORT_RANGE")"
+ZMUX_DEV_ORIGIN="http://localhost:${ZMUX_DEV_PORT}"
 
 # Quiet logging: capture all noisy build output (xcodebuild, zig, codesign,
 # plistbuddy, etc.) to a single log file. On success we print only a one-line
 # summary plus the App/CLI paths. On failure we dump the log.
-RELOAD_LOG="/tmp/cmux-reload-${TAG_SLUG}.log"
+RELOAD_LOG="/tmp/zmux-reload-${TAG_SLUG}.log"
 RELOAD_START_TIME="$(date +%s)"
 : > "$RELOAD_LOG"
 
@@ -395,22 +395,22 @@ reload_finalize() {
     echo "App path:"
     echo "  $APP_PATH"
   fi
-  if [[ -n "${CMUX_DEV_ORIGIN:-}" ]]; then
+  if [[ -n "${ZMUX_DEV_ORIGIN:-}" ]]; then
     echo
     echo "Dev web origin:"
-    echo "  $CMUX_DEV_ORIGIN"
+    echo "  $ZMUX_DEV_ORIGIN"
   fi
   if [[ -x "${CLI_PATH:-}" ]]; then
     echo
     echo "CLI path:"
     echo "  $CLI_PATH"
     echo "CLI helpers:"
-    echo "  /tmp/cmux-cli ..."
-    echo "  $HOME/.local/bin/cmux-dev ..."
-    if [[ -n "${CMUX_SHIM_TARGET:-}" ]]; then
-      echo "  $CMUX_SHIM_TARGET ..."
+    echo "  /tmp/zmux-cli ..."
+    echo "  $HOME/.local/bin/zmux-dev ..."
+    if [[ -n "${ZMUX_SHIM_TARGET:-}" ]]; then
+      echo "  $ZMUX_SHIM_TARGET ..."
     fi
-    echo "If your shell still resolves the old cmux, run: rehash"
+    echo "If your shell still resolves the old zmux, run: rehash"
   fi
   if [[ "$LAUNCH" -eq 0 ]]; then
     echo
@@ -425,15 +425,15 @@ echo "==> reload starting (tag: ${TAG}, log: ${RELOAD_LOG})" >&3
 "$PWD/scripts/ensure-ghosttykit.sh"
 
 if should_skip_ghostty_cli_helper_zig_build; then
-  if [[ "${CMUX_SKIP_ZIG_BUILD:-}" != "1" ]]; then
-    echo "Auto-enabling CMUX_SKIP_ZIG_BUILD=1 for Ghostty CLI helper (${AUTO_SKIP_ZIG_BUILD_REASON})"
+  if [[ "${ZMUX_SKIP_ZIG_BUILD:-}" != "1" ]]; then
+    echo "Auto-enabling ZMUX_SKIP_ZIG_BUILD=1 for Ghostty CLI helper (${AUTO_SKIP_ZIG_BUILD_REASON})"
   fi
-  export CMUX_SKIP_ZIG_BUILD=1
+  export ZMUX_SKIP_ZIG_BUILD=1
 fi
 
 XCODEBUILD_ARGS=(
   -project GhosttyTabs.xcodeproj
-  -scheme cmux
+  -scheme zmux
   -configuration Debug
   -destination 'platform=macOS'
 )
@@ -447,14 +447,14 @@ if [[ -z "$TAG" ]]; then
     PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID"
   )
 fi
-# Forward CMUX_SKIP_ZIG_BUILD to xcodebuild run script phases (e.g. macOS
+# Forward ZMUX_SKIP_ZIG_BUILD to xcodebuild run script phases (e.g. macOS
 # Tahoe where zig 0.15.2 can't link the ghostty CLI helper).
-if [[ "${CMUX_SKIP_ZIG_BUILD:-}" == "1" ]]; then
-  XCODEBUILD_ARGS+=(CMUX_SKIP_ZIG_BUILD=1)
+if [[ "${ZMUX_SKIP_ZIG_BUILD:-}" == "1" ]]; then
+  XCODEBUILD_ARGS+=(ZMUX_SKIP_ZIG_BUILD=1)
 fi
 XCODEBUILD_ARGS+=(build)
 
-XCODEBUILD_LOCK="${TMPDIR:-/tmp}/cmux-xcodebuild-$(id -u).lock"
+XCODEBUILD_LOCK="${TMPDIR:-/tmp}/zmux-xcodebuild-$(id -u).lock"
 # Xcode 26's SWBBuildService is a per-user singleton. Concurrent xcodebuild
 # invocations (even with separate -derivedDataPath) share that daemon and can
 # crash it, SIGTERMing in-flight builds. Serialize via a per-user lock so
@@ -545,7 +545,7 @@ if [[ -z "${APP_PATH}" || ! -d "${APP_PATH}" ]]; then
 fi
 
 if [[ -n "${TAG_SLUG:-}" ]]; then
-  TMP_COMPAT_DERIVED_LINK="/tmp/cmux-${TAG_SLUG}"
+  TMP_COMPAT_DERIVED_LINK="/tmp/zmux-${TAG_SLUG}"
   if [[ "$DERIVED_DATA" != "$TMP_COMPAT_DERIVED_LINK" ]]; then
     ABS_DERIVED_DATA="$(cd "$DERIVED_DATA" && pwd)"
     rm -rf "$TMP_COMPAT_DERIVED_LINK"
@@ -566,74 +566,74 @@ if [[ -n "$TAG" && "$APP_NAME" != "$SEARCH_APP_NAME" ]]; then
     /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BUNDLE_ID" "$INFO_PLIST" 2>/dev/null \
       || /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string $BUNDLE_ID" "$INFO_PLIST"
     if [[ -n "${TAG_SLUG:-}" ]]; then
-      APP_SUPPORT_DIR="$HOME/Library/Application Support/cmux"
-      CMUXD_SOCKET="${APP_SUPPORT_DIR}/cmuxd-dev-${TAG_SLUG}.sock"
-      CMUX_SOCKET="/tmp/cmux-debug-${TAG_SLUG}.sock"
-      CMUX_DEBUG_LOG="/tmp/cmux-debug-${TAG_SLUG}.log"
-      write_last_socket_path "$CMUX_SOCKET"
-      echo "$CMUX_DEBUG_LOG" > /tmp/cmux-last-debug-log-path || true
+      APP_SUPPORT_DIR="$HOME/Library/Application Support/zmux"
+      ZMUXD_SOCKET="${APP_SUPPORT_DIR}/zmuxd-dev-${TAG_SLUG}.sock"
+      ZMUX_SOCKET="/tmp/zmux-debug-${TAG_SLUG}.sock"
+      ZMUX_DEBUG_LOG="/tmp/zmux-debug-${TAG_SLUG}.log"
+      write_last_socket_path "$ZMUX_SOCKET"
+      echo "$ZMUX_DEBUG_LOG" > /tmp/zmux-last-debug-log-path || true
       /usr/libexec/PlistBuddy -c "Add :LSEnvironment dict" "$INFO_PLIST" 2>/dev/null || true
-      set_plist_env "$INFO_PLIST" CMUXD_UNIX_PATH "$CMUXD_SOCKET"
-      set_plist_env "$INFO_PLIST" CMUX_SOCKET_PATH "$CMUX_SOCKET"
-      set_plist_env "$INFO_PLIST" CMUX_DEBUG_LOG "$CMUX_DEBUG_LOG"
-      set_plist_env "$INFO_PLIST" CMUX_SOCKET_ENABLE "1"
-      set_plist_env "$INFO_PLIST" CMUX_SOCKET_MODE "allowAll"
-      set_plist_env "$INFO_PLIST" CMUX_REMOTE_DAEMON_ALLOW_LOCAL_BUILD "1"
-      set_plist_env "$INFO_PLIST" CMUXTERM_REPO_ROOT "$PWD"
-      set_plist_env "$INFO_PLIST" CMUX_PORT "$CMUX_DEV_PORT"
-      set_plist_env "$INFO_PLIST" CMUX_PORT_END "$CMUX_DEV_PORT_END"
-      set_plist_env "$INFO_PLIST" CMUX_PORT_RANGE "$CMUX_DEV_PORT_RANGE"
-      set_plist_env "$INFO_PLIST" PORT "$CMUX_DEV_PORT"
-      set_plist_env "$INFO_PLIST" CMUX_AUTH_WWW_ORIGIN "$CMUX_DEV_ORIGIN"
-      set_plist_env "$INFO_PLIST" CMUX_API_BASE_URL "$CMUX_DEV_ORIGIN"
-      set_plist_env "$INFO_PLIST" CMUX_VM_API_BASE_URL "$CMUX_DEV_ORIGIN"
-      if [[ -S "$CMUXD_SOCKET" ]]; then
-        for PID in $(lsof -t "$CMUXD_SOCKET" 2>/dev/null); do
+      set_plist_env "$INFO_PLIST" ZMUXD_UNIX_PATH "$ZMUXD_SOCKET"
+      set_plist_env "$INFO_PLIST" ZMUX_SOCKET_PATH "$ZMUX_SOCKET"
+      set_plist_env "$INFO_PLIST" ZMUX_DEBUG_LOG "$ZMUX_DEBUG_LOG"
+      set_plist_env "$INFO_PLIST" ZMUX_SOCKET_ENABLE "1"
+      set_plist_env "$INFO_PLIST" ZMUX_SOCKET_MODE "allowAll"
+      set_plist_env "$INFO_PLIST" ZMUX_REMOTE_DAEMON_ALLOW_LOCAL_BUILD "1"
+      set_plist_env "$INFO_PLIST" ZMUXTERM_REPO_ROOT "$PWD"
+      set_plist_env "$INFO_PLIST" ZMUX_PORT "$ZMUX_DEV_PORT"
+      set_plist_env "$INFO_PLIST" ZMUX_PORT_END "$ZMUX_DEV_PORT_END"
+      set_plist_env "$INFO_PLIST" ZMUX_PORT_RANGE "$ZMUX_DEV_PORT_RANGE"
+      set_plist_env "$INFO_PLIST" PORT "$ZMUX_DEV_PORT"
+      set_plist_env "$INFO_PLIST" ZMUX_AUTH_WWW_ORIGIN "$ZMUX_DEV_ORIGIN"
+      set_plist_env "$INFO_PLIST" ZMUX_API_BASE_URL "$ZMUX_DEV_ORIGIN"
+      set_plist_env "$INFO_PLIST" ZMUX_VM_API_BASE_URL "$ZMUX_DEV_ORIGIN"
+      if [[ -S "$ZMUXD_SOCKET" ]]; then
+        for PID in $(lsof -t "$ZMUXD_SOCKET" 2>/dev/null); do
           kill "$PID" 2>/dev/null || true
         done
-        rm -f "$CMUXD_SOCKET"
+        rm -f "$ZMUXD_SOCKET"
       fi
-      if [[ -S "$CMUX_SOCKET" ]]; then
-        rm -f "$CMUX_SOCKET"
+      if [[ -S "$ZMUX_SOCKET" ]]; then
+        rm -f "$ZMUX_SOCKET"
       fi
     fi
   fi
   APP_PATH="$TAG_APP_PATH"
 fi
 
-CLI_PATH="$(dirname "$APP_PATH")/cmux"
+CLI_PATH="$(dirname "$APP_PATH")/zmux"
 if [[ -x "$CLI_PATH" ]]; then
-  (umask 077; printf '%s\n' "$CLI_PATH" > /tmp/cmux-last-cli-path) || true
-  ln -sfn "$CLI_PATH" /tmp/cmux-cli || true
+  (umask 077; printf '%s\n' "$CLI_PATH" > /tmp/zmux-last-cli-path) || true
+  ln -sfn "$CLI_PATH" /tmp/zmux-cli || true
 
   # Stable shim that always follows the last reload-selected dev CLI.
-  DEV_CLI_SHIM="$HOME/.local/bin/cmux-dev"
-  write_dev_cli_shim "$DEV_CLI_SHIM" "/Applications/cmux.app/Contents/Resources/bin/cmux"
+  DEV_CLI_SHIM="$HOME/.local/bin/zmux-dev"
+  write_dev_cli_shim "$DEV_CLI_SHIM" "/Applications/zmux.app/Contents/Resources/bin/zmux"
 
-  CMUX_SHIM_TARGET="$(select_cmux_shim_target || true)"
-  if [[ -n "${CMUX_SHIM_TARGET:-}" ]]; then
-    write_dev_cli_shim "$CMUX_SHIM_TARGET" "/Applications/cmux.app/Contents/Resources/bin/cmux"
+  ZMUX_SHIM_TARGET="$(select_zmux_shim_target || true)"
+  if [[ -n "${ZMUX_SHIM_TARGET:-}" ]]; then
+    write_dev_cli_shim "$ZMUX_SHIM_TARGET" "/Applications/zmux.app/Contents/Resources/bin/zmux"
   fi
 fi
 
-# Build cmuxd and ghostty helper binaries (needed for both launch and no-launch).
-CMUXD_SRC="$PWD/cmuxd/zig-out/bin/cmuxd"
+# Build zmuxd and ghostty helper binaries (needed for both launch and no-launch).
+ZMUXD_SRC="$PWD/zmuxd/zig-out/bin/zmuxd"
 GHOSTTY_HELPER_SRC="$PWD/ghostty/zig-out/bin/ghostty"
-if [[ -d "$PWD/cmuxd" ]]; then
-  (cd "$PWD/cmuxd" && zig build -Doptimize=ReleaseFast)
+if [[ -d "$PWD/zmuxd" ]]; then
+  (cd "$PWD/zmuxd" && zig build -Doptimize=ReleaseFast)
 fi
 if [[ -d "$PWD/ghostty" ]]; then
-  if [[ "${CMUX_SKIP_ZIG_BUILD:-}" == "1" ]]; then
-    echo "Skipping direct ghostty CLI helper zig build (CMUX_SKIP_ZIG_BUILD=1)"
+  if [[ "${ZMUX_SKIP_ZIG_BUILD:-}" == "1" ]]; then
+    echo "Skipping direct ghostty CLI helper zig build (ZMUX_SKIP_ZIG_BUILD=1)"
   else
     (cd "$PWD/ghostty" && zig build cli-helper -Dapp-runtime=none -Demit-macos-app=false -Demit-xcframework=false -Doptimize=ReleaseFast)
   fi
 fi
-if [[ -x "$CMUXD_SRC" ]]; then
+if [[ -x "$ZMUXD_SRC" ]]; then
   BIN_DIR="$APP_PATH/Contents/Resources/bin"
   mkdir -p "$BIN_DIR"
-  cp "$CMUXD_SRC" "$BIN_DIR/cmuxd"
-  chmod +x "$BIN_DIR/cmuxd"
+  cp "$ZMUXD_SRC" "$BIN_DIR/zmuxd"
+  chmod +x "$BIN_DIR/zmuxd"
 fi
 if [[ -x "$GHOSTTY_HELPER_SRC" ]]; then
   BIN_DIR="$APP_PATH/Contents/Resources/bin"
@@ -645,16 +645,16 @@ if command -v xattr >/dev/null 2>&1; then
   xattr -cr "$APP_PATH" || true
 fi
 if ! /usr/bin/codesign --force --sign - --timestamp=none --generate-entitlement-der "$APP_PATH" >/dev/null 2>&1; then
-  if [[ "${CMUX_ALLOW_UNSIGNED_DEV_APP:-}" == "1" ]]; then
-    echo "warning: codesign failed for $APP_PATH; continuing because CMUX_ALLOW_UNSIGNED_DEV_APP=1" >&2
+  if [[ "${ZMUX_ALLOW_UNSIGNED_DEV_APP:-}" == "1" ]]; then
+    echo "warning: codesign failed for $APP_PATH; continuing because ZMUX_ALLOW_UNSIGNED_DEV_APP=1" >&2
   else
     echo "error: codesign failed for $APP_PATH" >&2
     exit 1
   fi
 fi
-CLI_PATH="$APP_PATH/Contents/Resources/bin/cmux"
+CLI_PATH="$APP_PATH/Contents/Resources/bin/zmux"
 if [[ -x "$CLI_PATH" ]]; then
-  echo "$CLI_PATH" > /tmp/cmux-last-cli-path || true
+  echo "$CLI_PATH" > /tmp/zmux-last-cli-path || true
 fi
 
 # Tag mode: always terminate the existing same-tag instance after a successful build,
@@ -677,26 +677,26 @@ if [[ "$LAUNCH" -eq 1 ]]; then
     sleep 0.3
   fi
 
-  # Avoid inheriting cmux/ghostty environment variables from the terminal that
-  # runs this script (often inside another cmux instance), which can cause
+  # Avoid inheriting zmux/ghostty environment variables from the terminal that
+  # runs this script (often inside another zmux instance), which can cause
   # socket and resource-path conflicts.
   OPEN_CLEAN_ENV=(
     env
-    -u CMUX_SOCKET_PATH
-    -u CMUX_WORKSPACE_ID
-    -u CMUX_SURFACE_ID
-    -u CMUX_TAB_ID
-    -u CMUX_PANEL_ID
-    -u CMUXD_UNIX_PATH
-    -u CMUX_TAG
-    -u CMUX_DEBUG_LOG
-    -u CMUX_BUNDLE_ID
-    -u CMUX_SHELL_INTEGRATION
+    -u ZMUX_SOCKET_PATH
+    -u ZMUX_WORKSPACE_ID
+    -u ZMUX_SURFACE_ID
+    -u ZMUX_TAB_ID
+    -u ZMUX_PANEL_ID
+    -u ZMUXD_UNIX_PATH
+    -u ZMUX_TAG
+    -u ZMUX_DEBUG_LOG
+    -u ZMUX_BUNDLE_ID
+    -u ZMUX_SHELL_INTEGRATION
     -u GHOSTTY_BIN_DIR
     -u GHOSTTY_RESOURCES_DIR
     -u GHOSTTY_SHELL_FEATURES
     # Dev shells (including CI/Codex) often force-disable paging by exporting these.
-    # Don't leak that into cmux, otherwise `git diff` won't page even with PAGER=less.
+    # Don't leak that into zmux, otherwise `git diff` won't page even with PAGER=less.
     -u GIT_PAGER
     -u GH_PAGER
     -u TERMINFO
@@ -704,29 +704,29 @@ if [[ "$LAUNCH" -eq 1 ]]; then
   )
 
   TAG_LAUNCH_ENV=(
-    CMUX_TAG="${TAG_SLUG:-}"
-    CMUX_SOCKET_ENABLE=1
-    CMUX_SOCKET_MODE=allowAll
-    CMUX_DEBUG_LOG="$CMUX_DEBUG_LOG"
-    CMUX_REMOTE_DAEMON_ALLOW_LOCAL_BUILD=1
-    CMUXTERM_REPO_ROOT="$PWD"
-    CMUX_PORT="$CMUX_DEV_PORT"
-    CMUX_PORT_END="$CMUX_DEV_PORT_END"
-    CMUX_PORT_RANGE="$CMUX_DEV_PORT_RANGE"
-    PORT="$CMUX_DEV_PORT"
-    CMUX_AUTH_WWW_ORIGIN="$CMUX_DEV_ORIGIN"
-    CMUX_API_BASE_URL="$CMUX_DEV_ORIGIN"
-    CMUX_VM_API_BASE_URL="$CMUX_DEV_ORIGIN"
+    ZMUX_TAG="${TAG_SLUG:-}"
+    ZMUX_SOCKET_ENABLE=1
+    ZMUX_SOCKET_MODE=allowAll
+    ZMUX_DEBUG_LOG="$ZMUX_DEBUG_LOG"
+    ZMUX_REMOTE_DAEMON_ALLOW_LOCAL_BUILD=1
+    ZMUXTERM_REPO_ROOT="$PWD"
+    ZMUX_PORT="$ZMUX_DEV_PORT"
+    ZMUX_PORT_END="$ZMUX_DEV_PORT_END"
+    ZMUX_PORT_RANGE="$ZMUX_DEV_PORT_RANGE"
+    PORT="$ZMUX_DEV_PORT"
+    ZMUX_AUTH_WWW_ORIGIN="$ZMUX_DEV_ORIGIN"
+    ZMUX_API_BASE_URL="$ZMUX_DEV_ORIGIN"
+    ZMUX_VM_API_BASE_URL="$ZMUX_DEV_ORIGIN"
   )
 
-  if [[ -n "${TAG_SLUG:-}" && -n "${CMUX_SOCKET:-}" ]]; then
-    # Ensure tag-specific socket paths win even if the caller has CMUX_* overrides.
-    "${OPEN_CLEAN_ENV[@]}" "${TAG_LAUNCH_ENV[@]}" CMUX_SOCKET_PATH="$CMUX_SOCKET" CMUXD_UNIX_PATH="$CMUXD_SOCKET" open -g "$APP_PATH"
+  if [[ -n "${TAG_SLUG:-}" && -n "${ZMUX_SOCKET:-}" ]]; then
+    # Ensure tag-specific socket paths win even if the caller has ZMUX_* overrides.
+    "${OPEN_CLEAN_ENV[@]}" "${TAG_LAUNCH_ENV[@]}" ZMUX_SOCKET_PATH="$ZMUX_SOCKET" ZMUXD_UNIX_PATH="$ZMUXD_SOCKET" open -g "$APP_PATH"
   elif [[ -n "${TAG_SLUG:-}" ]]; then
     "${OPEN_CLEAN_ENV[@]}" "${TAG_LAUNCH_ENV[@]}" open -g "$APP_PATH"
   else
-    echo "/tmp/cmux-debug.sock" > /tmp/cmux-last-socket-path || true
-    echo "/tmp/cmux-debug.log" > /tmp/cmux-last-debug-log-path || true
+    echo "/tmp/zmux-debug.sock" > /tmp/zmux-last-socket-path || true
+    echo "/tmp/zmux-debug.log" > /tmp/zmux-last-debug-log-path || true
     "${OPEN_CLEAN_ENV[@]}" open -g "$APP_PATH"
   fi
 

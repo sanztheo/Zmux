@@ -1,5 +1,5 @@
 import AppKit
-import CMUXWorkstream
+import ZMUXWorkstream
 import Foundation
 import UserNotifications
 
@@ -14,7 +14,7 @@ import UserNotifications
 /// Hooks then receive the decision inline in the `feed.push` response.
 final class FeedCoordinator: @unchecked Sendable {
     static let shared = FeedCoordinator()
-    static let storeInstalledNotification = Notification.Name("cmux.feed.storeInstalled")
+    static let storeInstalledNotification = Notification.Name("zmux.feed.storeInstalled")
 
     // The store runs on the main actor. The coordinator is not isolated,
     // so it hops to main explicitly when touching the store.
@@ -34,7 +34,7 @@ final class FeedCoordinator: @unchecked Sendable {
     /// multiple prompts only installs one watcher.
     @MainActor private var pidWatchers: [Int: DispatchSourceProcess] = [:]
     private let pidWatcherQueue = DispatchQueue(
-        label: "cmux.feed.pidWatcher", qos: .utility
+        label: "zmux.feed.pidWatcher", qos: .utility
     )
 
     private init() {}
@@ -254,8 +254,8 @@ extension FeedCoordinator {
 
     /// Parses `workstreamId` in the form `<agent>-<sessionId>` and
     /// looks up the matching hook-session entry in
-    /// `~/.cmuxterm/<agent>-hook-sessions.json` (written by
-    /// `cmux <agent>-hook session-start`). Returns `true` if a match
+    /// `~/.zmuxterm/<agent>-hook-sessions.json` (written by
+    /// `zmux <agent>-hook session-start`). Returns `true` if a match
     /// was found so the UI can gate the jump gesture.
     ///
     /// Actual focus (workspace.select + surface.focus) is scheduled via
@@ -303,9 +303,9 @@ extension FeedCoordinator {
     }
 }
 
-/// Reads the per-agent hook session stores (`~/.cmuxterm/<agent>-hook-sessions.json`)
-/// to map a feed `workstream_id` back to a cmux `(workspaceId, surfaceId)` pair.
-/// The schema is the same one written by `cmux <agent>-hook session-start`.
+/// Reads the per-agent hook session stores (`~/.zmuxterm/<agent>-hook-sessions.json`)
+/// to map a feed `workstream_id` back to a zmux `(workspaceId, surfaceId)` pair.
+/// The schema is the same one written by `zmux <agent>-hook session-start`.
 enum FeedJumpResolver {
     struct Target: Equatable {
         let workspaceId: String
@@ -323,7 +323,7 @@ enum FeedJumpResolver {
     static func lookup(agent: String, sessionId: String) -> Target? {
         let home = FileManager.default.homeDirectoryForCurrentUser
         let file = home
-            .appendingPathComponent(".cmuxterm", isDirectory: true)
+            .appendingPathComponent(".zmuxterm", isDirectory: true)
             .appendingPathComponent("\(agent)-hook-sessions.json", isDirectory: false)
         guard let data = try? Data(contentsOf: file),
               let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
@@ -345,7 +345,7 @@ enum FeedJumpResolver {
     }
 
     /// Dispatches a workspace-select + surface-focus intent. Posts
-    /// through the existing cmux notification pathway so we don't need
+    /// through the existing zmux notification pathway so we don't need
     /// to bind directly to the TerminalController V2 handlers from the
     /// Feed layer.
     @MainActor
@@ -378,8 +378,8 @@ enum FeedJumpResolver {
 }
 
 extension Notification.Name {
-    static let feedRequestFocus = Notification.Name("cmux.feedRequestFocus")
-    static let feedRequestSendText = Notification.Name("cmux.feedRequestSendText")
+    static let feedRequestFocus = Notification.Name("zmux.feedRequestFocus")
+    static let feedRequestSendText = Notification.Name("zmux.feedRequestSendText")
 }
 
 // MARK: - Native notification banner
@@ -399,7 +399,7 @@ private func postFeedNotification(event: WorkstreamEvent, requestId: String) {
         let body: String
         switch event.hookEventName {
         case .permissionRequest:
-            categoryId = "CMUXFeedPermission"
+            categoryId = "ZMUXFeedPermission"
             title = String(
                 localized: "feed.notification.permission.title",
                 defaultValue: "\(event.source.capitalized) permission"
@@ -414,7 +414,7 @@ private func postFeedNotification(event: WorkstreamEvent, requestId: String) {
                 defaultValue: "Decision needed"
             )
         case .exitPlanMode:
-            categoryId = "CMUXFeedExitPlan"
+            categoryId = "ZMUXFeedExitPlan"
             title = String(
                 localized: "feed.notification.exitPlan.title",
                 defaultValue: "\(event.source.capitalized) plan ready"
@@ -424,7 +424,7 @@ private func postFeedNotification(event: WorkstreamEvent, requestId: String) {
                 defaultValue: "Review and approve the plan"
             )
         case .askUserQuestion:
-            categoryId = "CMUXFeedQuestion"
+            categoryId = "ZMUXFeedQuestion"
             title = String(
                 localized: "feed.notification.question.title",
                 defaultValue: "\(event.source.capitalized) question"

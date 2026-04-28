@@ -8,19 +8,19 @@ enum AuthEnvironment {
 
     static var callbackScheme: String {
         let environment = ProcessInfo.processInfo.environment
-        if let overridden = environment["CMUX_AUTH_CALLBACK_SCHEME"]?
+        if let overridden = environment["ZMUX_AUTH_CALLBACK_SCHEME"]?
             .trimmingCharacters(in: .whitespacesAndNewlines),
            !overridden.isEmpty {
             return overridden
         }
-        // Match the Info.plist CFBundleURLSchemes $(CMUX_AUTH_CALLBACK_SCHEME)
-        // expansion: cmux-dev in Debug builds, cmux in Release. Without this
+        // Match the Info.plist CFBundleURLSchemes $(ZMUX_AUTH_CALLBACK_SCHEME)
+        // expansion: zmux-dev in Debug builds, zmux in Release. Without this
         // Debug split, beginSignIn() would start an ASWebAuthenticationSession
-        // listening on "cmux" while the OS routes cmux-dev:// → this app.
+        // listening on "zmux" while the OS routes zmux-dev:// → this app.
         #if DEBUG
-        return "cmux-dev"
+        return "zmux-dev"
         #else
-        return "cmux"
+        return "zmux"
         #endif
     }
 
@@ -30,15 +30,15 @@ enum AuthEnvironment {
 
     static var websiteOrigin: URL {
         resolvedURL(
-            environmentKey: "CMUX_WWW_ORIGIN",
-            fallback: "https://cmux.com"
+            environmentKey: "ZMUX_WWW_ORIGIN",
+            fallback: "https://zmux.com"
         )
     }
 
     static var signInWebsiteOrigin: URL {
         canonicalizedLoopbackURL(
             resolvedURL(
-                environmentKey: "CMUX_AUTH_WWW_ORIGIN",
+                environmentKey: "ZMUX_AUTH_WWW_ORIGIN",
                 fallback: defaultWebOrigin
             )
         )
@@ -47,40 +47,40 @@ enum AuthEnvironment {
     static var apiBaseURL: URL {
         canonicalizedLoopbackURL(
             resolvedURL(
-                environmentKey: "CMUX_API_BASE_URL",
+                environmentKey: "ZMUX_API_BASE_URL",
                 fallback: defaultAPIBaseURL
             )
         )
     }
 
-    /// Base URL for the cmux-owned cloud VM backend (`/api/vm`).
+    /// Base URL for the zmux-owned cloud VM backend (`/api/vm`).
     ///
     /// Resolution order (first hit wins):
-    ///   1. process env `CMUX_VM_API_BASE_URL` — works when the app is launched from a shell.
-    ///   2. `~/.cmux-dev.env` file `CMUX_VM_API_BASE_URL=...` line — works regardless of how
+    ///   1. process env `ZMUX_VM_API_BASE_URL` — works when the app is launched from a shell.
+    ///   2. `~/.zmux-dev.env` file `ZMUX_VM_API_BASE_URL=...` line — works regardless of how
     ///      the app was launched (click-through, Dock, `open`, etc.). Only honored in DEBUG.
-    ///   3. VM backend dev origin (`http://localhost:$CMUX_PORT` in Debug, cmux.com in Release).
+    ///   3. VM backend dev origin (`http://localhost:$ZMUX_PORT` in Debug, zmux.com in Release).
     static var vmAPIBaseURL: URL {
-        if let overridden = ProcessInfo.processInfo.environment["CMUX_VM_API_BASE_URL"]?
+        if let overridden = ProcessInfo.processInfo.environment["ZMUX_VM_API_BASE_URL"]?
             .trimmingCharacters(in: .whitespacesAndNewlines),
            !overridden.isEmpty,
            let url = URL(string: overridden) {
             return canonicalizedLoopbackURL(url)
         }
-        if let override = devOverride(key: "CMUX_VM_API_BASE_URL"),
+        if let override = devOverride(key: "ZMUX_VM_API_BASE_URL"),
            let url = URL(string: override) {
             return canonicalizedLoopbackURL(url)
         }
         return canonicalizedLoopbackURL(URL(string: defaultVMAPIOrigin)!)
     }
 
-    /// Look up `key=value` in `~/.cmux-dev.env` for the DEBUG build. Returns nil in Release.
+    /// Look up `key=value` in `~/.zmux-dev.env` for the DEBUG build. Returns nil in Release.
     /// Kept tiny on purpose — this is a "drop a file, restart the app, it picks up" override,
     /// not a real config system.
     private static func devOverride(key: String) -> String? {
         #if DEBUG
         guard let home = ProcessInfo.processInfo.environment["HOME"] else { return nil }
-        let path = (home as NSString).appendingPathComponent(".cmux-dev.env")
+        let path = (home as NSString).appendingPathComponent(".zmux-dev.env")
         guard let data = try? String(contentsOfFile: path, encoding: .utf8) else { return nil }
         for raw in data.split(separator: "\n") {
             let line = raw.trimmingCharacters(in: .whitespaces)
@@ -98,8 +98,8 @@ enum AuthEnvironment {
         #endif
     }
 
-    private static var cmuxPort: String {
-        environmentPort("CMUX_PORT") ?? environmentPort("PORT") ?? "3777"
+    private static var zmuxPort: String {
+        environmentPort("ZMUX_PORT") ?? environmentPort("PORT") ?? "3777"
     }
 
     private static func environmentPort(_ key: String) -> String? {
@@ -114,49 +114,49 @@ enum AuthEnvironment {
     }
 
     private static var defaultWebOrigin: String {
-        if let origin = ProcessInfo.processInfo.environment["CMUX_WWW_ORIGIN"]?
+        if let origin = ProcessInfo.processInfo.environment["ZMUX_WWW_ORIGIN"]?
             .trimmingCharacters(in: .whitespacesAndNewlines),
            !origin.isEmpty {
             return origin
         }
         #if DEBUG
-        return "http://localhost:\(cmuxPort)"
+        return "http://localhost:\(zmuxPort)"
         #else
-        return "https://cmux.com"
+        return "https://zmux.com"
         #endif
     }
 
     private static var defaultVMAPIOrigin: String {
         #if DEBUG
-        return "http://localhost:\(cmuxPort)"
+        return "http://localhost:\(zmuxPort)"
         #else
-        return "https://cmux.com"
+        return "https://zmux.com"
         #endif
     }
 
     private static var defaultAPIBaseURL: String {
-        if let url = ProcessInfo.processInfo.environment["CMUX_API_BASE_URL"]?
+        if let url = ProcessInfo.processInfo.environment["ZMUX_API_BASE_URL"]?
             .trimmingCharacters(in: .whitespacesAndNewlines),
            !url.isEmpty {
             return url
         }
         #if DEBUG
-        return "http://localhost:\(cmuxPort)"
+        return "http://localhost:\(zmuxPort)"
         #else
-        return "https://api.cmux.sh"
+        return "https://api.zmux.sh"
         #endif
     }
 
     static var stackBaseURL: URL {
         resolvedURL(
-            environmentKey: "CMUX_STACK_BASE_URL",
+            environmentKey: "ZMUX_STACK_BASE_URL",
             fallback: "https://api.stack-auth.com"
         )
     }
 
     static var stackProjectID: String {
         let environment = ProcessInfo.processInfo.environment
-        if let projectID = environment["CMUX_STACK_PROJECT_ID"]?
+        if let projectID = environment["ZMUX_STACK_PROJECT_ID"]?
             .trimmingCharacters(in: .whitespacesAndNewlines),
            !projectID.isEmpty {
             return projectID
@@ -170,7 +170,7 @@ enum AuthEnvironment {
 
     static var stackPublishableClientKey: String {
         let environment = ProcessInfo.processInfo.environment
-        if let clientKey = environment["CMUX_STACK_PUBLISHABLE_CLIENT_KEY"]?
+        if let clientKey = environment["ZMUX_STACK_PUBLISHABLE_CLIENT_KEY"]?
             .trimmingCharacters(in: .whitespacesAndNewlines),
            !clientKey.isEmpty {
             return clientKey
@@ -185,7 +185,7 @@ enum AuthEnvironment {
     /// The website origin used for the after-sign-in handler.
     static var afterSignInOrigin: URL {
         resolvedURL(
-            environmentKey: "CMUX_AUTH_WWW_ORIGIN",
+            environmentKey: "ZMUX_AUTH_WWW_ORIGIN",
             fallback: defaultWebOrigin
         )
     }
@@ -193,7 +193,7 @@ enum AuthEnvironment {
     static func signInURL() -> URL {
         // Build the after-sign-in callback URL that includes the native app return scheme.
         // The after-sign-in handler extracts tokens from the Stack Auth session
-        // and redirects to the native app via the cmux:// callback scheme.
+        // and redirects to the native app via the zmux:// callback scheme.
         var afterSignInComponents = URLComponents(
             url: afterSignInOrigin.appendingPathComponent("handler/after-sign-in", isDirectory: false),
             resolvingAgainstBaseURL: false

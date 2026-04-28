@@ -1443,7 +1443,7 @@ private func sessionDragItemProvider(for entry: SessionEntry) -> NSItemProvider 
 // MARK: - NSPopover host
 
 /// Hosts SectionPopoverView in a real NSPopover. SwiftUI's native `.popover()`
-/// doesn't reliably let the embedded TextField become first responder in cmux's
+/// doesn't reliably let the embedded TextField become first responder in zmux's
 /// focus-managed environment — the terminal keeps grabbing focus back.
 struct SectionPopoverHost: NSViewRepresentable {
     @Binding var isPresented: Bool
@@ -1499,7 +1499,7 @@ struct SectionPopoverHost: NSViewRepresentable {
             // open SwiftUI layout settles over multiple passes and
             // preferredContentSize briefly reports a partial height —
             // NSPopover latches onto that and renders squished (evidence:
-            // /tmp/cmux-debug-spin-fix.log, refreshContent logged
+            // /tmp/zmux-debug-spin-fix.log, refreshContent logged
             // fitting=360x486 at present, but visible popover was ~280).
             // Instead we drive popover.contentSize manually from
             // fittingSize on every updateNSView / present call.

@@ -1,11 +1,11 @@
 > Ovaj prijevod je generisan od strane Claude. Ako imate prijedloge za poboljšanje, otvorite PR.
 
-<h1 align="center">cmux</h1>
+<h1 align="center">zmux</h1>
 <p align="center">macOS terminal baziran na Ghostty sa vertikalnim tabovima i obavještenjima za AI agente za programiranje</p>
 
 <p align="center">
-  <a href="https://github.com/manaflow-ai/cmux/releases/latest/download/cmux-macos.dmg">
-    <img src="./docs/assets/macos-badge.png" alt="Preuzmi cmux za macOS" width="180" />
+  <a href="https://github.com/manaflow-ai/zmux/releases/latest/download/zmux-macos.dmg">
+    <img src="./docs/assets/macos-badge.png" alt="Preuzmi zmux za macOS" width="180" />
   </a>
 </p>
 
@@ -16,15 +16,15 @@
 <p align="center">
   <a href="https://x.com/manaflowai"><img src="https://img.shields.io/badge/@manaflow-555?logo=x" alt="X / Twitter" /></a>
   <a href="https://discord.gg/xsgFEVrWCZ"><img src="https://img.shields.io/badge/Discord-555?logo=discord" alt="Discord" /></a>
-  <a href="https://github.com/manaflow-ai/cmux"><img src="https://img.shields.io/github/stars/manaflow-ai/cmux?style=flat&logo=github&label=stars&color=4c71f2" alt="GitHub stars" /></a>
+  <a href="https://github.com/manaflow-ai/zmux"><img src="https://img.shields.io/github/stars/manaflow-ai/zmux?style=flat&logo=github&label=stars&color=4c71f2" alt="GitHub stars" /></a>
 </p>
 
 <p align="center">
-  <img src="./docs/assets/main-first-image.png" alt="cmux snimak ekrana" width="900" />
+  <img src="./docs/assets/main-first-image.png" alt="zmux snimak ekrana" width="900" />
 </p>
 
 <p align="center">
-  <a href="https://www.youtube.com/watch?v=i-WxO5YUTOs">▶ Demo video</a> · <a href="https://cmux.com/blog/zen-of-cmux">The Zen of cmux</a>
+  <a href="https://www.youtube.com/watch?v=i-WxO5YUTOs">▶ Demo video</a> · <a href="https://zmux.com/blog/zen-of-zmux">The Zen of zmux</a>
 </p>
 
 ## Funkcije
@@ -69,16 +69,16 @@ Bočna traka prikazuje git granu, status/broj povezanog PR-a, radni direktorij, 
 <tr>
 <td width="40%" valign="middle">
 <h3>SSH</h3>
-<code>cmux ssh user@remote</code> kreira radni prostor za udaljenu mašinu. Paneli preglednika se usmjeravaju kroz udaljenu mrežu tako da localhost jednostavno radi. Prevucite sliku u udaljenu sesiju za upload putem scp.
+<code>zmux ssh user@remote</code> kreira radni prostor za udaljenu mašinu. Paneli preglednika se usmjeravaju kroz udaljenu mrežu tako da localhost jednostavno radi. Prevucite sliku u udaljenu sesiju za upload putem scp.
 </td>
 <td width="60%">
-<img src="./docs/assets/ssh.png" alt="cmux SSH" width="100%" />
+<img src="./docs/assets/ssh.png" alt="zmux SSH" width="100%" />
 </td>
 </tr>
 <tr>
 <td width="40%" valign="middle">
 <h3>Claude Code Teams</h3>
-<code>cmux claude-teams</code> pokreće teammate režim Claude Code sa jednom komandom. Članovi tima se pojavljuju kao nativni podijeljeni paneli sa metapodacima u bočnoj traci i obavještenjima. Nije potreban tmux.
+<code>zmux claude-teams</code> pokreće teammate režim Claude Code sa jednom komandom. Članovi tima se pojavljuju kao nativni podijeljeni paneli sa metapodacima u bočnoj traci i obavještenjima. Nije potreban tmux.
 </td>
 <td width="60%">
 <img src="./docs/assets/claude-code-teams.png" alt="Claude Code Teams" width="100%" />
@@ -87,7 +87,7 @@ Bočna traka prikazuje git granu, status/broj povezanog PR-a, radni direktorij, 
 </table>
 
 - **Uvoz preglednika** — Uvezite kolačiće, historiju i sesije iz Chrome, Firefox, Arc i 20+ preglednika tako da paneli preglednika počnu autentificirani
-- **Prilagođene komande** — Definirajte akcije specifične za projekt u [`cmux.json`](https://cmux.com/docs/custom-commands) koje se pokreću iz palete komandi
+- **Prilagođene komande** — Definirajte akcije specifične za projekt u [`zmux.json`](https://zmux.com/docs/custom-commands) koje se pokreću iz palete komandi
 - **Skriptabilan** — CLI i socket API za kreiranje radnih prostora, dijeljenje panela, slanje pritisaka tipki i automatizaciju preglednika
 - **Nativna macOS aplikacija** — Izgrađena sa Swift i AppKit, ne Electron. Brzo pokretanje, niska potrošnja memorije.
 - **Kompatibilan sa Ghostty** — Čita vašu postojeću konfiguraciju `~/.config/ghostty/config` za teme, fontove i boje
@@ -97,44 +97,44 @@ Bočna traka prikazuje git granu, status/broj povezanog PR-a, radni direktorij, 
 
 ### DMG (preporučeno)
 
-<a href="https://github.com/manaflow-ai/cmux/releases/latest/download/cmux-macos.dmg">
-  <img src="./docs/assets/macos-badge.png" alt="Preuzmi cmux za macOS" width="180" />
+<a href="https://github.com/manaflow-ai/zmux/releases/latest/download/zmux-macos.dmg">
+  <img src="./docs/assets/macos-badge.png" alt="Preuzmi zmux za macOS" width="180" />
 </a>
 
-Otvorite `.dmg` datoteku i prevucite cmux u folder Aplikacije. cmux se automatski ažurira putem Sparkle, tako da trebate preuzeti samo jednom.
+Otvorite `.dmg` datoteku i prevucite zmux u folder Aplikacije. zmux se automatski ažurira putem Sparkle, tako da trebate preuzeti samo jednom.
 
 ### Homebrew
 
 ```bash
-brew tap manaflow-ai/cmux
-brew install --cask cmux
+brew tap manaflow-ai/zmux
+brew install --cask zmux
 ```
 
 Za ažuriranje kasnije:
 
 ```bash
-brew upgrade --cask cmux
+brew upgrade --cask zmux
 ```
 
 Pri prvom pokretanju, macOS vas može zamoliti da potvrdite otvaranje aplikacije od identificiranog programera. Kliknite **Otvori** da nastavite.
 
-## Zašto cmux?
+## Zašto zmux?
 
 Pokrećem mnogo Claude Code i Codex sesija paralelno. Koristio sam Ghostty sa gomilom podijeljenih panela i oslanjao se na nativna macOS obavještenja da znam kada agent treba mene. Ali tijelo obavještenja Claude Code je uvijek samo „Claude is waiting for your input" bez konteksta, a sa dovoljno otvorenih tabova nisam mogao ni pročitati naslove.
 
-Isprobao sam nekoliko orkestratora za kodiranje, ali većina ih je bila Electron/Tauri aplikacije i performanse su me nervirale. Također jednostavno preferiram terminal jer GUI orkestratori vas zaključavaju u svoj radni tok. Zato sam izgradio cmux kao nativnu macOS aplikaciju u Swift/AppKit. Koristi libghostty za renderiranje terminala i čita vašu postojeću Ghostty konfiguraciju za teme, fontove i boje.
+Isprobao sam nekoliko orkestratora za kodiranje, ali većina ih je bila Electron/Tauri aplikacije i performanse su me nervirale. Također jednostavno preferiram terminal jer GUI orkestratori vas zaključavaju u svoj radni tok. Zato sam izgradio zmux kao nativnu macOS aplikaciju u Swift/AppKit. Koristi libghostty za renderiranje terminala i čita vašu postojeću Ghostty konfiguraciju za teme, fontove i boje.
 
-Glavni dodaci su bočna traka i sistem obavještenja. Bočna traka ima vertikalne tabove koji prikazuju git granu, status/broj povezanog PR-a, radni direktorij, portove koji slušaju i tekst posljednjeg obavještenja za svaki radni prostor. Sistem obavještenja hvata terminalne sekvence (OSC 9/99/777) i ima CLI (`cmux notify`) koji možete povezati sa hookovima agenata za Claude Code, OpenCode itd. Kada agent čeka, njegov panel dobija plavi prsten, a tab se osvjetljava u bočnoj traci, tako da mogu vidjeti koji me treba kroz podjele i tabove. Cmd+Shift+U skače na najnovije nepročitano.
+Glavni dodaci su bočna traka i sistem obavještenja. Bočna traka ima vertikalne tabove koji prikazuju git granu, status/broj povezanog PR-a, radni direktorij, portove koji slušaju i tekst posljednjeg obavještenja za svaki radni prostor. Sistem obavještenja hvata terminalne sekvence (OSC 9/99/777) i ima CLI (`zmux notify`) koji možete povezati sa hookovima agenata za Claude Code, OpenCode itd. Kada agent čeka, njegov panel dobija plavi prsten, a tab se osvjetljava u bočnoj traci, tako da mogu vidjeti koji me treba kroz podjele i tabove. Cmd+Shift+U skače na najnovije nepročitano.
 
 Ugrađeni preglednik ima skriptabilni API portiran iz [agent-browser](https://github.com/vercel-labs/agent-browser). Agenti mogu snimiti stablo pristupačnosti, dobiti reference elemenata, kliknuti, popuniti formulare i evaluirati JS. Možete podijeliti panel preglednika pored terminala i omogućiti Claude Code da direktno komunicira sa vašim razvojnim serverom.
 
 Sve je skriptabilno kroz CLI i socket API — kreiranje radnih prostora/tabova, dijeljenje panela, slanje pritisaka tipki, otvaranje URL-ova u pregledniku.
 
-## The Zen of cmux
+## The Zen of zmux
 
-cmux ne propisuje programerima kako da koriste svoje alate. To je terminal i preglednik sa CLI-jem, a ostatak je na vama.
+zmux ne propisuje programerima kako da koriste svoje alate. To je terminal i preglednik sa CLI-jem, a ostatak je na vama.
 
-cmux je primitiv, ne rješenje. Daje vam terminal, preglednik, obavještenja, radne prostore, podjele, tabove i CLI za kontrolu svega toga. cmux vas ne prisiljava na određeni način korištenja agenata za kodiranje. Ono što izgradite sa tim primitivima je vaše.
+zmux je primitiv, ne rješenje. Daje vam terminal, preglednik, obavještenja, radne prostore, podjele, tabove i CLI za kontrolu svega toga. zmux vas ne prisiljava na određeni način korištenja agenata za kodiranje. Ono što izgradite sa tim primitivima je vaše.
 
 Najbolji programeri su oduvijek gradili vlastite alate. Niko još nije otkrio najbolji način rada sa agentima, a timovi koji grade zatvorene proizvode to također nisu uradili. Programeri koji su najbliži svojim bazama koda će to otkriti prvi.
 
@@ -142,7 +142,7 @@ Dajte milion programera kompozabilne primitive i oni će kolektivno pronaći naj
 
 ## Dokumentacija
 
-Za više informacija o konfiguraciji cmux, posjetite [našu dokumentaciju](https://cmux.com/docs/getting-started?utm_source=readme).
+Za više informacija o konfiguraciji zmux, posjetite [našu dokumentaciju](https://zmux.com/docs/getting-started?utm_source=readme).
 
 ## Prečice na Tastaturi
 
@@ -232,27 +232,27 @@ Prečice razvojnih alata preglednika prate Safari zadane postavke i mogu se pril
 
 ## Noćne verzije
 
-[Preuzmi cmux NIGHTLY](https://github.com/manaflow-ai/cmux/releases/download/nightly/cmux-nightly-macos.dmg)
+[Preuzmi zmux NIGHTLY](https://github.com/manaflow-ai/zmux/releases/download/nightly/zmux-nightly-macos.dmg)
 
-cmux NIGHTLY je zasebna aplikacija sa vlastitim bundle ID-om, tako da radi uporedo sa stabilnom verzijom. Automatski se gradi iz najnovijeg `main` commita i ažurira se putem vlastitog Sparkle feeda.
+zmux NIGHTLY je zasebna aplikacija sa vlastitim bundle ID-om, tako da radi uporedo sa stabilnom verzijom. Automatski se gradi iz najnovijeg `main` commita i ažurira se putem vlastitog Sparkle feeda.
 
 ## Vraćanje sesije (trenutno ponašanje)
 
-Prilikom ponovnog pokretanja, cmux trenutno vraća samo raspored aplikacije i metapodatke:
+Prilikom ponovnog pokretanja, zmux trenutno vraća samo raspored aplikacije i metapodatke:
 - Raspored prozora/radnih prostora/panela
 - Radne direktorije
 - Scrollback terminala (po mogućnosti)
 - URL preglednika i historija navigacije
 
-cmux **ne** vraća stanje živih procesa unutar terminalnih aplikacija. Na primjer, aktivne sesije Claude Code/tmux/vim se još ne nastavljaju nakon restarta.
+zmux **ne** vraća stanje živih procesa unutar terminalnih aplikacija. Na primjer, aktivne sesije Claude Code/tmux/vim se još ne nastavljaju nakon restarta.
 
 ## Historija zvjezdica
 
-<a href="https://star-history.com/#manaflow-ai/cmux&Date">
+<a href="https://star-history.com/#manaflow-ai/zmux&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=manaflow-ai/cmux&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=manaflow-ai/cmux&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=manaflow-ai/cmux&type=Date" width="600" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=manaflow-ai/zmux&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=manaflow-ai/zmux&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=manaflow-ai/zmux&type=Date" width="600" />
  </picture>
 </a>
 
@@ -262,26 +262,26 @@ Načini da se uključite:
 
 - Pratite nas na X za ažuriranja [@manaflowai](https://x.com/manaflowai), [@lawrencecchen](https://x.com/lawrencecchen) i [@austinywang](https://x.com/austinywang)
 - Pridružite se razgovoru na [Discordu](https://discord.gg/xsgFEVrWCZ)
-- Kreirajte i učestvujte u [GitHub issues](https://github.com/manaflow-ai/cmux/issues) i [diskusijama](https://github.com/manaflow-ai/cmux/discussions)
-- Javite nam šta gradite sa cmux
+- Kreirajte i učestvujte u [GitHub issues](https://github.com/manaflow-ai/zmux/issues) i [diskusijama](https://github.com/manaflow-ai/zmux/discussions)
+- Javite nam šta gradite sa zmux
 
 ## Zajednica
 
 - [Discord](https://discord.gg/xsgFEVrWCZ)
-- [GitHub](https://github.com/manaflow-ai/cmux)
+- [GitHub](https://github.com/manaflow-ai/zmux)
 - [X / Twitter](https://twitter.com/manaflowai)
 - [YouTube](https://www.youtube.com/channel/UCAa89_j-TWkrXfk9A3CbASw)
 - [LinkedIn](https://www.linkedin.com/company/manaflow-ai/)
-- [Reddit](https://www.reddit.com/r/cmux/)
+- [Reddit](https://www.reddit.com/r/zmux/)
 
 ## Osnivačko izdanje
 
-cmux je besplatan, otvorenog koda i uvijek će biti. Ako želite podržati razvoj i dobiti rani pristup onome što dolazi:
+zmux je besplatan, otvorenog koda i uvijek će biti. Ako želite podržati razvoj i dobiti rani pristup onome što dolazi:
 
 **[Nabavite Osnivačko izdanje](https://buy.stripe.com/3cI00j2Ld0it5OU33r5EY0q)**
 
 - **Prioritetni zahtjevi za funkcije/ispravke grešaka**
-- **Rani pristup: cmux AI koji vam daje kontekst o svakom radnom prostoru, tabu i panelu**
+- **Rani pristup: zmux AI koji vam daje kontekst o svakom radnom prostoru, tabu i panelu**
 - **Rani pristup: iOS aplikacija sa terminalima sinhroniziranim između desktopa i telefona**
 - **Rani pristup: Cloud VM-ovi**
 - **Rani pristup: Glasovni režim**
@@ -289,6 +289,6 @@ cmux je besplatan, otvorenog koda i uvijek će biti. Ako želite podržati razvo
 
 ## Licenca
 
-cmux je otvorenog koda pod [GPL-3.0-or-later](LICENSE) licencom.
+zmux je otvorenog koda pod [GPL-3.0-or-later](LICENSE) licencom.
 
 Ako vaša organizacija ne može ispuniti uslove GPL-a, dostupna je komercijalna licenca. Kontaktirajte [founders@manaflow.com](mailto:founders@manaflow.com) za detalje.

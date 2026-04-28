@@ -1,11 +1,11 @@
 > 此翻译由 Claude 生成。如有改进建议，欢迎提交 PR。
 
-<h1 align="center">cmux</h1>
+<h1 align="center">zmux</h1>
 <p align="center">基于 Ghostty 的 macOS 终端，带有垂直标签页和为 AI 编程代理设计的通知系统</p>
 
 <p align="center">
-  <a href="https://github.com/manaflow-ai/cmux/releases/latest/download/cmux-macos.dmg">
-    <img src="./docs/assets/macos-badge.png" alt="下载 cmux macOS 版" width="180" />
+  <a href="https://github.com/manaflow-ai/zmux/releases/latest/download/zmux-macos.dmg">
+    <img src="./docs/assets/macos-badge.png" alt="下载 zmux macOS 版" width="180" />
   </a>
 </p>
 
@@ -16,15 +16,15 @@
 <p align="center">
   <a href="https://x.com/manaflowai"><img src="https://img.shields.io/badge/@manaflow-555?logo=x" alt="X / Twitter" /></a>
   <a href="https://discord.gg/xsgFEVrWCZ"><img src="https://img.shields.io/badge/Discord-555?logo=discord" alt="Discord" /></a>
-  <a href="https://github.com/manaflow-ai/cmux"><img src="https://img.shields.io/github/stars/manaflow-ai/cmux?style=flat&logo=github&label=stars&color=4c71f2" alt="GitHub stars" /></a>
+  <a href="https://github.com/manaflow-ai/zmux"><img src="https://img.shields.io/github/stars/manaflow-ai/zmux?style=flat&logo=github&label=stars&color=4c71f2" alt="GitHub stars" /></a>
 </p>
 
 <p align="center">
-  <img src="./docs/assets/main-first-image.png" alt="cmux 截图" width="900" />
+  <img src="./docs/assets/main-first-image.png" alt="zmux 截图" width="900" />
 </p>
 
 <p align="center">
-  <a href="https://www.youtube.com/watch?v=i-WxO5YUTOs">▶ 演示视频</a> · <a href="https://cmux.com/blog/zen-of-cmux">The Zen of cmux</a>
+  <a href="https://www.youtube.com/watch?v=i-WxO5YUTOs">▶ 演示视频</a> · <a href="https://zmux.com/blog/zen-of-zmux">The Zen of zmux</a>
 </p>
 
 ## 功能特性
@@ -69,16 +69,16 @@
 <tr>
 <td width="40%" valign="middle">
 <h3>SSH</h3>
-<code>cmux ssh user@remote</code> 为远程机器创建工作区。浏览器窗格通过远程网络路由，因此 localhost 直接可用。将图片拖入远程会话即可通过 scp 上传。
+<code>zmux ssh user@remote</code> 为远程机器创建工作区。浏览器窗格通过远程网络路由，因此 localhost 直接可用。将图片拖入远程会话即可通过 scp 上传。
 </td>
 <td width="60%">
-<img src="./docs/assets/ssh.png" alt="cmux SSH" width="100%" />
+<img src="./docs/assets/ssh.png" alt="zmux SSH" width="100%" />
 </td>
 </tr>
 <tr>
 <td width="40%" valign="middle">
 <h3>Claude Code Teams</h3>
-<code>cmux claude-teams</code> 一条命令运行 Claude Code 的队友模式。队友以原生分割的形式生成，侧边栏显示元数据和通知。无需 tmux。
+<code>zmux claude-teams</code> 一条命令运行 Claude Code 的队友模式。队友以原生分割的形式生成，侧边栏显示元数据和通知。无需 tmux。
 </td>
 <td width="60%">
 <img src="./docs/assets/claude-code-teams.png" alt="Claude Code Teams" width="100%" />
@@ -87,7 +87,7 @@
 </table>
 
 - **浏览器导入** — 从 Chrome、Firefox、Arc 及 20 多种浏览器导入 Cookie、历史记录和会话，让浏览器窗格启动即已登录
-- **自定义命令** — 在 [`cmux.json`](https://cmux.com/docs/custom-commands) 中定义项目专属操作，通过命令面板启动
+- **自定义命令** — 在 [`zmux.json`](https://zmux.com/docs/custom-commands) 中定义项目专属操作，通过命令面板启动
 - **可脚本化** — 通过 CLI 和 socket API 创建工作区、分割窗格、发送按键和自动化浏览器操作
 - **原生 macOS 应用** — 使用 Swift 和 AppKit 构建，非 Electron。启动快速，内存占用低。
 - **兼容 Ghostty** — 读取您现有的 `~/.config/ghostty/config` 配置文件中的主题、字体和颜色设置
@@ -97,44 +97,44 @@
 
 ### DMG（推荐）
 
-<a href="https://github.com/manaflow-ai/cmux/releases/latest/download/cmux-macos.dmg">
-  <img src="./docs/assets/macos-badge.png" alt="下载 cmux macOS 版" width="180" />
+<a href="https://github.com/manaflow-ai/zmux/releases/latest/download/zmux-macos.dmg">
+  <img src="./docs/assets/macos-badge.png" alt="下载 zmux macOS 版" width="180" />
 </a>
 
-打开 `.dmg` 文件并将 cmux 拖动到"应用程序"文件夹。cmux 通过 Sparkle 自动更新，您只需下载一次。
+打开 `.dmg` 文件并将 zmux 拖动到"应用程序"文件夹。zmux 通过 Sparkle 自动更新，您只需下载一次。
 
 ### Homebrew
 
 ```bash
-brew tap manaflow-ai/cmux
-brew install --cask cmux
+brew tap manaflow-ai/zmux
+brew install --cask zmux
 ```
 
 稍后更新：
 
 ```bash
-brew upgrade --cask cmux
+brew upgrade --cask zmux
 ```
 
 首次启动时，macOS 可能会要求您确认打开来自已验证开发者的应用。点击**打开**即可继续。
 
-## 为什么做 cmux？
+## 为什么做 zmux？
 
 我同时运行大量 Claude Code 和 Codex 会话。之前我用 Ghostty 开了一堆分割窗格，依靠 macOS 原生通知来了解代理何时需要我。但 Claude Code 的通知内容总是千篇一律的"Claude is waiting for your input"，没有任何上下文信息，而且标签页一多，连标题都看不清了。
 
-我试过几个编程协调工具，但大多数都是 Electron/Tauri 应用，性能让我不满意。我也更喜欢终端，因为 GUI 协调工具会把你锁定在它们的工作流里。所以我用 Swift/AppKit 构建了 cmux，作为一个原生 macOS 应用。它使用 libghostty 进行终端渲染，并读取您现有的 Ghostty 配置中的主题、字体和颜色设置。
+我试过几个编程协调工具，但大多数都是 Electron/Tauri 应用，性能让我不满意。我也更喜欢终端，因为 GUI 协调工具会把你锁定在它们的工作流里。所以我用 Swift/AppKit 构建了 zmux，作为一个原生 macOS 应用。它使用 libghostty 进行终端渲染，并读取您现有的 Ghostty 配置中的主题、字体和颜色设置。
 
-主要新增的是侧边栏和通知系统。侧边栏有垂直标签页，显示每个工作区的 git 分支、关联 PR 状态/编号、工作目录、监听端口和最新通知文本。通知系统能捕获终端序列（OSC 9/99/777），并提供 CLI（`cmux notify`），您可以将其接入 Claude Code、OpenCode 等代理的钩子。当代理等待时，其窗格会显示蓝色光环，标签页会在侧边栏高亮，这样我就能在多个分割窗格和标签页之间一眼看出哪个需要我。⌘⇧U 可以跳转到最新的未读通知。
+主要新增的是侧边栏和通知系统。侧边栏有垂直标签页，显示每个工作区的 git 分支、关联 PR 状态/编号、工作目录、监听端口和最新通知文本。通知系统能捕获终端序列（OSC 9/99/777），并提供 CLI（`zmux notify`），您可以将其接入 Claude Code、OpenCode 等代理的钩子。当代理等待时，其窗格会显示蓝色光环，标签页会在侧边栏高亮，这样我就能在多个分割窗格和标签页之间一眼看出哪个需要我。⌘⇧U 可以跳转到最新的未读通知。
 
 内置浏览器拥有从 [agent-browser](https://github.com/vercel-labs/agent-browser) 移植的可脚本化 API。代理可以抓取无障碍树快照、获取元素引用、执行点击、填写表单和执行 JS。您可以在终端旁边分割出浏览器窗格，让 Claude Code 直接与您的开发服务器交互。
 
 所有操作都可以通过 CLI 和 socket API 进行脚本化 — 创建工作区/标签页、分割窗格、发送按键、在浏览器中打开 URL。
 
-## The Zen of cmux
+## The Zen of zmux
 
-cmux 不规定开发者应该如何使用工具。它是一个带有 CLI 的终端和浏览器，其余的由你决定。
+zmux 不规定开发者应该如何使用工具。它是一个带有 CLI 的终端和浏览器，其余的由你决定。
 
-cmux 是原语，而非解决方案。它提供终端、浏览器、通知、工作区、分割、标签页，以及控制这一切的 CLI。cmux 不强迫你以特定方式使用编程代理。你用这些原语构建什么，完全取决于你自己。
+zmux 是原语，而非解决方案。它提供终端、浏览器、通知、工作区、分割、标签页，以及控制这一切的 CLI。zmux 不强迫你以特定方式使用编程代理。你用这些原语构建什么，完全取决于你自己。
 
 最优秀的开发者一直在构建自己的工具。还没有人找到与代理协作的最佳方式，那些构建封闭产品的团队也没有找到。最接近自己代码库的开发者会最先找到答案。
 
@@ -142,7 +142,7 @@ cmux 是原语，而非解决方案。它提供终端、浏览器、通知、工
 
 ## 文档
 
-有关 cmux 配置的更多信息，请[查看我们的文档](https://cmux.com/docs/getting-started?utm_source=readme)。
+有关 zmux 配置的更多信息，请[查看我们的文档](https://zmux.com/docs/getting-started?utm_source=readme)。
 
 ## 键盘快捷键
 
@@ -232,27 +232,27 @@ cmux 是原语，而非解决方案。它提供终端、浏览器、通知、工
 
 ## 每夜构建
 
-[下载 cmux NIGHTLY](https://github.com/manaflow-ai/cmux/releases/download/nightly/cmux-nightly-macos.dmg)
+[下载 zmux NIGHTLY](https://github.com/manaflow-ai/zmux/releases/download/nightly/zmux-nightly-macos.dmg)
 
-cmux NIGHTLY 是一个拥有独立 Bundle ID 的单独应用，因此可以与稳定版并行运行。它从最新的 `main` 提交自动构建，并通过独立的 Sparkle 更新源自动更新。
+zmux NIGHTLY 是一个拥有独立 Bundle ID 的单独应用，因此可以与稳定版并行运行。它从最新的 `main` 提交自动构建，并通过独立的 Sparkle 更新源自动更新。
 
 ## 会话恢复（当前行为）
 
-重新启动时，cmux 目前仅恢复应用布局和元数据：
+重新启动时，zmux 目前仅恢复应用布局和元数据：
 - 窗口/工作区/窗格布局
 - 工作目录
 - 终端回滚缓冲区（尽力恢复）
 - 浏览器 URL 和导航历史
 
-cmux **不会**恢复终端应用内部的实时进程状态。例如，活动的 Claude Code/tmux/vim 会话在重启后尚无法恢复。
+zmux **不会**恢复终端应用内部的实时进程状态。例如，活动的 Claude Code/tmux/vim 会话在重启后尚无法恢复。
 
 ## Star History
 
-<a href="https://star-history.com/#manaflow-ai/cmux&Date">
+<a href="https://star-history.com/#manaflow-ai/zmux&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=manaflow-ai/cmux&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=manaflow-ai/cmux&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=manaflow-ai/cmux&type=Date" width="600" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=manaflow-ai/zmux&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=manaflow-ai/zmux&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=manaflow-ai/zmux&type=Date" width="600" />
  </picture>
 </a>
 
@@ -262,26 +262,26 @@ cmux **不会**恢复终端应用内部的实时进程状态。例如，活动�
 
 - 在 X 上关注我们：[@manaflowai](https://x.com/manaflowai)、[@lawrencecchen](https://x.com/lawrencecchen)、[@austinywang](https://x.com/austinywang)
 - 加入 [Discord](https://discord.gg/xsgFEVrWCZ) 讨论
-- 创建和参与 [GitHub Issues](https://github.com/manaflow-ai/cmux/issues) 和[讨论](https://github.com/manaflow-ai/cmux/discussions)
-- 告诉我们您在用 cmux 构建什么
+- 创建和参与 [GitHub Issues](https://github.com/manaflow-ai/zmux/issues) 和[讨论](https://github.com/manaflow-ai/zmux/discussions)
+- 告诉我们您在用 zmux 构建什么
 
 ## 社区
 
 - [Discord](https://discord.gg/xsgFEVrWCZ)
-- [GitHub](https://github.com/manaflow-ai/cmux)
+- [GitHub](https://github.com/manaflow-ai/zmux)
 - [X / Twitter](https://twitter.com/manaflowai)
 - [YouTube](https://www.youtube.com/channel/UCAa89_j-TWkrXfk9A3CbASw)
 - [LinkedIn](https://www.linkedin.com/company/manaflow-ai/)
-- [Reddit](https://www.reddit.com/r/cmux/)
+- [Reddit](https://www.reddit.com/r/zmux/)
 
 ## Founder's Edition
 
-cmux 免费、开源，并将一直如此。如果您想支持开发并提前体验即将推出的功能：
+zmux 免费、开源，并将一直如此。如果您想支持开发并提前体验即将推出的功能：
 
 **[获取 Founder's Edition](https://buy.stripe.com/3cI00j2Ld0it5OU33r5EY0q)**
 
 - **功能请求/Bug 修复优先处理**
-- **抢先体验：为每个工作区、标签页和面板提供上下文的 cmux AI**
+- **抢先体验：为每个工作区、标签页和面板提供上下文的 zmux AI**
 - **抢先体验：桌面与手机间终端同步的 iOS 应用**
 - **抢先体验：云端虚拟机**
 - **抢先体验：语音模式**
@@ -289,6 +289,6 @@ cmux 免费、开源，并将一直如此。如果您想支持开发并提前体
 
 ## 许可证
 
-cmux 以 [GPL-3.0-or-later](LICENSE) 开源。
+zmux 以 [GPL-3.0-or-later](LICENSE) 开源。
 
 如果您的组织无法遵守 GPL，可提供商业许可证。详情请联系 [founders@manaflow.com](mailto:founders@manaflow.com)。

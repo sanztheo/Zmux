@@ -13,16 +13,16 @@ import WebKit
 /// WebAuthn ceremony with AuthenticationServices. Native results are then
 /// marshalled back into JS objects that match the browser credential shape.
 enum BrowserWebAuthnBridgeContract {
-    static let handlerName = "cmuxWebAuthn"
+    static let handlerName = "zmuxWebAuthn"
 
     static let scriptSource: String = {
         let handlerName = BrowserWebAuthnBridgeContract.handlerName
         return #"""
         (() => {
-          if (window.__cmuxWebAuthnBridgeInstalled) {
+          if (window.__zmuxWebAuthnBridgeInstalled) {
             return true;
           }
-          window.__cmuxWebAuthnBridgeInstalled = true;
+          window.__zmuxWebAuthnBridgeInstalled = true;
 
           const handlerName = "\#(handlerName)";
 
@@ -792,7 +792,7 @@ private struct BrowserWebAuthnClientDataContext {
                 .lowercased() ?? callerOrigin.host
 
         #if DEBUG
-        cmuxDebugLog("webauthn.resolveRP explicit=\(explicitIdentifier ?? "(nil)") resolved=\(requestedIdentifier) callerHost=\(callerOrigin.host) permitted=\(callerOrigin.permits(relyingPartyIdentifier: requestedIdentifier))")
+        zmuxDebugLog("webauthn.resolveRP explicit=\(explicitIdentifier ?? "(nil)") resolved=\(requestedIdentifier) callerHost=\(callerOrigin.host) permitted=\(callerOrigin.permits(relyingPartyIdentifier: requestedIdentifier))")
         #endif
         guard callerOrigin.permits(relyingPartyIdentifier: requestedIdentifier) else {
             throw BrowserWebAuthnBridgeError.security("Passkey access is not available.")
@@ -1169,7 +1169,7 @@ final class BrowserWebAuthnCoordinator: NSObject, WKScriptMessageHandlerWithRepl
             do {
                 let envelope = try BrowserWebAuthnRequestParser.parseEnvelope(from: message.body)
                 #if DEBUG
-                cmuxDebugLog("webauthn.dispatch kind=\(envelope.kind.rawValue) frame=\(message.frameInfo.isMainFrame ? "main" : "sub") url=\(message.frameInfo.securityOrigin.host)")
+                zmuxDebugLog("webauthn.dispatch kind=\(envelope.kind.rawValue) frame=\(message.frameInfo.isMainFrame ? "main" : "sub") url=\(message.frameInfo.securityOrigin.host)")
                 #endif
                 switch envelope.kind {
                 case .capabilities:
@@ -1180,7 +1180,7 @@ final class BrowserWebAuthnCoordinator: NSObject, WKScriptMessageHandlerWithRepl
                         callerMayPromptForPlatformAuthorization: callerMayPrompt
                     )
                     #if DEBUG
-                    cmuxDebugLog("webauthn.capabilities reply=\(capReply)")
+                    zmuxDebugLog("webauthn.capabilities reply=\(capReply)")
                     #endif
                     replyHandler(capReply, nil)
                 case .createCredential:
@@ -1189,7 +1189,7 @@ final class BrowserWebAuthnCoordinator: NSObject, WKScriptMessageHandlerWithRepl
                         from: envelope
                     )
                     #if DEBUG
-                    cmuxDebugLog(
+                    zmuxDebugLog(
                         "webauthn.createCredential hasRP=\(debugHasValue(request.publicKey.rp?.id)) " +
                         "hasUserName=\(debugHasValue(request.publicKey.user.name)) " +
                         "userIDBytes=\(request.publicKey.user.id.data.count) " +
@@ -1199,7 +1199,7 @@ final class BrowserWebAuthnCoordinator: NSObject, WKScriptMessageHandlerWithRepl
                     #endif
                     let reply = try await handleCreateCredential(request, message: message)
                     #if DEBUG
-                    cmuxDebugLog("webauthn.createCredential reply.ok=\(reply["ok"] ?? "nil") hasCredential=\(reply["credential"] != nil) fallback=\(reply["useWebKitFallback"] ?? "nil")")
+                    zmuxDebugLog("webauthn.createCredential reply.ok=\(reply["ok"] ?? "nil") hasCredential=\(reply["credential"] != nil) fallback=\(reply["useWebKitFallback"] ?? "nil")")
                     #endif
                     replyHandler(reply, nil)
                 case .getCredential:
@@ -1208,7 +1208,7 @@ final class BrowserWebAuthnCoordinator: NSObject, WKScriptMessageHandlerWithRepl
                         from: envelope
                     )
                     #if DEBUG
-                    cmuxDebugLog(
+                    zmuxDebugLog(
                         "webauthn.getCredential hasRPID=\(debugHasValue(request.publicKey.rpId)) " +
                         "allowCredentials=\(request.publicKey.allowCredentials?.count ?? 0) " +
                         "mediation=\(request.mediation ?? "(nil)")"
@@ -1216,18 +1216,18 @@ final class BrowserWebAuthnCoordinator: NSObject, WKScriptMessageHandlerWithRepl
                     #endif
                     let reply = try await handleGetCredential(request, message: message)
                     #if DEBUG
-                    cmuxDebugLog("webauthn.getCredential reply.ok=\(reply["ok"] ?? "nil") hasCredential=\(reply["credential"] != nil) fallback=\(reply["useWebKitFallback"] ?? "nil")")
+                    zmuxDebugLog("webauthn.getCredential reply.ok=\(reply["ok"] ?? "nil") hasCredential=\(reply["credential"] != nil) fallback=\(reply["useWebKitFallback"] ?? "nil")")
                     #endif
                     replyHandler(reply, nil)
                 }
             } catch let error as BrowserWebAuthnBridgeError {
                 #if DEBUG
-                cmuxDebugLog("webauthn.error bridge: \(error.replyObject())")
+                zmuxDebugLog("webauthn.error bridge: \(error.replyObject())")
                 #endif
                 replyHandler(error.replyObject(), nil)
             } catch {
                 #if DEBUG
-                cmuxDebugLog("webauthn.error unknown: \(error.localizedDescription)")
+                zmuxDebugLog("webauthn.error unknown: \(error.localizedDescription)")
                 #endif
                 replyHandler(BrowserWebAuthnBridgeError.unknown(error.localizedDescription).replyObject(), nil)
             }
@@ -1242,7 +1242,7 @@ extension BrowserWebAuthnCoordinator: ASAuthorizationControllerDelegate, ASAutho
         didCompleteWithAuthorization authorization: ASAuthorization
     ) {
         #if DEBUG
-        cmuxDebugLog("webauthn.asAuth.didComplete credentialType=\(type(of: authorization.credential))")
+        zmuxDebugLog("webauthn.asAuth.didComplete credentialType=\(type(of: authorization.credential))")
         #endif
         do {
             finishAuthorization(
@@ -1252,7 +1252,7 @@ extension BrowserWebAuthnCoordinator: ASAuthorizationControllerDelegate, ASAutho
             )
         } catch {
             #if DEBUG
-            cmuxDebugLog("webauthn.asAuth.didComplete replyMarshalError=\(error)")
+            zmuxDebugLog("webauthn.asAuth.didComplete replyMarshalError=\(error)")
             #endif
             finishAuthorization(with: .failure(error))
         }
@@ -1264,7 +1264,7 @@ extension BrowserWebAuthnCoordinator: ASAuthorizationControllerDelegate, ASAutho
     ) {
         #if DEBUG
         let nsError = error as NSError
-        cmuxDebugLog("webauthn.asAuth.didFail domain=\(nsError.domain) code=\(nsError.code)")
+        zmuxDebugLog("webauthn.asAuth.didFail domain=\(nsError.domain) code=\(nsError.code)")
         #endif
         finishAuthorization(with: .failure(bridgeError(from: error)))
     }
@@ -1272,7 +1272,7 @@ extension BrowserWebAuthnCoordinator: ASAuthorizationControllerDelegate, ASAutho
     func presentationAnchor(for controller: ASAuthorizationController) -> ASPresentationAnchor {
         let anchor = activePresentationWindow ?? NSApp.keyWindow ?? NSApp.mainWindow ?? NSWindow()
         #if DEBUG
-        cmuxDebugLog("webauthn.asAuth.presentationAnchor hasTitle=\(anchor.title.isEmpty ? 0 : 1) isVisible=\(anchor.isVisible) isKey=\(anchor.isKeyWindow)")
+        zmuxDebugLog("webauthn.asAuth.presentationAnchor hasTitle=\(anchor.title.isEmpty ? 0 : 1) isVisible=\(anchor.isVisible) isKey=\(anchor.isKeyWindow)")
         #endif
         return anchor
     }
@@ -1301,7 +1301,7 @@ private extension BrowserWebAuthnCoordinator {
         message: WKScriptMessage
     ) async throws -> [String: Any] {
         #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "webauthn.handleCreate BEGIN origin=\(message.frameInfo.securityOrigin.host) " +
             "webViewHost=\(message.webView?.url?.host ?? "(nil)") hasWebViewURL=\(message.webView?.url == nil ? 0 : 1)"
         )
@@ -1309,7 +1309,7 @@ private extension BrowserWebAuthnCoordinator {
         let clientDataContext = try BrowserWebAuthnClientDataContext.resolve(for: message)
         guard let plan = try buildCreationPlan(request, clientDataContext: clientDataContext) else {
             #if DEBUG
-            cmuxDebugLog("webauthn.handleCreate no plan — returning fallback")
+            zmuxDebugLog("webauthn.handleCreate no plan — returning fallback")
             #endif
             return fallbackReply()
         }
@@ -1317,7 +1317,7 @@ private extension BrowserWebAuthnCoordinator {
         let requests = try await authorizationRequests(for: plan, message: message)
         guard !requests.isEmpty else {
             #if DEBUG
-            cmuxDebugLog("webauthn.handleCreate authorizationRequests empty — returning fallback")
+            zmuxDebugLog("webauthn.handleCreate authorizationRequests empty — returning fallback")
             #endif
             return fallbackReply()
         }
@@ -1334,7 +1334,7 @@ private extension BrowserWebAuthnCoordinator {
         message: WKScriptMessage
     ) async throws -> [String: Any] {
         #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "webauthn.handleGet BEGIN origin=\(message.frameInfo.securityOrigin.host) " +
             "webViewHost=\(message.webView?.url?.host ?? "(nil)") hasWebViewURL=\(message.webView?.url == nil ? 0 : 1)"
         )
@@ -1342,7 +1342,7 @@ private extension BrowserWebAuthnCoordinator {
         let clientDataContext = try BrowserWebAuthnClientDataContext.resolve(for: message)
         guard let plan = try buildAssertionPlan(request, clientDataContext: clientDataContext) else {
             #if DEBUG
-            cmuxDebugLog("webauthn.handleGet no plan — returning fallback")
+            zmuxDebugLog("webauthn.handleGet no plan — returning fallback")
             #endif
             return fallbackReply()
         }
@@ -1350,7 +1350,7 @@ private extension BrowserWebAuthnCoordinator {
         let requests = try await authorizationRequests(for: plan, message: message)
         guard !requests.isEmpty else {
             #if DEBUG
-            cmuxDebugLog("webauthn.handleGet authorizationRequests empty — returning fallback")
+            zmuxDebugLog("webauthn.handleGet authorizationRequests empty — returning fallback")
             #endif
             return fallbackReply()
         }
@@ -1368,23 +1368,23 @@ private extension BrowserWebAuthnCoordinator {
     ) async throws -> [ASAuthorizationRequest] {
         var includePlatformRequests = plan.hasPlatformRequests
         #if DEBUG
-        cmuxDebugLog("webauthn.authRequests hasPlatform=\(plan.hasPlatformRequests) hasSecurityKey=\(plan.securityKeyRequests.count > 0) order=\(plan.order)")
+        zmuxDebugLog("webauthn.authRequests hasPlatform=\(plan.hasPlatformRequests) hasSecurityKey=\(plan.securityKeyRequests.count > 0) order=\(plan.order)")
         #endif
 
         if includePlatformRequests {
             let currentState = BrowserPasskeyAuthorizationGate.shared.currentAuthorizationState()
             #if DEBUG
-            cmuxDebugLog("webauthn.authRequests passkeyAuthState=\(currentState.rawValue) callerMayPrompt=\(callerMayPromptForPlatformAuthorization(message))")
+            zmuxDebugLog("webauthn.authRequests passkeyAuthState=\(currentState.rawValue) callerMayPrompt=\(callerMayPromptForPlatformAuthorization(message))")
             #endif
             if currentState == .notDetermined && !callerMayPromptForPlatformAuthorization(message) {
                 #if DEBUG
-                cmuxDebugLog("webauthn.authRequests skipping platform: cross-origin subframe can't prompt")
+                zmuxDebugLog("webauthn.authRequests skipping platform: cross-origin subframe can't prompt")
                 #endif
                 includePlatformRequests = false
             } else {
                 let authorizationState = await BrowserPasskeyAuthorizationGate.shared.authorizeIfNeeded()
                 #if DEBUG
-                cmuxDebugLog("webauthn.authRequests authorizeIfNeeded result=\(authorizationState.rawValue)")
+                zmuxDebugLog("webauthn.authRequests authorizeIfNeeded result=\(authorizationState.rawValue)")
                 #endif
                 if authorizationState != .authorized {
                     includePlatformRequests = false
@@ -1394,22 +1394,22 @@ private extension BrowserWebAuthnCoordinator {
 
         let requests = plan.authorizationRequests(includePlatformRequests: includePlatformRequests)
         #if DEBUG
-        cmuxDebugLog("webauthn.authRequests finalCount=\(requests.count) includePlatform=\(includePlatformRequests)")
+        zmuxDebugLog("webauthn.authRequests finalCount=\(requests.count) includePlatform=\(includePlatformRequests)")
         #endif
         guard !requests.isEmpty else {
             #if DEBUG
-            cmuxDebugLog("webauthn.authRequests FAIL: no requests available, throwing notAllowed")
+            zmuxDebugLog("webauthn.authRequests FAIL: no requests available, throwing notAllowed")
             #endif
             throw BrowserWebAuthnBridgeError.notAllowed("Passkey access was denied for this browser.")
         }
 
         if plan.needsBluetoothPreparation(includePlatformRequests: includePlatformRequests) {
             #if DEBUG
-            cmuxDebugLog("webauthn.authRequests preparing bluetooth")
+            zmuxDebugLog("webauthn.authRequests preparing bluetooth")
             #endif
             let btState = await BrowserBluetoothAuthorizationGate.shared.prepareIfNeeded()
             #if DEBUG
-            cmuxDebugLog("webauthn.authRequests bluetooth result=\(btState)")
+            zmuxDebugLog("webauthn.authRequests bluetooth result=\(btState)")
             #endif
         }
 
@@ -1422,14 +1422,14 @@ private extension BrowserWebAuthnCoordinator {
         prefersImmediatelyAvailableCredentials: Bool
     ) async throws -> [String: Any] {
         #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "webauthn.performAuth requestCount=\(requests.count) hasWindow=\(window == nil ? 0 : 1) " +
             "hasWindowTitle=\((window?.title.isEmpty == false) ? 1 : 0) " +
             "prefersImmediate=\(prefersImmediatelyAvailableCredentials) " +
             "hasPendingContinuation=\(activeAuthorizationContinuation != nil)"
         )
         for (i, req) in requests.enumerated() {
-            cmuxDebugLog("webauthn.performAuth request[\(i)]=\(type(of: req))")
+            zmuxDebugLog("webauthn.performAuth request[\(i)]=\(type(of: req))")
         }
         #endif
         guard !requests.isEmpty else {
@@ -1437,19 +1437,19 @@ private extension BrowserWebAuthnCoordinator {
         }
         guard let window else {
             #if DEBUG
-            cmuxDebugLog("webauthn.performAuth FAIL: no window")
+            zmuxDebugLog("webauthn.performAuth FAIL: no window")
             #endif
             throw BrowserWebAuthnBridgeError.notSupported("Native passkey support is unavailable.")
         }
         guard activeAuthorizationContinuation == nil else {
             #if DEBUG
-            cmuxDebugLog("webauthn.performAuth FAIL: ceremony already in progress")
+            zmuxDebugLog("webauthn.performAuth FAIL: ceremony already in progress")
             #endif
             throw BrowserWebAuthnBridgeError.notAllowed("The passkey request failed.")
         }
 
         #if DEBUG
-        cmuxDebugLog("webauthn.performAuth launching ASAuthorizationController")
+        zmuxDebugLog("webauthn.performAuth launching ASAuthorizationController")
         #endif
         return try await withCheckedThrowingContinuation { continuation in
             let controller = ASAuthorizationController(authorizationRequests: requests)
@@ -1565,13 +1565,13 @@ private extension BrowserWebAuthnCoordinator {
 
         guard !platformRequests.isEmpty || !securityKeyRequests.isEmpty else {
             #if DEBUG
-            cmuxDebugLog("webauthn.buildCreationPlan no requests built — returning nil")
+            zmuxDebugLog("webauthn.buildCreationPlan no requests built — returning nil")
             #endif
             return nil
         }
 
         #if DEBUG
-        cmuxDebugLog("webauthn.buildCreationPlan rp=\(relyingPartyIdentifier) platform=\(platformRequests.count) securityKey=\(securityKeyRequests.count) attachment=\(attachment ?? "(nil)")")
+        zmuxDebugLog("webauthn.buildCreationPlan rp=\(relyingPartyIdentifier) platform=\(platformRequests.count) securityKey=\(securityKeyRequests.count) attachment=\(attachment ?? "(nil)")")
         #endif
         return .init(
             platformRequests: platformRequests,
@@ -1650,7 +1650,7 @@ private extension BrowserWebAuthnCoordinator {
 
         guard !platformRequests.isEmpty || !securityKeyRequests.isEmpty else {
             #if DEBUG
-            cmuxDebugLog("webauthn.buildAssertionPlan no requests built — returning nil")
+            zmuxDebugLog("webauthn.buildAssertionPlan no requests built — returning nil")
             #endif
             return nil
         }
@@ -1661,7 +1661,7 @@ private extension BrowserWebAuthnCoordinator {
             allowCredentials.isEmpty ? true : transportSummary.shouldShowHybridTransport
 
         #if DEBUG
-        cmuxDebugLog("webauthn.buildAssertionPlan rp=\(relyingPartyIdentifier) platform=\(platformRequests.count) securityKey=\(securityKeyRequests.count) allowCredentials=\(allowCredentials.count) mediation=\(request.mediation ?? "(nil)") hybridTransport=\(transportSummary.shouldShowHybridTransport)")
+        zmuxDebugLog("webauthn.buildAssertionPlan rp=\(relyingPartyIdentifier) platform=\(platformRequests.count) securityKey=\(securityKeyRequests.count) allowCredentials=\(allowCredentials.count) mediation=\(request.mediation ?? "(nil)") hybridTransport=\(transportSummary.shouldShowHybridTransport)")
         #endif
         return .init(
             platformRequests: platformRequests,
@@ -1871,7 +1871,7 @@ private extension BrowserWebAuthnCoordinator {
             callerMayPromptForPlatformAuthorization: callerMayPromptForPlatformAuthorization
         )
         #if DEBUG
-        cmuxDebugLog("webauthn.capability state=\(state.rawValue) authorized=\(authorized) denied=\(denied) canPrompt=\(canPromptForAccess) callerMayPrompt=\(callerMayPromptForPlatformAuthorization) platformSupport=\(platformRequestSupport) securityKeySupport=\(securityKeySupport) deviceConfigured=\(deviceConfiguredForPasskeys as Any) advertisedPlatform=\(platformPasskeyAvailability as Any) btAuth=\(bluetoothState.isAuthorized) btHybrid=\(bluetoothState.canUseHybridTransport)")
+        zmuxDebugLog("webauthn.capability state=\(state.rawValue) authorized=\(authorized) denied=\(denied) canPrompt=\(canPromptForAccess) callerMayPrompt=\(callerMayPromptForPlatformAuthorization) platformSupport=\(platformRequestSupport) securityKeySupport=\(securityKeySupport) deviceConfigured=\(deviceConfiguredForPasskeys as Any) advertisedPlatform=\(platformPasskeyAvailability as Any) btAuth=\(bluetoothState.isAuthorized) btHybrid=\(bluetoothState.canUseHybridTransport)")
         #endif
 
         var payload: [String: Any] = [

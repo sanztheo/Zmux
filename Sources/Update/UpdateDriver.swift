@@ -19,7 +19,7 @@ class UpdateDriver: NSObject, SPUUserDriver {
               reply: @escaping @Sendable (SUUpdatePermissionResponse) -> Void) {
 #if DEBUG
         let env = ProcessInfo.processInfo.environment
-        if env["CMUX_UI_TEST_TRIGGER_UPDATE_CHECK"] == "1" || env["CMUX_UI_TEST_AUTO_ALLOW_PERMISSION"] == "1" {
+        if env["ZMUX_UI_TEST_TRIGGER_UPDATE_CHECK"] == "1" || env["ZMUX_UI_TEST_AUTO_ALLOW_PERMISSION"] == "1" {
             UpdateLogStore.shared.append("auto-allow update permission (ui test)")
             DispatchQueue.main.async {
                 reply(SUUpdatePermissionResponse(automaticUpdateChecks: true, sendSystemProfile: false))
@@ -27,7 +27,7 @@ class UpdateDriver: NSObject, SPUUserDriver {
             return
         }
 #endif
-        // Never show Sparkle's permission UI. cmux always enables scheduled checks and keeps
+        // Never show Sparkle's permission UI. zmux always enables scheduled checks and keeps
         // automatic downloads disabled so installs remain user-driven.
         UpdateLogStore.shared.append("auto-allow update permission (no UI)")
         DispatchQueue.main.async {
@@ -48,7 +48,7 @@ class UpdateDriver: NSObject, SPUUserDriver {
     }
 
     func showUpdateReleaseNotes(with downloadData: SPUDownloadData) {
-        // cmux uses Sparkle's UI for release notes links instead.
+        // zmux uses Sparkle's UI for release notes links instead.
     }
 
     func showUpdateReleaseNotesFailedToDownloadWithError(_ error: any Error) {
@@ -147,7 +147,7 @@ class UpdateDriver: NSObject, SPUUserDriver {
     }
 
     func showUpdateInFocus() {
-        // No-op; cmux never shows Sparkle dialogs.
+        // No-op; zmux never shows Sparkle dialogs.
     }
 
     func dismissUpdateInstallation() {

@@ -1,6 +1,6 @@
 #if DEBUG
 import AppKit
-import CMUXWorkstream
+import ZMUXWorkstream
 import SwiftUI
 
 /// Debug-only window that renders every Feed item kind + state against
@@ -16,7 +16,7 @@ final class FeedPreviewWindowController: NSWindowController, NSWindowDelegate {
             defer: false
         )
         window.title = "Feed Preview"
-        window.identifier = NSUserInterfaceItemIdentifier("cmux.feedPreview")
+        window.identifier = NSUserInterfaceItemIdentifier("zmux.feedPreview")
         window.minSize = NSSize(width: 420, height: 500)
         window.center()
         window.isReleasedWhenClosed = false
@@ -184,7 +184,7 @@ enum FeedPreviewFixtures {
 
     static func item(kind: Kind, state: StateChoice) -> WorkstreamItem {
         let createdAt = Date().addingTimeInterval(-30)
-        let cwd = "/Users/lawrence/fun/cmuxterm-hq"
+        let cwd = "/Users/lawrence/fun/zmuxterm-hq"
         let (workstreamKind, payload): (WorkstreamKind, WorkstreamPayload) = makePayload(kind: kind)
         let statusValue: WorkstreamStatus = {
             if !workstreamKind.isActionable { return .telemetry }
@@ -268,7 +268,7 @@ enum FeedPreviewFixtures {
             3. Call ExitPlanMode with allowedPrompts entries so the user sees the Bash permission-request UI.
 
             **Requested permissions:**
-            - Bash: run ./scripts/reload.sh --tag <tag> for tagged macOS cmux dev builds
+            - Bash: run ./scripts/reload.sh --tag <tag> for tagged macOS zmux dev builds
             """
             return (.exitPlan, .exitPlan(
                 requestId: "preview-plan",

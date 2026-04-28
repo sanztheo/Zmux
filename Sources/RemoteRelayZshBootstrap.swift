@@ -16,14 +16,14 @@ struct RemoteRelayZshBootstrap {
 
     private var sharedHistoryLines: [String] {
         [
-            "if [ -z \"${HISTFILE:-}\" ] || [ \"$HISTFILE\" = \"\(shellStateDir)/.zsh_history\" ]; then export HISTFILE=\"$CMUX_REAL_ZDOTDIR/.zsh_history\"; fi",
+            "if [ -z \"${HISTFILE:-}\" ] || [ \"$HISTFILE\" = \"\(shellStateDir)/.zsh_history\" ]; then export HISTFILE=\"$ZMUX_REAL_ZDOTDIR/.zsh_history\"; fi",
         ]
     }
 
     var zshEnvLines: [String] {
         [
-            "[ -f \"$CMUX_REAL_ZDOTDIR/.zshenv\" ] && source \"$CMUX_REAL_ZDOTDIR/.zshenv\"",
-            "if [ -n \"${ZDOTDIR:-}\" ] && [ \"$ZDOTDIR\" != \"\(shellStateDir)\" ]; then export CMUX_REAL_ZDOTDIR=\"$ZDOTDIR\"; fi",
+            "[ -f \"$ZMUX_REAL_ZDOTDIR/.zshenv\" ] && source \"$ZMUX_REAL_ZDOTDIR/.zshenv\"",
+            "if [ -n \"${ZDOTDIR:-}\" ] && [ \"$ZDOTDIR\" != \"\(shellStateDir)\" ]; then export ZMUX_REAL_ZDOTDIR=\"$ZDOTDIR\"; fi",
         ] + sharedHistoryLines + [
             "export ZDOTDIR=\"\(shellStateDir)\"",
         ]
@@ -31,19 +31,19 @@ struct RemoteRelayZshBootstrap {
 
     var zshProfileLines: [String] {
         [
-            "[ -f \"$CMUX_REAL_ZDOTDIR/.zprofile\" ] && source \"$CMUX_REAL_ZDOTDIR/.zprofile\"",
+            "[ -f \"$ZMUX_REAL_ZDOTDIR/.zprofile\" ] && source \"$ZMUX_REAL_ZDOTDIR/.zprofile\"",
         ]
     }
 
     func zshRCLines(commonShellLines: [String]) -> [String] {
         sharedHistoryLines + [
-            "[ -f \"$CMUX_REAL_ZDOTDIR/.zshrc\" ] && source \"$CMUX_REAL_ZDOTDIR/.zshrc\"",
+            "[ -f \"$ZMUX_REAL_ZDOTDIR/.zshrc\" ] && source \"$ZMUX_REAL_ZDOTDIR/.zshrc\"",
         ] + commonShellLines
     }
 
     var zshLoginLines: [String] {
         [
-            "[ -f \"$CMUX_REAL_ZDOTDIR/.zlogin\" ] && source \"$CMUX_REAL_ZDOTDIR/.zlogin\"",
+            "[ -f \"$ZMUX_REAL_ZDOTDIR/.zlogin\" ] && source \"$ZMUX_REAL_ZDOTDIR/.zlogin\"",
         ]
     }
 }

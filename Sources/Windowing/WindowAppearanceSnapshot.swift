@@ -104,7 +104,7 @@ struct WindowGlassSettingsSnapshot {
     }
 
     func shouldApply(glassEffectAvailable: Bool = WindowGlassEffect.isAvailable) -> Bool {
-        cmuxShouldApplyWindowGlass(
+        zmuxShouldApplyWindowGlass(
             sidebarBlendMode: sidebarBlendModeRawValue,
             bgGlassEnabled: isEnabled,
             glassEffectAvailable: glassEffectAvailable

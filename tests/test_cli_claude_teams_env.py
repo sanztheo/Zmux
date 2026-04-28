@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Regression test: `cmux claude-teams` injects the tmux-style auto-mode env.
+Regression test: `zmux claude-teams` injects the tmux-style auto-mode env.
 """
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from claude_teams_test_utils import resolve_cmux_cli
+from claude_teams_test_utils import resolve_zmux_cli
 
 
 def make_executable(path: Path, content: str) -> None:
@@ -30,14 +30,14 @@ def run_claude_teams(
     node_options: str,
     tmpdir: str | None = None,
 ) -> tuple[subprocess.CompletedProcess[str], str, str, str]:
-    with tempfile.TemporaryDirectory(prefix="cmux-claude-teams-env-") as td:
+    with tempfile.TemporaryDirectory(prefix="zmux-claude-teams-env-") as td:
         tmp = Path(td)
         real_bin = tmp / "real-bin"
         real_bin.mkdir(parents=True, exist_ok=True)
 
         env_log = tmp / "agent-teams.log"
         tmux_log = tmp / "tmux-path.log"
-        cmux_bin_log = tmp / "cmux-bin.log"
+        zmux_bin_log = tmp / "zmux-bin.log"
         argv_log = tmp / "argv.log"
         tmux_env_log = tmp / "tmux-env.log"
         tmux_pane_log = tmp / "tmux-pane.log"
@@ -57,14 +57,14 @@ def run_claude_teams(
 set -euo pipefail
 printf '%s\\n' "${CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS-__UNSET__}" > "$FAKE_AGENT_TEAMS_LOG"
 command -v tmux > "$FAKE_TMUX_PATH_LOG"
-printf '%s\\n' "${CMUX_CLAUDE_TEAMS_CMUX_BIN-__UNSET__}" > "$FAKE_CMUX_BIN_LOG"
+printf '%s\\n' "${ZMUX_CLAUDE_TEAMS_ZMUX_BIN-__UNSET__}" > "$FAKE_ZMUX_BIN_LOG"
 printf '%s\\n' "$@" > "$FAKE_ARGV_LOG"
 printf '%s\\n' "${TMUX-__UNSET__}" > "$FAKE_TMUX_ENV_LOG"
 printf '%s\\n' "${TMUX_PANE-__UNSET__}" > "$FAKE_TMUX_PANE_LOG"
 printf '%s\\n' "${TERM-__UNSET__}" > "$FAKE_TERM_LOG"
 printf '%s\\n' "${TERM_PROGRAM-__UNSET__}" > "$FAKE_TERM_PROGRAM_LOG"
-printf '%s\\n' "${CMUX_SOCKET_PATH-__UNSET__}" > "$FAKE_SOCKET_PATH_LOG"
-printf '%s\\n' "${CMUX_SOCKET_PASSWORD-__UNSET__}" > "$FAKE_SOCKET_PASSWORD_LOG"
+printf '%s\\n' "${ZMUX_SOCKET_PATH-__UNSET__}" > "$FAKE_SOCKET_PATH_LOG"
+printf '%s\\n' "${ZMUX_SOCKET_PASSWORD-__UNSET__}" > "$FAKE_SOCKET_PASSWORD_LOG"
 printf '%s\\n' "${NODE_OPTIONS-__UNSET__}" > "$FAKE_NODE_OPTIONS_LOG"
 exec node "$FAKE_REAL_NODE_SCRIPT" "$@"
 """,
@@ -109,7 +109,7 @@ fs.writeFileSync(
         env["PATH"] = f"{real_bin}:{base_env.get('PATH', '/usr/bin:/bin')}"
         env["FAKE_AGENT_TEAMS_LOG"] = str(env_log)
         env["FAKE_TMUX_PATH_LOG"] = str(tmux_log)
-        env["FAKE_CMUX_BIN_LOG"] = str(cmux_bin_log)
+        env["FAKE_ZMUX_BIN_LOG"] = str(zmux_bin_log)
         env["FAKE_ARGV_LOG"] = str(argv_log)
         env["FAKE_TMUX_ENV_LOG"] = str(tmux_env_log)
         env["FAKE_TMUX_PANE_LOG"] = str(tmux_pane_log)
@@ -128,7 +128,7 @@ fs.writeFileSync(
         env["NODE_OPTIONS"] = node_options
         if tmpdir is not None:
             env["TMPDIR"] = tmpdir
-        explicit_socket_path = str(tmp / "explicit-cmux.sock")
+        explicit_socket_path = str(tmp / "explicit-zmux.sock")
         explicit_socket_password = "topsecret"
 
         proc = subprocess.run(
@@ -171,16 +171,16 @@ fs.writeFileSync(
             raise SystemExit(1)
 
         if tmux_path.startswith(str(real_bin)):
-            print(f"FAIL: expected cmux tmux shim to shadow PATH, got {tmux_path!r}")
+            print(f"FAIL: expected zmux tmux shim to shadow PATH, got {tmux_path!r}")
             raise SystemExit(1)
 
-        cmux_bin_value = read_text(cmux_bin_log)
-        if not cmux_bin_value or cmux_bin_value == "__UNSET__":
-            print("FAIL: missing CMUX_CLAUDE_TEAMS_CMUX_BIN")
+        zmux_bin_value = read_text(zmux_bin_log)
+        if not zmux_bin_value or zmux_bin_value == "__UNSET__":
+            print("FAIL: missing ZMUX_CLAUDE_TEAMS_ZMUX_BIN")
             raise SystemExit(1)
 
-        if not os.path.exists(cmux_bin_value):
-            print(f"FAIL: CMUX_CLAUDE_TEAMS_CMUX_BIN does not exist: {cmux_bin_value!r}")
+        if not os.path.exists(zmux_bin_value):
+            print(f"FAIL: ZMUX_CLAUDE_TEAMS_ZMUX_BIN does not exist: {zmux_bin_value!r}")
             raise SystemExit(1)
 
         argv_lines = argv_log.read_text(encoding="utf-8").splitlines()
@@ -214,13 +214,13 @@ fs.writeFileSync(
 
         socket_path_value = read_text(socket_path_log)
         if socket_path_value != explicit_socket_path:
-            print(f"FAIL: expected CMUX_SOCKET_PATH={explicit_socket_path!r}, got {socket_path_value!r}")
+            print(f"FAIL: expected ZMUX_SOCKET_PATH={explicit_socket_path!r}, got {socket_path_value!r}")
             raise SystemExit(1)
 
         socket_password_value = read_text(socket_password_log)
         if socket_password_value != explicit_socket_password:
             print(
-                "FAIL: expected CMUX_SOCKET_PASSWORD to preserve the explicit CLI override, "
+                "FAIL: expected ZMUX_SOCKET_PASSWORD to preserve the explicit CLI override, "
                 f"got {socket_password_value!r}"
             )
             raise SystemExit(1)
@@ -230,7 +230,7 @@ fs.writeFileSync(
 
 def main() -> int:
     try:
-        cli_path = resolve_cmux_cli()
+        cli_path = resolve_zmux_cli()
     except Exception as exc:
         print(f"FAIL: {exc}")
         return 1
@@ -243,7 +243,7 @@ def main() -> int:
         "--trace-warnings",
     )
     if proc.returncode != 0:
-        print("FAIL: `cmux claude-teams --version` exited non-zero")
+        print("FAIL: `zmux claude-teams --version` exited non-zero")
         print(f"exit={proc.returncode}")
         print(f"stdout={proc.stdout.strip()}")
         print(f"stderr={proc.stderr.strip()}")
@@ -284,7 +284,7 @@ def main() -> int:
         "--max-old-space-size 2048 --trace-warnings",
     )
     if proc.returncode != 0:
-        print("FAIL: `cmux claude-teams --version` with existing heap flag exited non-zero")
+        print("FAIL: `zmux claude-teams --version` with existing heap flag exited non-zero")
         print(f"exit={proc.returncode}")
         print(f"stdout={proc.stdout.strip()}")
         print(f"stderr={proc.stderr.strip()}")
@@ -319,7 +319,7 @@ def main() -> int:
         )
         return 1
 
-    with tempfile.TemporaryDirectory(prefix="cmux-claude-teams-bad-tmp-") as td:
+    with tempfile.TemporaryDirectory(prefix="zmux-claude-teams-bad-tmp-") as td:
         bad_tmpdir = Path(td) / "not-a-directory"
         bad_tmpdir.write_text("occupied", encoding="utf-8")
         proc, node_options_value, runtime_node_options_value, child_node_options_value = run_claude_teams(
@@ -329,7 +329,7 @@ def main() -> int:
             tmpdir=str(bad_tmpdir),
         )
     if proc.returncode != 0:
-        print("FAIL: `cmux claude-teams --version` should still succeed when TMPDIR is unusable")
+        print("FAIL: `zmux claude-teams --version` should still succeed when TMPDIR is unusable")
         print(f"exit={proc.returncode}")
         print(f"stdout={proc.stdout.strip()}")
         print(f"stderr={proc.stderr.strip()}")
@@ -356,7 +356,7 @@ def main() -> int:
         )
         return 1
 
-    print("PASS: cmux claude-teams restores child NODE_OPTIONS while injecting the auto-mode tmux env")
+    print("PASS: zmux claude-teams restores child NODE_OPTIONS while injecting the auto-mode tmux env")
     return 0
 
 

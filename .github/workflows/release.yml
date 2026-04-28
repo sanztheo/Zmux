@@ -156,7 +156,7 @@ jobs:
       - name: Build universal app (Release)
         if: steps.guard_release_assets.outputs.skip_all != 'true'
         run: |
-          xcodebuild -scheme cmux -configuration Release -derivedDataPath build-universal \
+          xcodebuild -scheme zmux -configuration Release -derivedDataPath build-universal \
             -destination 'generic/platform=macOS' \
             -clonedSourcePackagesDirPath .spm-cache \
             ARCHS="arm64 x86_64" \
@@ -167,9 +167,9 @@ jobs:
         if: steps.guard_release_assets.outputs.skip_all != 'true'
         run: |
           set -euo pipefail
-          APP_BINARY="build-universal/Build/Products/Release/cmux.app/Contents/MacOS/cmux"
-          CLI_BINARY="build-universal/Build/Products/Release/cmux.app/Contents/Resources/bin/cmux"
-          HELPER_BINARY="build-universal/Build/Products/Release/cmux.app/Contents/Resources/bin/ghostty"
+          APP_BINARY="build-universal/Build/Products/Release/zmux.app/Contents/MacOS/zmux"
+          CLI_BINARY="build-universal/Build/Products/Release/zmux.app/Contents/Resources/bin/zmux"
+          HELPER_BINARY="build-universal/Build/Products/Release/zmux.app/Contents/Resources/bin/ghostty"
           APP_ARCHS="$(lipo -archs "$APP_BINARY")"
           CLI_ARCHS="$(lipo -archs "$CLI_BINARY")"
           HELPER_ARCHS="$(lipo -archs "$HELPER_BINARY")"
@@ -184,42 +184,42 @@ jobs:
         if: steps.guard_release_assets.outputs.skip_all != 'true'
         run: |
           set -euo pipefail
-          APP_PLIST="build-universal/Build/Products/Release/cmux.app/Contents/Info.plist"
+          APP_PLIST="build-universal/Build/Products/Release/zmux.app/Contents/Info.plist"
           APP_VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP_PLIST")
           ./scripts/build_remote_daemon_release_assets.sh \
             --version "$APP_VERSION" \
             --release-tag "$GITHUB_REF_NAME" \
-            --repo "manaflow-ai/cmux" \
+            --repo "manaflow-ai/zmux" \
             --output-dir "remote-daemon-assets"
-          MANIFEST_JSON="$(python3 -c 'import json,sys; print(json.dumps(json.load(open(sys.argv[1], encoding="utf-8")), separators=(",",":")))' remote-daemon-assets/cmuxd-remote-manifest.json)"
-          plutil -remove CMUXRemoteDaemonManifestJSON "$APP_PLIST" >/dev/null 2>&1 || true
-          plutil -insert CMUXRemoteDaemonManifestJSON -string "$MANIFEST_JSON" "$APP_PLIST"
+          MANIFEST_JSON="$(python3 -c 'import json,sys; print(json.dumps(json.load(open(sys.argv[1], encoding="utf-8")), separators=(",",":")))' remote-daemon-assets/zmuxd-remote-manifest.json)"
+          plutil -remove ZMUXRemoteDaemonManifestJSON "$APP_PLIST" >/dev/null 2>&1 || true
+          plutil -insert ZMUXRemoteDaemonManifestJSON -string "$MANIFEST_JSON" "$APP_PLIST"
 
       - name: Run CLI version memory guard regression
         if: steps.guard_release_assets.outputs.skip_all != 'true'
         run: |
           set -euo pipefail
-          CLI_BINARY="build-universal/Build/Products/Release/cmux.app/Contents/Resources/bin/cmux"
-          [ -x "$CLI_BINARY" ] || { echo "cmux CLI binary not found at $CLI_BINARY" >&2; exit 1; }
-          CMUX_CLI_BIN="$CLI_BINARY" python3 tests/test_cli_version_memory_guard.py
+          CLI_BINARY="build-universal/Build/Products/Release/zmux.app/Contents/Resources/bin/zmux"
+          [ -x "$CLI_BINARY" ] || { echo "zmux CLI binary not found at $CLI_BINARY" >&2; exit 1; }
+          ZMUX_CLI_BIN="$CLI_BINARY" python3 tests/test_cli_version_memory_guard.py
 
       - name: Verify bundled Ghostty theme picker helper
         if: steps.guard_release_assets.outputs.skip_all != 'true'
         run: |
           set -euo pipefail
-          HELPER_BINARY="build-universal/Build/Products/Release/cmux.app/Contents/Resources/bin/ghostty"
+          HELPER_BINARY="build-universal/Build/Products/Release/zmux.app/Contents/Resources/bin/ghostty"
           [ -x "$HELPER_BINARY" ] || { echo "Ghostty theme picker helper not found at $HELPER_BINARY" >&2; exit 1; }
 
       - name: Inject Sparkle keys into Info.plist
         if: steps.guard_release_assets.outputs.skip_all != 'true'
         run: |
-          APP_PLIST="build-universal/Build/Products/Release/cmux.app/Contents/Info.plist"
+          APP_PLIST="build-universal/Build/Products/Release/zmux.app/Contents/Info.plist"
           /usr/libexec/PlistBuddy -c "Delete :SUPublicEDKey" "$APP_PLIST" >/dev/null 2>&1 || true
           /usr/libexec/PlistBuddy -c "Delete :SUFeedURL" "$APP_PLIST" >/dev/null 2>&1 || true
           echo "Adding SUPublicEDKey to Info.plist..."
           /usr/libexec/PlistBuddy -c "Add :SUPublicEDKey string ${SPARKLE_PUBLIC_KEY}" "$APP_PLIST"
           echo "Adding SUFeedURL to Info.plist..."
-          /usr/libexec/PlistBuddy -c "Add :SUFeedURL string https://github.com/manaflow-ai/cmux/releases/latest/download/appcast.xml" "$APP_PLIST"
+          /usr/libexec/PlistBuddy -c "Add :SUFeedURL string https://github.com/manaflow-ai/zmux/releases/latest/download/appcast.xml" "$APP_PLIST"
           echo "Verifying:"
           /usr/libexec/PlistBuddy -c "Print :SUPublicEDKey" "$APP_PLIST"
           /usr/libexec/PlistBuddy -c "Print :SUFeedURL" "$APP_PLIST"
@@ -257,15 +257,15 @@ jobs:
             echo "Missing APPLE_RELEASE_PROVISIONING_PROFILE_BASE64 secret" >&2
             exit 1
           fi
-          APP_PATH="build-universal/Build/Products/Release/cmux.app"
+          APP_PATH="build-universal/Build/Products/Release/zmux.app"
           PROFILE_PATH="$APP_PATH/Contents/embedded.provisionprofile"
-          TMP_PROFILE="$(mktemp /tmp/cmux-release-profile.XXXXXX)"
-          TMP_PLIST="$(mktemp /tmp/cmux-release-profile.XXXXXX.plist)"
+          TMP_PROFILE="$(mktemp /tmp/zmux-release-profile.XXXXXX)"
+          TMP_PLIST="$(mktemp /tmp/zmux-release-profile.XXXXXX.plist)"
           trap 'rm -f "$TMP_PROFILE" "$TMP_PLIST"' EXIT
           echo "$APPLE_RELEASE_PROVISIONING_PROFILE_BASE64" | base64 --decode > "$TMP_PROFILE"
           security cms -D -i "$TMP_PROFILE" > "$TMP_PLIST"
           APP_ID="$(/usr/libexec/PlistBuddy -c "Print :Entitlements:com.apple.application-identifier" "$TMP_PLIST")"
-          if [ "$APP_ID" != "7WLXT3NR37.com.cmuxterm.app" ]; then
+          if [ "$APP_ID" != "7WLXT3NR37.com.zmuxterm.app" ]; then
             echo "Release provisioning profile targets unexpected app ID: $APP_ID" >&2
             exit 1
           fi
@@ -290,10 +290,10 @@ jobs:
             echo "Missing APPLE_SIGNING_IDENTITY secret" >&2
             exit 1
           fi
-          APP_PATH="build-universal/Build/Products/Release/cmux.app"
-          ./scripts/sign-cmux-bundle.sh \
+          APP_PATH="build-universal/Build/Products/Release/zmux.app"
+          ./scripts/sign-zmux-bundle.sh \
             "$APP_PATH" \
-            cmux.release.entitlements \
+            zmux.release.entitlements \
             "$APPLE_SIGNING_IDENTITY"
 
       - name: Notarize app
@@ -308,9 +308,9 @@ jobs:
             echo "Missing notarization secrets (APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID)" >&2
             exit 1
           fi
-          APP_PATH="build-universal/Build/Products/Release/cmux.app"
-          ZIP_SUBMIT="cmux-notary.zip"
-          DMG_RELEASE="cmux-macos.dmg"
+          APP_PATH="build-universal/Build/Products/Release/zmux.app"
+          ZIP_SUBMIT="zmux-notary.zip"
+          DMG_RELEASE="zmux-macos.dmg"
           ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "$ZIP_SUBMIT"
           APP_SUBMIT_JSON="$(xcrun notarytool submit "$ZIP_SUBMIT" --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_SPECIFIC_PASSWORD" --wait --output-format json)"
           APP_SUBMIT_ID="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<<"$APP_SUBMIT_JSON")"
@@ -329,7 +329,7 @@ jobs:
             --identity="$APPLE_SIGNING_IDENTITY" \
             "$APP_PATH" \
             ./
-          mv ./cmux*.dmg "$DMG_RELEASE"
+          mv ./zmux*.dmg "$DMG_RELEASE"
           DMG_SUBMIT_JSON="$(xcrun notarytool submit "$DMG_RELEASE" --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_APP_SPECIFIC_PASSWORD" --wait --output-format json)"
           DMG_SUBMIT_ID="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])' <<<"$DMG_SUBMIT_JSON")"
           DMG_STATUS="$(python3 -c 'import json,sys; print(json.load(sys.stdin)["status"])' <<<"$DMG_SUBMIT_JSON")"
@@ -346,7 +346,7 @@ jobs:
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_ORG: manaflow
-          SENTRY_PROJECT: cmuxterm-macos
+          SENTRY_PROJECT: zmuxterm-macos
         run: |
           if [ -z "$SENTRY_AUTH_TOKEN" ]; then
             echo "SENTRY_AUTH_TOKEN not set, skipping dSYM upload"
@@ -364,29 +364,29 @@ jobs:
             echo "Missing SPARKLE_PRIVATE_KEY secret" >&2
             exit 1
           fi
-          ./scripts/sparkle_generate_appcast.sh cmux-macos.dmg "$GITHUB_REF_NAME" appcast.xml
+          ./scripts/sparkle_generate_appcast.sh zmux-macos.dmg "$GITHUB_REF_NAME" appcast.xml
 
       - name: Attest remote daemon release assets
         if: steps.guard_release_assets.outputs.skip_all != 'true'
         uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # v4.1.0
         with:
           subject-path: |
-            remote-daemon-assets/cmuxd-remote-darwin-arm64
-            remote-daemon-assets/cmuxd-remote-darwin-amd64
-            remote-daemon-assets/cmuxd-remote-linux-arm64
-            remote-daemon-assets/cmuxd-remote-linux-amd64
-            remote-daemon-assets/cmuxd-remote-checksums.txt
-            remote-daemon-assets/cmuxd-remote-manifest.json
+            remote-daemon-assets/zmuxd-remote-darwin-arm64
+            remote-daemon-assets/zmuxd-remote-darwin-amd64
+            remote-daemon-assets/zmuxd-remote-linux-arm64
+            remote-daemon-assets/zmuxd-remote-linux-amd64
+            remote-daemon-assets/zmuxd-remote-checksums.txt
+            remote-daemon-assets/zmuxd-remote-manifest.json
 
       - name: Upload build artifacts (dry-run)
         if: steps.guard_release_assets.outputs.skip_upload != 'true' && github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: cmux-release-dry-run
+          name: zmux-release-dry-run
           path: |
-            cmux-macos.dmg
+            zmux-macos.dmg
             appcast.xml
-            remote-daemon-assets/cmuxd-remote-*
+            remote-daemon-assets/zmuxd-remote-*
           if-no-files-found: error
 
       - name: Upload release asset
@@ -394,14 +394,14 @@ jobs:
         uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3.0.0
         with:
           files: |
-            cmux-macos.dmg
+            zmux-macos.dmg
             appcast.xml
-            remote-daemon-assets/cmuxd-remote-darwin-arm64
-            remote-daemon-assets/cmuxd-remote-darwin-amd64
-            remote-daemon-assets/cmuxd-remote-linux-arm64
-            remote-daemon-assets/cmuxd-remote-linux-amd64
-            remote-daemon-assets/cmuxd-remote-checksums.txt
-            remote-daemon-assets/cmuxd-remote-manifest.json
+            remote-daemon-assets/zmuxd-remote-darwin-arm64
+            remote-daemon-assets/zmuxd-remote-darwin-amd64
+            remote-daemon-assets/zmuxd-remote-linux-arm64
+            remote-daemon-assets/zmuxd-remote-linux-amd64
+            remote-daemon-assets/zmuxd-remote-checksums.txt
+            remote-daemon-assets/zmuxd-remote-manifest.json
           generate_release_notes: true
           overwrite_files: false
 
@@ -431,11 +431,11 @@ jobs:
           # a DMG that doesn't exist yet. R2 PutObject is atomic, so the appcast
           # is either the old version or the new one, never missing.
           aws s3 cp appcast.xml \
-            "s3://cmux-binaries/stable/appcast.xml" \
+            "s3://zmux-binaries/stable/appcast.xml" \
             --endpoint-url "$R2_ENDPOINT" \
             --cache-control "no-cache, no-store, must-revalidate"
 
-          echo "R2 appcast upload complete: https://files.cmux.com/stable/appcast.xml"
+          echo "R2 appcast upload complete: https://files.zmux.com/stable/appcast.xml"
 
       - name: Cleanup keychain
         if: always()

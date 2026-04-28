@@ -1,30 +1,30 @@
 # Directory Actions Dogfood
 
-This tree is for dogfooding per-directory `cmux.json` resolution.
+This tree is for dogfooding per-directory `zmux.json` resolution.
 
-Use a terminal pane in cmux and `cd` into these directories:
+Use a terminal pane in zmux and `cd` into these directories:
 
 - `dogfood/directory-actions/alpha`
 - `dogfood/directory-actions/alpha/nested`
 - `dogfood/directory-actions/legacy`
-- `dogfood/directory-actions/legacy/prefer-dot-cmux`
+- `dogfood/directory-actions/legacy/prefer-dot-zmux`
 
 What each one demonstrates:
 
 - `alpha`
-  - Inherits the ancestor `./.cmux/cmux.json`
+  - Inherits the ancestor `./.zmux/zmux.json`
   - Shows ancestor lookup from the active pane cwd
 - `alpha/nested`
-  - Has its own `./.cmux/cmux.json`
-  - Overrides `cmux.newTerminal`
+  - Has its own `./.zmux/zmux.json`
+  - Overrides `zmux.newTerminal`
   - Replaces the surface tab bar button list
   - Still inherits parent actions into Command Palette
 - `legacy`
-  - Uses fallback `./cmux.json`
+  - Uses fallback `./zmux.json`
   - Demonstrates backward-compatible local config loading
-- `legacy/prefer-dot-cmux`
-  - Contains both `./cmux.json` and `./.cmux/cmux.json`
-  - The `./.cmux/cmux.json` file should win
+- `legacy/prefer-dot-zmux`
+  - Contains both `./zmux.json` and `./.zmux/zmux.json`
+  - The `./.zmux/zmux.json` file should win
 
 General expectations:
 

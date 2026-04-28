@@ -1,6 +1,6 @@
 import AppKit
 import AuthenticationServices
-import CMUXAuthCore
+import ZMUXAuthCore
 import Foundation
 import StackAuth
 #if canImport(Security)
@@ -13,7 +13,7 @@ private final class AuthPresentationContext: NSObject, ASWebAuthenticationPresen
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
         // ASWebAuthenticationSession invokes this on whichever thread called
         // session.start(). When beginSignIn() fires from the socket command
-        // dispatch thread (cmux auth login), this callback lands off-main,
+        // dispatch thread (zmux auth login), this callback lands off-main,
         // and any NSApp access must hop to main before returning.
         if Thread.isMainThread {
             return Self.currentAnchor()
@@ -83,7 +83,7 @@ extension StackAuthTokenStoreProtocol {
 }
 
 protocol AuthClientProtocol: Sendable {
-    func currentUser() async throws -> CMUXAuthUser?
+    func currentUser() async throws -> ZMUXAuthUser?
     func listTeams() async throws -> [AuthTeamSummary]
     func currentAccessToken() async throws -> String?
     func signOut() async throws
@@ -95,7 +95,7 @@ extension AuthClientProtocol {
 }
 
 enum AuthKeychainServiceName {
-    static let stableFallback = "com.cmuxterm.app.auth"
+    static let stableFallback = "com.zmuxterm.app.auth"
 
     static func make(bundleIdentifier: String? = Bundle.main.bundleIdentifier) -> String {
         guard let bundleIdentifier, !bundleIdentifier.isEmpty else {
@@ -111,7 +111,7 @@ final class AuthManager: ObservableObject {
 
     private static func defaultTokenStore() -> any StackAuthTokenStoreProtocol {
         // Release builds include a keychain-access-groups entitlement (via
-        // Resources/cmux.entitlements) and go through the data-protection
+        // Resources/zmux.entitlements) and go through the data-protection
         // keychain. Debug ad-hoc builds can't carry that entitlement
         // without a provisioning profile, so Keychain writes fail with
         // errSecMissingEntitlement and the file store takes over. The
@@ -123,7 +123,7 @@ final class AuthManager: ObservableObject {
     }
 
     @Published private(set) var isAuthenticated = false
-    @Published private(set) var currentUser: CMUXAuthUser?
+    @Published private(set) var currentUser: ZMUXAuthUser?
     @Published private(set) var availableTeams: [AuthTeamSummary] = []
     @Published private(set) var isLoading = false
     @Published private(set) var isRestoringSession = false
@@ -304,7 +304,7 @@ final class AuthManager: ObservableObject {
     }
 
     /// Shared CLI auth flow: initiate session, open browser, poll for token.
-    /// Used by both the Settings sign-in button and `cmux login`.
+    /// Used by both the Settings sign-in button and `zmux login`.
     static func runCLIAuthFlow(
         urlOpener: @escaping (URL) -> Void = { NSWorkspace.shared.open($0) }
     ) async throws -> String {
@@ -498,7 +498,7 @@ final class AuthManager: ObservableObject {
             await store.setTokens(accessToken: result.accessToken, refreshToken: result.refreshToken)
         }
         // Update published state synchronously on main actor
-        let user = CMUXAuthUser(id: result.userId, primaryEmail: result.email, displayName: result.displayName)
+        let user = ZMUXAuthUser(id: result.userId, primaryEmail: result.email, displayName: result.displayName)
         currentUser = user
         settingsStore.saveCachedUser(user)
         availableTeams = result.teams
@@ -536,7 +536,7 @@ final class AuthManager: ObservableObject {
             extraHeaders: ["x-stack-access-token": accessToken],
             method: "GET"
         )
-        let user = CMUXAuthUser(
+        let user = ZMUXAuthUser(
             id: userJSON["id"] as? String ?? "",
             primaryEmail: userJSON["primary_email"] as? String,
             displayName: userJSON["display_name"] as? String
@@ -589,7 +589,7 @@ final class AuthManager: ObservableObject {
     }
 
     /// Both the access and refresh token for the current session, for callers that need to
-    /// talk to cmux-owned backend endpoints (e.g. the cloud VM service) with the Stack Auth
+    /// talk to zmux-owned backend endpoints (e.g. the cloud VM service) with the Stack Auth
     /// Authorization + X-Stack-Refresh-Token header pair.
     ///
     /// Awaits on-launch restoration before reading the token store. Without this, VM RPCs
@@ -636,7 +636,7 @@ final class AuthManager: ObservableObject {
         }
     }
 
-    /// DEBUG-only append to /tmp/cmux-auth-debug.log. In Release builds this
+    /// DEBUG-only append to /tmp/zmux-auth-debug.log. In Release builds this
     /// is a no-op so token-derived material and user emails never land in a
     /// world-traversable file. Call sites still pass PII-bearing strings
     /// because redacting at the call site is a lot of churn; keeping the
@@ -644,7 +644,7 @@ final class AuthManager: ObservableObject {
     nonisolated static func authLog(_ message: String) {
         #if DEBUG
         let line = "[\(Self.logTimestampFormatter.string(from: Date()))] auth: \(message)\n"
-        let path = "/tmp/cmux-auth-debug.log"
+        let path = "/tmp/zmux-auth-debug.log"
         if let handle = FileHandle(forWritingAtPath: path) {
             handle.seekToEndOfFile()
             handle.write(line.data(using: .utf8)!)
@@ -668,7 +668,7 @@ final class AuthManager: ObservableObject {
     }
 
     private func refreshSession() async throws {
-        let user: CMUXAuthUser?
+        let user: ZMUXAuthUser?
         do {
             user = try await client.currentUser()
         } catch {
@@ -710,7 +710,7 @@ final class AuthManager: ObservableObject {
 
     private static func defaultURLOpener(_ url: URL) {
         let environment = ProcessInfo.processInfo.environment
-        if let capturePath = environment["CMUX_UI_TEST_CAPTURE_OPEN_URL_PATH"]?
+        if let capturePath = environment["ZMUX_UI_TEST_CAPTURE_OPEN_URL_PATH"]?
             .trimmingCharacters(in: .whitespacesAndNewlines),
            !capturePath.isEmpty {
             try? FileManager.default.createDirectory(
@@ -726,7 +726,7 @@ final class AuthManager: ObservableObject {
         }
         // Open in the user's actual default browser. urlsForApplications(toOpen:)
         // returns candidates in LaunchServices priority order (user's chosen
-        // default first). Skip cmux itself, since Info.plist advertises http/https
+        // default first). Skip zmux itself, since Info.plist advertises http/https
         // at LSHandlerRank=Default and otherwise the app could re-open the URL in
         // its own embedded WebView.
         let ownBundleIDs: Set<String> = {
@@ -739,7 +739,7 @@ final class AuthManager: ObservableObject {
             guard let id = Bundle(url: appURL)?.bundleIdentifier else { return true }
             if ownBundleIDs.contains(id) { return false }
             let lower = id.lowercased()
-            return !lower.hasPrefix("dev.cmux.") && !lower.hasPrefix("com.cmuxterm.")
+            return !lower.hasPrefix("dev.zmux.") && !lower.hasPrefix("com.zmuxterm.")
         }
         let config = NSWorkspace.OpenConfiguration()
         config.createsNewApplicationInstance = false
@@ -851,9 +851,9 @@ private actor FileStackTokenStore: StackAuthTokenStoreProtocol {
             for: .applicationSupportDirectory,
             in: .userDomainMask
         ).first ?? URL(fileURLWithPath: NSHomeDirectory()).appendingPathComponent("Library/Application Support")
-        let bundleID = Bundle.main.bundleIdentifier ?? "cmux"
+        let bundleID = Bundle.main.bundleIdentifier ?? "zmux"
         return support
-            .appendingPathComponent("cmux", isDirectory: true)
+            .appendingPathComponent("zmux", isDirectory: true)
             .appendingPathComponent(bundleID, isDirectory: true)
             .appendingPathComponent("credentials.json", isDirectory: false)
     }()
@@ -937,8 +937,8 @@ private actor FileStackTokenStore: StackAuthTokenStoreProtocol {
 }
 
 private actor KeychainStackTokenStore: StackAuthTokenStoreProtocol {
-    private static let accessTokenAccount = "cmux-auth-access-token"
-    private static let refreshTokenAccount = "cmux-auth-refresh-token"
+    private static let accessTokenAccount = "zmux-auth-access-token"
+    private static let refreshTokenAccount = "zmux-auth-refresh-token"
     private let service = AuthKeychainServiceName.make()
 
     private var cachedAccessToken: String?
@@ -1087,9 +1087,9 @@ actor LiveAuthClient: AuthClientProtocol {
         await stack.getAccessToken()
     }
 
-    func currentUser() async throws -> CMUXAuthUser? {
+    func currentUser() async throws -> ZMUXAuthUser? {
         guard let payload = try await stack.getUser() else { return nil }
-        return CMUXAuthUser(
+        return ZMUXAuthUser(
             id: await payload.id,
             primaryEmail: await payload.primaryEmail,
             displayName: await payload.displayName
@@ -1122,32 +1122,32 @@ actor LiveAuthClient: AuthClientProtocol {
 
 private struct UITestAuthClient: AuthClientProtocol {
     let tokenStore: any StackAuthTokenStoreProtocol
-    let user: CMUXAuthUser
+    let user: ZMUXAuthUser
     let teams: [AuthTeamSummary]
 
     static func makeIfEnabled(
         tokenStore: any StackAuthTokenStoreProtocol
     ) -> Self? {
         let environment = ProcessInfo.processInfo.environment
-        guard environment["CMUX_UI_TEST_AUTH_STUB"] == "1" else {
+        guard environment["ZMUX_UI_TEST_AUTH_STUB"] == "1" else {
             return nil
         }
 
-        let user = CMUXAuthUser(
-            id: environment["CMUX_UI_TEST_AUTH_USER_ID"] ?? "ui_test_user",
-            primaryEmail: environment["CMUX_UI_TEST_AUTH_EMAIL"] ?? "uitest@cmux.dev",
-            displayName: environment["CMUX_UI_TEST_AUTH_NAME"] ?? "UI Test"
+        let user = ZMUXAuthUser(
+            id: environment["ZMUX_UI_TEST_AUTH_USER_ID"] ?? "ui_test_user",
+            primaryEmail: environment["ZMUX_UI_TEST_AUTH_EMAIL"] ?? "uitest@zmux.dev",
+            displayName: environment["ZMUX_UI_TEST_AUTH_NAME"] ?? "UI Test"
         )
         let teams = [
             AuthTeamSummary(
-                id: environment["CMUX_UI_TEST_AUTH_TEAM_ID"] ?? "team_alpha",
-                displayName: environment["CMUX_UI_TEST_AUTH_TEAM_NAME"] ?? "Alpha"
+                id: environment["ZMUX_UI_TEST_AUTH_TEAM_ID"] ?? "team_alpha",
+                displayName: environment["ZMUX_UI_TEST_AUTH_TEAM_NAME"] ?? "Alpha"
             ),
         ]
         return Self(tokenStore: tokenStore, user: user, teams: teams)
     }
 
-    func currentUser() async throws -> CMUXAuthUser? {
+    func currentUser() async throws -> ZMUXAuthUser? {
         let hasAccessToken = await tokenStore.currentAccessToken() != nil
         let hasRefreshToken = await tokenStore.currentRefreshToken() != nil
         return (hasAccessToken || hasRefreshToken) ? user : nil

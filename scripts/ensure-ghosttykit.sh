@@ -96,15 +96,15 @@ if ! git -C ghostty diff --quiet --ignore-submodules=all HEAD -- || [[ -n "$UNTR
   GHOSTTY_KEY="${GHOSTTY_SHA}-dirty-${DIRTY_HASH}"
 fi
 
-CACHE_ROOT="${CMUX_GHOSTTYKIT_CACHE_DIR:-$HOME/.cache/cmux/ghosttykit}"
+CACHE_ROOT="${ZMUX_GHOSTTYKIT_CACHE_DIR:-$HOME/.cache/zmux/ghosttykit}"
 CACHE_DIR="$CACHE_ROOT/$GHOSTTY_KEY"
 CACHE_XCFRAMEWORK="$CACHE_DIR/GhosttyKit.xcframework"
 LOCAL_XCFRAMEWORK="$PROJECT_DIR/ghostty/macos/GhosttyKit.xcframework"
 LOCAL_KEY_STAMP="$LOCAL_XCFRAMEWORK/.ghostty_state_key"
 LEGACY_LOCAL_SHA_STAMP="$LOCAL_XCFRAMEWORK/.ghostty_sha"
 LOCK_DIR="$CACHE_ROOT/$GHOSTTY_KEY.lock"
-GHOSTTYKIT_CHECKSUMS_FILE="${CMUX_GHOSTTYKIT_CHECKSUMS_FILE:-$SCRIPT_DIR/ghosttykit-checksums.txt}"
-GHOSTTYKIT_ARCHIVE_VALIDATOR="${CMUX_GHOSTTYKIT_ARCHIVE_VALIDATOR:-$SCRIPT_DIR/validate-xcframework-archive.py}"
+GHOSTTYKIT_CHECKSUMS_FILE="${ZMUX_GHOSTTYKIT_CHECKSUMS_FILE:-$SCRIPT_DIR/ghosttykit-checksums.txt}"
+GHOSTTYKIT_ARCHIVE_VALIDATOR="${ZMUX_GHOSTTYKIT_ARCHIVE_VALIDATOR:-$SCRIPT_DIR/validate-xcframework-archive.py}"
 
 mkdir -p "$CACHE_ROOT"
 
@@ -125,7 +125,7 @@ trap 'rmdir "$LOCK_DIR" >/dev/null 2>&1 || true' EXIT
 
 try_fetch_prebuilt_xcframework() {
   # Only attempt when Ghostty submodule is clean — dirty trees won't match any
-  # published release. Opt-out via CMUX_GHOSTTYKIT_NO_PREBUILT=1.
+  # published release. Opt-out via ZMUX_GHOSTTYKIT_NO_PREBUILT=1.
   #
   # Trust model: only install prebuilt artifacts whose SHA256 is pinned in the
   # reviewed checksum manifest for the current ghostty submodule commit.
@@ -133,7 +133,7 @@ try_fetch_prebuilt_xcframework() {
   if [[ "$GHOSTTY_KEY" != "$GHOSTTY_SHA" ]]; then
     return 1
   fi
-  if [[ "${CMUX_GHOSTTYKIT_NO_PREBUILT:-0}" == "1" ]]; then
+  if [[ "${ZMUX_GHOSTTYKIT_NO_PREBUILT:-0}" == "1" ]]; then
     return 1
   fi
   if ! command -v curl >/dev/null 2>&1; then

@@ -1,6 +1,6 @@
 # Third-Party Licenses
 
-cmux includes the following third-party software:
+zmux includes the following third-party software:
 
 ---
 

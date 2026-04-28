@@ -9,12 +9,12 @@ enum VMClientError: Error, CustomStringConvertible {
     var description: String {
         switch self {
         case .notSignedIn:
-            return "Not signed in. Run `cmux auth login` first."
+            return "Not signed in. Run `zmux auth login` first."
         case .backendUnreachable(let url, let detail):
             return """
-                Cannot reach cmux backend at \(url). Is the dev server running?
-                  • In this shell: export CMUX_VM_API_BASE_URL=http://localhost:<port>
-                  • Then relaunch the cmux app so it inherits the env.
+                Cannot reach zmux backend at \(url). Is the dev server running?
+                  • In this shell: export ZMUX_VM_API_BASE_URL=http://localhost:<port>
+                  • Then relaunch the zmux app so it inherits the env.
                 (underlying: \(detail))
                 """
         case .httpStatus(let code, let body):
@@ -39,7 +39,7 @@ struct VMExecResult {
 }
 
 /// Short-lived SSH endpoint the backend mints on demand. Mac client dials this with the
-/// existing `cmux ssh` transport.
+/// existing `zmux ssh` transport.
 struct VMSSHEndpoint {
     let transport: String
     let host: String

@@ -3,7 +3,7 @@ import Bonsplit
 import SwiftUI
 
 private extension NSView {
-    func cmuxAncestor<T: NSView>(of type: T.Type) -> T? {
+    func zmuxAncestor<T: NSView>(of type: T.Type) -> T? {
         var current: NSView? = self
         while let view = current {
             if let target = view as? T {
@@ -42,7 +42,7 @@ struct SurfaceSearchOverlay: View {
                     onFieldDidFocus: onFieldDidFocus,
                     onEscape: {
                         #if DEBUG
-                        cmuxDebugLog("find.nativeField.escape surface=\(surfaceId.uuidString.prefix(5)) needleEmpty=\(searchState.needle.isEmpty)")
+                        zmuxDebugLog("find.nativeField.escape surface=\(surfaceId.uuidString.prefix(5)) needleEmpty=\(searchState.needle.isEmpty)")
                         #endif
                         if searchState.needle.isEmpty {
                             onClose()
@@ -83,7 +83,7 @@ struct SurfaceSearchOverlay: View {
 
                 Button(action: {
                     #if DEBUG
-                    cmuxDebugLog("findbar.next surface=\(surfaceId.uuidString.prefix(5))")
+                    zmuxDebugLog("findbar.next surface=\(surfaceId.uuidString.prefix(5))")
                     #endif
                     onNavigateSearch("navigate_search:next")
                 }) {
@@ -94,7 +94,7 @@ struct SurfaceSearchOverlay: View {
 
                 Button(action: {
                     #if DEBUG
-                    cmuxDebugLog("findbar.prev surface=\(surfaceId.uuidString.prefix(5))")
+                    zmuxDebugLog("findbar.prev surface=\(surfaceId.uuidString.prefix(5))")
                     #endif
                     onNavigateSearch("navigate_search:previous")
                 }) {
@@ -105,7 +105,7 @@ struct SurfaceSearchOverlay: View {
 
                 Button(action: {
                     #if DEBUG
-                    cmuxDebugLog("findbar.close surface=\(surfaceId.uuidString.prefix(5))")
+                    zmuxDebugLog("findbar.close surface=\(surfaceId.uuidString.prefix(5))")
                     #endif
                     onClose()
                 }) {
@@ -120,7 +120,7 @@ struct SurfaceSearchOverlay: View {
             .shadow(radius: 4)
             .onAppear {
                 #if DEBUG
-                cmuxDebugLog("find.overlay.appear tab=\(tabId.uuidString.prefix(5)) surface=\(surfaceId.uuidString.prefix(5))")
+                zmuxDebugLog("find.overlay.appear tab=\(tabId.uuidString.prefix(5)) surface=\(surfaceId.uuidString.prefix(5))")
                 #endif
                 isSearchFieldFocused = true
             }
@@ -259,7 +259,7 @@ private struct SearchTextFieldRepresentable: NSViewRepresentable {
 
         func controlTextDidBeginEditing(_ obj: Notification) {
             #if DEBUG
-            cmuxDebugLog("find.nativeField.beginEditing surface=\(parent.surfaceId.uuidString.prefix(5))")
+            zmuxDebugLog("find.nativeField.beginEditing surface=\(parent.surfaceId.uuidString.prefix(5))")
             #endif
             parent.onFieldDidFocus()
             if !parent.isFocused {
@@ -271,7 +271,7 @@ private struct SearchTextFieldRepresentable: NSViewRepresentable {
 
         func controlTextDidEndEditing(_ obj: Notification) {
             #if DEBUG
-            cmuxDebugLog("find.nativeField.endEditing surface=\(parent.surfaceId.uuidString.prefix(5))")
+            zmuxDebugLog("find.nativeField.endEditing surface=\(parent.surfaceId.uuidString.prefix(5))")
             #endif
             if parent.isFocused {
                 DispatchQueue.main.async {
@@ -285,7 +285,7 @@ private struct SearchTextFieldRepresentable: NSViewRepresentable {
             case #selector(NSResponder.cancelOperation(_:)):
                 // Don't intercept Escape during CJK IME composition (issue #118)
                 if textView.hasMarkedText() { return false }
-                control.cmuxAncestor(of: GhosttySurfaceScrollView.self)?.beginFindEscapeSuppression()
+                control.zmuxAncestor(of: GhosttySurfaceScrollView.self)?.beginFindEscapeSuppression()
                 parent.onEscape()
                 return true
             case #selector(NSResponder.insertNewline(_:)):
@@ -332,7 +332,7 @@ private struct SearchTextFieldRepresentable: NSViewRepresentable {
                 field.currentEditor() != nil ||
                 ((fr as? NSTextView)?.delegate as? NSTextField) === field
             #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "find.nativeField.searchFocusNotification surface=\(coordinator.parent.surfaceId.uuidString.prefix(5)) " +
                 "alreadyFocused=\(alreadyFocused) firstResponder=\(String(describing: fr))"
             )
@@ -340,7 +340,7 @@ private struct SearchTextFieldRepresentable: NSViewRepresentable {
             guard !alreadyFocused else { return }
             let result = window.makeFirstResponder(field)
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "find.nativeField.searchFocusApply surface=\(coordinator.parent.surfaceId.uuidString.prefix(5)) " +
                 "result=\(result ? 1 : 0) firstResponder=\(String(describing: window.firstResponder))"
             )

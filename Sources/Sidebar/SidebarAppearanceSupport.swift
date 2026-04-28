@@ -35,7 +35,7 @@ func sidebarActiveForegroundNSColor(
     return baseColor.withAlphaComponent(clampedOpacity)
 }
 
-func cmuxAccentNSColor(for colorScheme: ColorScheme) -> NSColor {
+func zmuxAccentNSColor(for colorScheme: ColorScheme) -> NSColor {
     switch colorScheme {
     case .dark:
         return NSColor(
@@ -54,20 +54,20 @@ func cmuxAccentNSColor(for colorScheme: ColorScheme) -> NSColor {
     }
 }
 
-func cmuxAccentNSColor(for appAppearance: NSAppearance?) -> NSColor {
+func zmuxAccentNSColor(for appAppearance: NSAppearance?) -> NSColor {
     let bestMatch = appAppearance?.bestMatch(from: [.darkAqua, .aqua])
     let scheme: ColorScheme = (bestMatch == .darkAqua) ? .dark : .light
-    return cmuxAccentNSColor(for: scheme)
+    return zmuxAccentNSColor(for: scheme)
 }
 
-func cmuxAccentNSColor() -> NSColor {
+func zmuxAccentNSColor() -> NSColor {
     NSColor(name: nil) { appearance in
-        cmuxAccentNSColor(for: appearance)
+        zmuxAccentNSColor(for: appearance)
     }
 }
 
-func cmuxAccentColor() -> Color {
-    Color(nsColor: cmuxAccentNSColor())
+func zmuxAccentColor() -> Color {
+    Color(nsColor: zmuxAccentNSColor())
 }
 
 private func sidebarSelectedWorkspaceRelativeLuminance(_ color: NSColor) -> CGFloat {
@@ -183,7 +183,7 @@ func sidebarSelectedWorkspaceBackgroundNSColor(
        let parsed = NSColor(hex: hex) {
         return parsed
     }
-    return cmuxAccentNSColor(for: colorScheme)
+    return zmuxAccentNSColor(for: colorScheme)
 }
 
 func sidebarSelectedWorkspaceForegroundNSColor(opacity: CGFloat) -> NSColor {
@@ -227,7 +227,7 @@ func sidebarWorkspaceRowBackgroundStyle(
         customHex: customColorHex,
         sidebarSelectionColorHex: sidebarSelectionColorHex
     )
-    let accentBackground = cmuxAccentNSColor(for: colorScheme)
+    let accentBackground = zmuxAccentNSColor(for: colorScheme)
     let customBackground = customColorHex.flatMap {
         WorkspaceTabColorSettings.displayNSColor(
             hex: $0,

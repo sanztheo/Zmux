@@ -9,7 +9,7 @@ private struct SnapshotPayload: Encodable {
 }
 
 private struct Payload: Encodable {
-    let cmux: SnapshotPayload
+    let zmux: SnapshotPayload
     let ghostty: SnapshotPayload
     let synced: SnapshotPayload
 }
@@ -26,14 +26,14 @@ private struct ConfigSourceProbe {
         let previewDirectoryURL = homeDirectoryURL
             .appendingPathComponent("Library", isDirectory: true)
             .appendingPathComponent("Caches", isDirectory: true)
-            .appendingPathComponent("cmux-config-probe", isDirectory: true)
+            .appendingPathComponent("zmux-config-probe", isDirectory: true)
         let environment = ConfigSourceEnvironment(
             homeDirectoryURL: homeDirectoryURL,
             previewDirectoryURL: previewDirectoryURL
         )
 
         let payload = Payload(
-            cmux: encodedSnapshot(for: .cmux, environment: environment),
+            zmux: encodedSnapshot(for: .zmux, environment: environment),
             ghostty: encodedSnapshot(for: .ghostty, environment: environment),
             synced: encodedSnapshot(for: .synced, environment: environment)
         )

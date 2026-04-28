@@ -4,10 +4,10 @@ import SwiftUI
 struct ConfigSettingsView: View {
     static let windowID = "config-editor"
 
-    @State private var configSource: ConfigSource = .cmux
+    @State private var configSource: ConfigSource = .zmux
     @State private var snapshots: [ConfigSource: ConfigSourceSnapshot] = [:]
-    @State private var cmuxDraft = ""
-    @State private var cmuxLastLoadedContents = ""
+    @State private var zmuxDraft = ""
+    @State private var zmuxLastLoadedContents = ""
     @State private var statusMessage = ""
     @State private var statusIsError = false
 
@@ -15,38 +15,38 @@ struct ConfigSettingsView: View {
         snapshots[configSource] ?? configSource.snapshot(environment: .live())
     }
 
-    private var hasUnsavedCmuxChanges: Bool {
-        cmuxDraft != cmuxLastLoadedContents
+    private var hasUnsavedZmuxChanges: Bool {
+        zmuxDraft != zmuxLastLoadedContents
     }
 
     private var currentBannerText: String? {
         switch configSource {
-        case .cmux:
+        case .zmux:
             return String(
-                localized: "settings.config.banner.cmux",
-                defaultValue: "This is the config file cmux reads. Edit it here, then Save to reload cmux."
+                localized: "settings.config.banner.zmux",
+                defaultValue: "This is the config file zmux reads. Edit it here, then Save to reload zmux."
             )
         case .ghostty:
             if currentSnapshot.hasBackingFile {
                 return String(
                     localized: "settings.config.banner.ghostty",
-                    defaultValue: "This file belongs to standalone Ghostty. cmux does not read it, so edits here do not affect cmux."
+                    defaultValue: "This file belongs to standalone Ghostty. zmux does not read it, so edits here do not affect zmux."
                 )
             }
             return String(
                 localized: "settings.config.banner.ghosttyMissing",
-                defaultValue: "No standalone Ghostty config file was found at the preferred path. cmux still does not read standalone Ghostty config."
+                defaultValue: "No standalone Ghostty config file was found at the preferred path. zmux still does not read standalone Ghostty config."
             )
         case .synced:
             if currentSnapshot.hasStandaloneGhosttyConfig {
                 return String(
                     localized: "settings.config.banner.synced",
-                    defaultValue: "This is a generated preview of the effective config. Edit the cmux tab to change what cmux reads."
+                    defaultValue: "This is a generated preview of the effective config. Edit the zmux tab to change what zmux reads."
                 )
             }
             return String(
                 localized: "settings.config.banner.syncedNoGhostty",
-                defaultValue: "This is a generated preview of the effective config. No standalone Ghostty config file was found, so only cmux overrides are shown."
+                defaultValue: "This is a generated preview of the effective config. No standalone Ghostty config file was found, so only zmux overrides are shown."
             )
         }
     }
@@ -86,11 +86,11 @@ struct ConfigSettingsView: View {
             }
 
             Group {
-                if configSource == .cmux {
-                    ConfigSettingsTextView(text: $cmuxDraft, isEditable: true)
+                if configSource == .zmux {
+                    ConfigSettingsTextView(text: $zmuxDraft, isEditable: true)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                         .background(editorBackground)
-                        .accessibilityIdentifier("ConfigSettingsCmuxEditor")
+                        .accessibilityIdentifier("ConfigSettingsZmuxEditor")
                 } else {
                     ConfigSettingsTextView(text: .constant(currentSnapshot.contents), isEditable: false)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -133,11 +133,11 @@ struct ConfigSettingsView: View {
                 .controlSize(.small)
 
                 Button(String(localized: "settings.config.action.save", defaultValue: "Save")) {
-                    saveCmuxConfig()
+                    saveZmuxConfig()
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
-                .disabled(configSource != .cmux || !hasUnsavedCmuxChanges)
+                .disabled(configSource != .zmux || !hasUnsavedZmuxChanges)
             }
         }
         .padding(16)
@@ -149,14 +149,14 @@ struct ConfigSettingsView: View {
             }
         )
         .onAppear {
-            refreshSnapshots(preserveCmuxDraft: false)
+            refreshSnapshots(preserveZmuxDraft: false)
         }
         .onChange(of: configSource) { _ in
             statusMessage = ""
             statusIsError = false
         }
         .onReceive(NotificationCenter.default.publisher(for: .ghosttyConfigDidReload)) { _ in
-            refreshSnapshots(preserveCmuxDraft: true)
+            refreshSnapshots(preserveZmuxDraft: true)
         }
     }
 
@@ -166,7 +166,7 @@ struct ConfigSettingsView: View {
     }
 
     private func configureWindow(_ window: NSWindow) {
-        window.identifier = NSUserInterfaceItemIdentifier("cmux.configEditor")
+        window.identifier = NSUserInterfaceItemIdentifier("zmux.configEditor")
         window.minSize = NSSize(width: 700, height: 500)
         window.tabbingMode = .disallowed
         window.animationBehavior = .utilityWindow
@@ -174,8 +174,8 @@ struct ConfigSettingsView: View {
         window.collectionBehavior.insert(.fullScreenAuxiliary)
     }
 
-    private func refreshSnapshots(preserveCmuxDraft: Bool) {
-        let wasDirty = hasUnsavedCmuxChanges
+    private func refreshSnapshots(preserveZmuxDraft: Bool) {
+        let wasDirty = hasUnsavedZmuxChanges
         let environment = ConfigSourceEnvironment.live()
         let newSnapshots = Dictionary(
             uniqueKeysWithValues: ConfigSource.allCases.map { source in
@@ -184,15 +184,15 @@ struct ConfigSettingsView: View {
         )
         snapshots = newSnapshots
 
-        let latestCmuxContents = newSnapshots[.cmux]?.contents ?? ""
-        if !preserveCmuxDraft || !wasDirty {
-            cmuxDraft = latestCmuxContents
+        let latestZmuxContents = newSnapshots[.zmux]?.contents ?? ""
+        if !preserveZmuxDraft || !wasDirty {
+            zmuxDraft = latestZmuxContents
         }
-        cmuxLastLoadedContents = latestCmuxContents
+        zmuxLastLoadedContents = latestZmuxContents
     }
 
     private func reloadFromDisk() {
-        refreshSnapshots(preserveCmuxDraft: false)
+        refreshSnapshots(preserveZmuxDraft: false)
         GhosttyApp.shared.reloadConfiguration(source: "settings.configWindow.reload")
         statusMessage = String(
             localized: "settings.config.status.reloaded",
@@ -201,9 +201,9 @@ struct ConfigSettingsView: View {
         statusIsError = false
     }
 
-    private func saveCmuxConfig() {
+    private func saveZmuxConfig() {
         let environment = ConfigSourceEnvironment.live()
-        let url = environment.cmuxConfigURL
+        let url = environment.zmuxConfigURL
 
         do {
             try FileManager.default.createDirectory(
@@ -211,20 +211,20 @@ struct ConfigSettingsView: View {
                 withIntermediateDirectories: true,
                 attributes: nil
             )
-            try cmuxDraft.write(to: url, atomically: true, encoding: .utf8)
-            cmuxLastLoadedContents = cmuxDraft
-            refreshSnapshots(preserveCmuxDraft: true)
+            try zmuxDraft.write(to: url, atomically: true, encoding: .utf8)
+            zmuxLastLoadedContents = zmuxDraft
+            refreshSnapshots(preserveZmuxDraft: true)
             GhosttyApp.shared.reloadConfiguration(source: "settings.configWindow.save")
             statusMessage = String(
                 localized: "settings.config.status.saved",
-                defaultValue: "Saved to cmux config and reloaded."
+                defaultValue: "Saved to zmux config and reloaded."
             )
             statusIsError = false
         } catch {
             NSSound.beep()
             statusMessage = String(
                 localized: "settings.config.status.saveFailed",
-                defaultValue: "Couldn't save the cmux config."
+                defaultValue: "Couldn't save the zmux config."
             )
             statusIsError = true
         }
@@ -245,14 +245,14 @@ struct ConfigSettingsView: View {
 
     private func materializedCurrentURL() -> URL {
         switch configSource {
-        case .cmux:
-            let url = ConfigSourceEnvironment.live().cmuxConfigURL
+        case .zmux:
+            let url = ConfigSourceEnvironment.live().zmuxConfigURL
             materializeEmptyFileIfNeeded(at: url)
             return url
         case .ghostty:
             return currentSnapshot.primaryURL
         case .synced:
-            refreshSnapshots(preserveCmuxDraft: true)
+            refreshSnapshots(preserveZmuxDraft: true)
             return snapshots[.synced]?.primaryURL ?? currentSnapshot.primaryURL
         }
     }
@@ -367,8 +367,8 @@ private struct ConfigSettingsTextView: NSViewRepresentable {
 private extension ConfigSource {
     var localizedTitle: String {
         switch self {
-        case .cmux:
-            return String(localized: "settings.config.source.cmux", defaultValue: "cmux")
+        case .zmux:
+            return String(localized: "settings.config.source.zmux", defaultValue: "zmux")
         case .ghostty:
             return String(localized: "settings.config.source.ghostty", defaultValue: "ghostty")
         case .synced:

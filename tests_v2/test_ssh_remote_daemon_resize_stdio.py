@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Process-level integration: cmuxd-remote stdio session resize coordinator."""
+"""Process-level integration: zmuxd-remote stdio session resize coordinator."""
 
 from __future__ import annotations
 
@@ -12,12 +12,12 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from cmux import cmuxError
+from zmux import zmuxError
 
 
 def _must(cond: bool, msg: str) -> None:
     if not cond:
-        raise cmuxError(msg)
+        raise zmuxError(msg)
 
 
 def _daemon_module_dir() -> Path:
@@ -33,7 +33,7 @@ def _rpc(
     timeout_s: float = 5.0,
 ) -> dict:
     if proc.stdin is None or proc.stdout is None:
-        raise cmuxError("daemon subprocess stdio pipes are not available")
+        raise zmuxError("daemon subprocess stdio pipes are not available")
 
     payload = {"id": req_id, "method": method, "params": params}
     proc.stdin.write(json.dumps(payload, separators=(",", ":")) + "\n")
@@ -53,27 +53,27 @@ def _rpc(
                     stderr = proc.stderr.read().strip()
                 except Exception:
                     stderr = ""
-            raise cmuxError(f"cmuxd-remote exited while waiting for {method} response: {stderr}")
+            raise zmuxError(f"zmuxd-remote exited while waiting for {method} response: {stderr}")
         try:
             resp = json.loads(line)
         except Exception as exc:  # noqa: BLE001
-            raise cmuxError(f"Invalid JSON response for {method}: {line!r} ({exc})")
+            raise zmuxError(f"Invalid JSON response for {method}: {line!r} ({exc})")
         _must(resp.get("id") == req_id, f"Response id mismatch for {method}: {resp}")
         return resp
 
-    raise cmuxError(f"Timed out waiting for cmuxd-remote response: {method}")
+    raise zmuxError(f"Timed out waiting for zmuxd-remote response: {method}")
 
 
 def _as_int(value: object, field: str) -> int:
     if isinstance(value, bool):
-        raise cmuxError(f"{field} should be numeric, got bool")
+        raise zmuxError(f"{field} should be numeric, got bool")
     if isinstance(value, int):
         return value
     if isinstance(value, float):
         if not value.is_integer():
-            raise cmuxError(f"{field} should be an integer value, got float {value!r}")
+            raise zmuxError(f"{field} should be an integer value, got float {value!r}")
         return int(value)
-    raise cmuxError(f"{field} has unexpected type {type(value).__name__}: {value!r}")
+    raise zmuxError(f"{field} has unexpected type {type(value).__name__}: {value!r}")
 
 
 def _assert_effective(resp: dict, want_cols: int, want_rows: int, label: str) -> None:
@@ -96,7 +96,7 @@ def main() -> int:
     _must(daemon_dir.is_dir(), f"Missing daemon module directory: {daemon_dir}")
 
     proc = subprocess.Popen(
-        ["go", "run", "./cmd/cmuxd-remote", "serve", "--stdio"],
+        ["go", "run", "./cmd/zmuxd-remote", "serve", "--stdio"],
         cwd=str(daemon_dir),
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
@@ -168,7 +168,7 @@ def main() -> int:
         attachments = (status.get("result") or {}).get("attachments") or []
         _must(len(attachments) == 1, f"session.status should report one active attachment after reattach: {status}")
 
-        print("PASS: cmuxd-remote stdio session.resize coordinator enforces smallest-screen-wins semantics")
+        print("PASS: zmuxd-remote stdio session.resize coordinator enforces smallest-screen-wins semantics")
         return 0
     finally:
         try:

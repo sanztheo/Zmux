@@ -52,9 +52,9 @@ jobs:
     env:
       AWS_REGION: ${{ vars.AWS_REGION || 'us-west-2' }}
       AWS_ROLE_ARN: ${{ secrets.AWS_MIGRATION_ROLE_ARN }}
-      CMUX_CLOUD_VM_ENV_SOURCE: process
-      CMUX_DB_DRIVER: aws-rds-iam
-      CMUX_DB_SSL_REJECT_UNAUTHORIZED: ${{ vars.CMUX_DB_SSL_REJECT_UNAUTHORIZED || 'true' }}
+      ZMUX_CLOUD_VM_ENV_SOURCE: process
+      ZMUX_DB_DRIVER: aws-rds-iam
+      ZMUX_DB_SSL_REJECT_UNAUTHORIZED: ${{ vars.ZMUX_DB_SSL_REJECT_UNAUTHORIZED || 'true' }}
       PGDATABASE: ${{ vars.PGDATABASE }}
       PGHOST: ${{ vars.PGHOST }}
       PGPORT: ${{ vars.PGPORT || '5432' }}
@@ -109,9 +109,9 @@ jobs:
     env:
       AWS_REGION: ${{ vars.AWS_REGION || 'us-west-2' }}
       AWS_ROLE_ARN: ${{ secrets.AWS_MIGRATION_ROLE_ARN }}
-      CMUX_CLOUD_VM_ENV_SOURCE: process
-      CMUX_DB_DRIVER: aws-rds-iam
-      CMUX_DB_SSL_REJECT_UNAUTHORIZED: ${{ vars.CMUX_DB_SSL_REJECT_UNAUTHORIZED || 'true' }}
+      ZMUX_CLOUD_VM_ENV_SOURCE: process
+      ZMUX_DB_DRIVER: aws-rds-iam
+      ZMUX_DB_SSL_REJECT_UNAUTHORIZED: ${{ vars.ZMUX_DB_SSL_REJECT_UNAUTHORIZED || 'true' }}
       PGDATABASE: ${{ vars.PGDATABASE }}
       PGHOST: ${{ vars.PGHOST }}
       PGPORT: ${{ vars.PGPORT || '5432' }}

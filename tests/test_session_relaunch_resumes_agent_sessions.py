@@ -3,9 +3,9 @@
 Regression: normal relaunch should resume saved Claude/Codex/OpenCode sessions.
 
 Repro for issue #2923:
-1) Launch cmux and seed workspaces with tracked Claude/Codex/OpenCode sessions.
+1) Launch zmux and seed workspaces with tracked Claude/Codex/OpenCode sessions.
 2) Quit the app normally so the session snapshot is saved.
-3) Relaunch cmux the next day.
+3) Relaunch zmux the next day.
 4) Verify the restored panels automatically run the saved resume commands.
 """
 
@@ -21,7 +21,7 @@ import tempfile
 import time
 from pathlib import Path
 
-from cmux import cmux
+from zmux import zmux
 
 
 def _bundle_id(app_path: Path) -> str:
@@ -38,7 +38,7 @@ def _bundle_id(app_path: Path) -> str:
 
 def _snapshot_path(bundle_id: str, suffix: str = "") -> Path:
     safe_bundle = re.sub(r"[^A-Za-z0-9._-]", "_", bundle_id)
-    return Path.home() / "Library/Application Support/cmux" / f"session-{safe_bundle}{suffix}.json"
+    return Path.home() / "Library/Application Support/zmux" / f"session-{safe_bundle}{suffix}.json"
 
 
 def _socket_reachable(socket_path: Path) -> bool:
@@ -76,7 +76,7 @@ def _wait_for_socket_closed(socket_path: Path, timeout: float = 20.0) -> None:
 
 
 def _kill_existing(app_path: Path) -> None:
-    exe = app_path / "Contents" / "MacOS" / "cmux DEV"
+    exe = app_path / "Contents" / "MacOS" / "zmux DEV"
     subprocess.run(["pkill", "-f", str(exe)], capture_output=True, text=True)
     time.sleep(1.0)
 
@@ -89,8 +89,8 @@ def _launch(app_path: Path, socket_path: Path, env_overrides: dict[str, str] | N
 
     command = ["open", "-na", str(app_path)]
     full_env = dict(env_overrides or {})
-    full_env["CMUX_SOCKET_PATH"] = str(socket_path)
-    full_env["CMUX_ALLOW_SOCKET_OVERRIDE"] = "1"
+    full_env["ZMUX_SOCKET_PATH"] = str(socket_path)
+    full_env["ZMUX_ALLOW_SOCKET_OVERRIDE"] = "1"
     for key, value in full_env.items():
         command.extend(["--env", f"{key}={value}"])
     subprocess.run(command, check=True)
@@ -113,15 +113,15 @@ def _quit(bundle_id: str, socket_path: Path) -> None:
     time.sleep(0.8)
 
 
-def _connect(socket_path: Path) -> cmux:
-    client = cmux(socket_path=str(socket_path))
+def _connect(socket_path: Path) -> zmux:
+    client = zmux(socket_path=str(socket_path))
     client.connect()
     if not client.ping():
         raise RuntimeError("ping failed")
     return client
 
 
-def _read_scrollback(client: cmux) -> str:
+def _read_scrollback(client: zmux) -> str:
     return client._send_command("read_screen --scrollback")
 
 
@@ -182,41 +182,41 @@ def _write_hook_state(
 
 
 def main() -> int:
-    app_path_str = os.environ.get("CMUX_APP_PATH", "").strip()
+    app_path_str = os.environ.get("ZMUX_APP_PATH", "").strip()
     if not app_path_str:
-        print("SKIP: set CMUX_APP_PATH to a built cmux DEV .app path")
+        print("SKIP: set ZMUX_APP_PATH to a built zmux DEV .app path")
         return 0
     app_path = Path(app_path_str)
     if not app_path.exists():
-        print(f"SKIP: CMUX_APP_PATH does not exist: {app_path}")
+        print(f"SKIP: ZMUX_APP_PATH does not exist: {app_path}")
         return 0
 
     bundle_id = _bundle_id(app_path)
-    socket_path = Path(f"/tmp/cmux-session-relaunch-agents-{bundle_id.replace('.', '-')}.sock")
+    socket_path = Path(f"/tmp/zmux-session-relaunch-agents-{bundle_id.replace('.', '-')}.sock")
     snapshot = _snapshot_path(bundle_id)
     previous_snapshot = _snapshot_path(bundle_id, suffix="-previous")
-    codex_expected = "CMUX_FAKE_CODEX_RESUME:resume codex-session-relaunch-2923"
+    codex_expected = "ZMUX_FAKE_CODEX_RESUME:resume codex-session-relaunch-2923"
     claude_expected = (
-        "CMUX_FAKE_CLAUDE_RESUME:--resume claude-session-relaunch-2923 "
+        "ZMUX_FAKE_CLAUDE_RESUME:--resume claude-session-relaunch-2923 "
         "--dangerously-skip-permissions"
     )
-    opencode_expected = "CMUX_FAKE_OPENCODE_RESUME:--session opencode-session-relaunch-2923"
+    opencode_expected = "ZMUX_FAKE_OPENCODE_RESUME:--session opencode-session-relaunch-2923"
 
     failures: list[str] = []
 
-    with tempfile.TemporaryDirectory(prefix="cmux-session-relaunch-agents-") as td:
+    with tempfile.TemporaryDirectory(prefix="zmux-session-relaunch-agents-") as td:
         fake_bin_dir = Path(td) / "bin"
         hook_state_dir = Path(td) / "hook-state"
         claude_hook_state = hook_state_dir / "claude-hook-sessions.json"
         codex_hook_state = hook_state_dir / "codex-hook-sessions.json"
         opencode_hook_state = hook_state_dir / "opencode-hook-sessions.json"
-        _write_fake_agent(fake_bin_dir, "codex", "CMUX_FAKE_CODEX_RESUME")
-        _write_fake_agent(fake_bin_dir, "claude", "CMUX_FAKE_CLAUDE_RESUME")
-        _write_fake_agent(fake_bin_dir, "opencode", "CMUX_FAKE_OPENCODE_RESUME")
+        _write_fake_agent(fake_bin_dir, "codex", "ZMUX_FAKE_CODEX_RESUME")
+        _write_fake_agent(fake_bin_dir, "claude", "ZMUX_FAKE_CLAUDE_RESUME")
+        _write_fake_agent(fake_bin_dir, "opencode", "ZMUX_FAKE_OPENCODE_RESUME")
         launch_path = f"{fake_bin_dir}:{os.environ.get('PATH', '')}"
         app_env = {
             "PATH": launch_path,
-            "CMUX_AGENT_HOOK_STATE_DIR": str(hook_state_dir),
+            "ZMUX_AGENT_HOOK_STATE_DIR": str(hook_state_dir),
         }
 
         _kill_existing(app_path)
@@ -306,7 +306,7 @@ def main() -> int:
                 client.close()
             _quit(bundle_id, socket_path)
 
-            # Prove the relaunch uses the persisted cmux snapshot, not the live hook files.
+            # Prove the relaunch uses the persisted zmux snapshot, not the live hook files.
             claude_hook_state.unlink(missing_ok=True)
             codex_hook_state.unlink(missing_ok=True)
             opencode_hook_state.unlink(missing_ok=True)

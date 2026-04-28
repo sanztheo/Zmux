@@ -1,6 +1,6 @@
 import AppKit
 import Bonsplit
-import CMUXWorkstream
+import ZMUXWorkstream
 import Observation
 import SwiftUI
 
@@ -299,7 +299,7 @@ final class RightSidebarKeyboardFocusView: NSView {
         AppDelegate.shared?.keyboardFocusCoordinator(for: window)?.registerRightSidebarHost(self)
 #if DEBUG
         dlog(
-            "rs.focus.host.attach win=\(window.windowNumber) canAccept=\(cmuxCanAcceptRightSidebarKeyboardFocus ? 1 : 0) " +
+            "rs.focus.host.attach win=\(window.windowNumber) canAccept=\(zmuxCanAcceptRightSidebarKeyboardFocus ? 1 : 0) " +
             "fr=\(rightSidebarDebugResponder(window.firstResponder))"
         )
 #endif
@@ -357,7 +357,7 @@ final class RightSidebarKeyboardFocusView: NSView {
 }
 
 extension NSView {
-    var cmuxCanAcceptRightSidebarKeyboardFocus: Bool {
+    var zmuxCanAcceptRightSidebarKeyboardFocus: Bool {
         guard window != nil, !isHiddenOrHasHiddenAncestor else { return false }
         var view: NSView? = self
         while let current = view {

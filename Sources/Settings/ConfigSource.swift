@@ -17,15 +17,15 @@ struct ConfigSourceEnvironment {
             ?? standardizedHome
                 .appendingPathComponent("Library", isDirectory: true)
                 .appendingPathComponent("Application Support", isDirectory: true)
-                .appendingPathComponent("com.cmuxterm.app", isDirectory: true)
+                .appendingPathComponent("com.zmuxterm.app", isDirectory: true)
     }
 
     static func live(fileManager: FileManager = .default) -> Self {
         Self(homeDirectoryURL: fileManager.homeDirectoryForCurrentUser, fileManager: fileManager)
     }
 
-    var cmuxConfigURL: URL {
-        applicationSupportDirectoryURL(forBundleIdentifier: "com.cmuxterm.app")
+    var zmuxConfigURL: URL {
+        applicationSupportDirectoryURL(forBundleIdentifier: "com.zmuxterm.app")
             .appendingPathComponent("config", isDirectory: false)
     }
 
@@ -96,20 +96,20 @@ struct ConfigSourceSnapshot {
 }
 
 enum ConfigSource: String, CaseIterable, Identifiable {
-    case cmux
+    case zmux
     case ghostty
     case synced
 
     var id: Self { self }
 
     var isEditable: Bool {
-        self == .cmux
+        self == .zmux
     }
 
     func snapshot(environment: ConfigSourceEnvironment = .live()) -> ConfigSourceSnapshot {
         switch self {
-        case .cmux:
-            let url = environment.cmuxConfigURL
+        case .zmux:
+            let url = environment.zmuxConfigURL
             return ConfigSourceSnapshot(
                 source: self,
                 primaryURL: url,
@@ -136,7 +136,7 @@ enum ConfigSource: String, CaseIterable, Identifiable {
             let hasStandaloneGhosttyConfig = environment.isRegularFile(at: ghosttyURL)
             let renderedContents = Self.renderSyncedPreview(
                 ghosttyURL: hasStandaloneGhosttyConfig ? ghosttyURL : nil,
-                cmuxURL: environment.cmuxConfigURL,
+                zmuxURL: environment.zmuxConfigURL,
                 environment: environment
             )
             Self.materializeSyncedPreview(
@@ -182,14 +182,14 @@ enum ConfigSource: String, CaseIterable, Identifiable {
 
     private static func renderSyncedPreview(
         ghosttyURL: URL?,
-        cmuxURL: URL,
+        zmuxURL: URL,
         environment: ConfigSourceEnvironment
     ) -> String {
-        // Preserve Ghostty key order, then overlay cmux entries using last-wins precedence.
+        // Preserve Ghostty key order, then overlay zmux entries using last-wins precedence.
         var effectiveEntriesByKey: [String: ParsedConfigEntry] = [:]
         var orderedKeys: [String] = []
 
-        for sourceURL in [ghosttyURL, cmuxURL].compactMap({ $0 }) {
+        for sourceURL in [ghosttyURL, zmuxURL].compactMap({ $0 }) {
             for entry in parsedEntries(from: sourceURL) {
                 if effectiveEntriesByKey[entry.key] == nil {
                     orderedKeys.append(entry.key)

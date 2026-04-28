@@ -17,11 +17,11 @@ final class KeyboardShortcutSettingsObserver: ObservableObject {
     }
 }
 
-final class CmuxSettingsFileStore {
-    static let shared = CmuxSettingsFileStore()
+final class ZmuxSettingsFileStore {
+    static let shared = ZmuxSettingsFileStore()
 
     static let currentSchemaVersion = 1
-    static let schemaURLString = "https://raw.githubusercontent.com/manaflow-ai/cmux/main/web/data/cmux-settings.schema.json"
+    static let schemaURLString = "https://raw.githubusercontent.com/manaflow-ai/zmux/main/web/data/zmux-settings.schema.json"
     // Keep this in sync with the parser below and the web schema/docs. Settings UI rows
     // validate against this set so new persisted settings need an explicit settings.json review.
     static let supportedSettingsJSONPaths: Set<String> = [
@@ -34,7 +34,7 @@ final class CmuxSettingsFileStore {
         "app.keepWorkspaceOpenWhenClosingLastSurface",
         "app.focusPaneOnFirstClick",
         "app.preferredEditor",
-        "app.openMarkdownInCmuxViewer",
+        "app.openMarkdownInZmuxViewer",
         "app.reorderOnNotification",
         "app.sendAnonymousTelemetry",
         "app.warnBeforeQuit",
@@ -53,8 +53,8 @@ final class CmuxSettingsFileStore {
         "sidebar.showNotificationMessage",
         "sidebar.showBranchDirectory",
         "sidebar.showPullRequests",
-        "sidebar.openPullRequestLinksInCmuxBrowser",
-        "sidebar.openPortLinksInCmuxBrowser",
+        "sidebar.openPullRequestLinksInZmuxBrowser",
+        "sidebar.openPortLinksInZmuxBrowser",
         "sidebar.showSSH",
         "sidebar.showPorts",
         "sidebar.showLog",
@@ -82,8 +82,8 @@ final class CmuxSettingsFileStore {
         "browser.defaultSearchEngine",
         "browser.showSearchSuggestions",
         "browser.theme",
-        "browser.openTerminalLinksInCmuxBrowser",
-        "browser.interceptTerminalOpenCommandInCmuxBrowser",
+        "browser.openTerminalLinksInZmuxBrowser",
+        "browser.interceptTerminalOpenCommandInZmuxBrowser",
         "browser.hostsToOpenInEmbeddedBrowser",
         "browser.urlsToAlwaysOpenExternally",
         "browser.insecureHttpHostsAllowedInEmbeddedBrowser",
@@ -93,13 +93,13 @@ final class CmuxSettingsFileStore {
         "shortcuts.bindings",
     ]
 
-    private static let releaseBundleIdentifier = "com.cmuxterm.app"
-    private static let backupsDefaultsKey = "cmux.settingsFile.backups.v1"
+    private static let releaseBundleIdentifier = "com.zmuxterm.app"
+    private static let backupsDefaultsKey = "zmux.settingsFile.backups.v1"
     fileprivate static let socketPasswordBackupIdentifier = "automation.socketPassword"
 
     static var defaultPrimaryPath: String {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
-        return (home as NSString).appendingPathComponent(".config/cmux/settings.json")
+        return (home as NSString).appendingPathComponent(".config/zmux/settings.json")
     }
 
     static var defaultFallbackPath: String? {
@@ -133,8 +133,8 @@ final class CmuxSettingsFileStore {
     private(set) var activeSourcePath: String?
 
     init(
-        primaryPath: String = CmuxSettingsFileStore.defaultPrimaryPath,
-        fallbackPath: String? = CmuxSettingsFileStore.defaultFallbackPath,
+        primaryPath: String = ZmuxSettingsFileStore.defaultPrimaryPath,
+        fallbackPath: String? = ZmuxSettingsFileStore.defaultFallbackPath,
         fileManager: FileManager = .default,
         notificationCenter: NotificationCenter = .default,
         startWatching: Bool = true
@@ -247,7 +247,7 @@ final class CmuxSettingsFileStore {
             try template.write(to: fileURL, atomically: true, encoding: .utf8)
             try fileManager.setAttributes([.posixPermissions: 0o600], ofItemAtPath: fileURL.path)
         } catch {
-            NSLog("[CmuxSettingsFileStore] failed to bootstrap %@: %@", primaryPath, String(describing: error))
+            NSLog("[ZmuxSettingsFileStore] failed to bootstrap %@: %@", primaryPath, String(describing: error))
         }
     }
 
@@ -320,7 +320,7 @@ final class CmuxSettingsFileStore {
             }
             return .parsed(parseSettingsFile(root: root, sourcePath: path))
         } catch {
-            NSLog("[CmuxSettingsFileStore] parse error at %@: %@", path, String(describing: error))
+            NSLog("[ZmuxSettingsFileStore] parse error at %@: %@", path, String(describing: error))
             return .invalid
         }
     }
@@ -329,7 +329,7 @@ final class CmuxSettingsFileStore {
         let schemaVersion = jsonInt(root["schemaVersion"]) ?? 1
         if schemaVersion > Self.currentSchemaVersion {
             NSLog(
-                "[CmuxSettingsFileStore] %@ uses future schemaVersion %d; parsing known fields only",
+                "[ZmuxSettingsFileStore] %@ uses future schemaVersion %d; parsing known fields only",
                 sourcePath,
                 schemaVersion
             )
@@ -419,7 +419,7 @@ final class CmuxSettingsFileStore {
         if let value = jsonString(section["preferredEditor"]) {
             snapshot.managedUserDefaults[PreferredEditorSettings.key] = .string(value)
         }
-        if let value = jsonBool(section["openMarkdownInCmuxViewer"]) {
+        if let value = jsonBool(section["openMarkdownInZmuxViewer"]) {
             snapshot.managedUserDefaults[CmdClickMarkdownRouteSettings.key] = .bool(value)
         }
         if let value = jsonBool(section["reorderOnNotification"]) {
@@ -511,11 +511,11 @@ final class CmuxSettingsFileStore {
         if let value = jsonBool(section["showPullRequests"]) {
             snapshot.managedUserDefaults["sidebarShowPullRequest"] = .bool(value)
         }
-        if let value = jsonBool(section["openPullRequestLinksInCmuxBrowser"]) {
-            snapshot.managedUserDefaults[BrowserLinkOpenSettings.openSidebarPullRequestLinksInCmuxBrowserKey] = .bool(value)
+        if let value = jsonBool(section["openPullRequestLinksInZmuxBrowser"]) {
+            snapshot.managedUserDefaults[BrowserLinkOpenSettings.openSidebarPullRequestLinksInZmuxBrowserKey] = .bool(value)
         }
-        if let value = jsonBool(section["openPortLinksInCmuxBrowser"]) {
-            snapshot.managedUserDefaults[BrowserLinkOpenSettings.openSidebarPortLinksInCmuxBrowserKey] = .bool(value)
+        if let value = jsonBool(section["openPortLinksInZmuxBrowser"]) {
+            snapshot.managedUserDefaults[BrowserLinkOpenSettings.openSidebarPortLinksInZmuxBrowserKey] = .bool(value)
         }
         if let value = jsonBool(section["showSSH"]) {
             snapshot.managedUserDefaults["sidebarShowSSH"] = .bool(value)
@@ -576,12 +576,12 @@ final class CmuxSettingsFileStore {
             for (rawName, rawValue) in rawColors {
                 let name = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !name.isEmpty else {
-                    NSLog("[CmuxSettingsFileStore] ignoring empty workspace color name in %@", sourcePath)
+                    NSLog("[ZmuxSettingsFileStore] ignoring empty workspace color name in %@", sourcePath)
                     continue
                 }
                 guard let hex = jsonString(rawValue),
                       let normalizedHex = WorkspaceTabColorSettings.normalizedHex(hex) else {
-                    NSLog("[CmuxSettingsFileStore] ignoring invalid workspace color '%@' in %@", name, sourcePath)
+                    NSLog("[ZmuxSettingsFileStore] ignoring invalid workspace color '%@' in %@", name, sourcePath)
                     continue
                 }
                 normalizedPalette[name] = normalizedHex
@@ -598,12 +598,12 @@ final class CmuxSettingsFileStore {
             )
             for (name, rawValue) in rawOverrides {
                 guard validNames.contains(name) else {
-                    NSLog("[CmuxSettingsFileStore] ignoring unknown workspace color '%@' in %@", name, sourcePath)
+                    NSLog("[ZmuxSettingsFileStore] ignoring unknown workspace color '%@' in %@", name, sourcePath)
                     continue
                 }
                 guard let hex = jsonString(rawValue),
                       let normalizedHex = WorkspaceTabColorSettings.normalizedHex(hex) else {
-                    NSLog("[CmuxSettingsFileStore] ignoring invalid workspace color override '%@' in %@", name, sourcePath)
+                    NSLog("[ZmuxSettingsFileStore] ignoring invalid workspace color override '%@' in %@", name, sourcePath)
                     continue
                 }
                 palette[name] = normalizedHex
@@ -678,7 +678,7 @@ final class CmuxSettingsFileStore {
     ) {
         if let raw = jsonString(section["socketControlMode"]) {
             let knownModes = Set([
-                "off", "cmuxonly", "automation", "password", "allowall", "openaccess", "fullopenaccess",
+                "off", "zmuxonly", "automation", "password", "allowall", "openaccess", "fullopenaccess",
                 "notifications", "full",
             ])
             let normalizedRaw = raw.replacingOccurrences(of: "-", with: "").lowercased()
@@ -717,14 +717,14 @@ final class CmuxSettingsFileStore {
                 logInvalid("automation.portBase", sourcePath: sourcePath)
                 return
             }
-            snapshot.managedUserDefaults["cmuxPortBase"] = .int(value)
+            snapshot.managedUserDefaults["zmuxPortBase"] = .int(value)
         }
         if let value = jsonInt(section["portRange"]) {
             guard value > 0 else {
                 logInvalid("automation.portRange", sourcePath: sourcePath)
                 return
             }
-            snapshot.managedUserDefaults["cmuxPortRange"] = .int(value)
+            snapshot.managedUserDefaults["zmuxPortRange"] = .int(value)
         }
     }
 
@@ -750,11 +750,11 @@ final class CmuxSettingsFileStore {
             }
             snapshot.managedUserDefaults[BrowserThemeSettings.modeKey] = .string(mode.rawValue)
         }
-        if let value = jsonBool(section["openTerminalLinksInCmuxBrowser"]) {
-            snapshot.managedUserDefaults[BrowserLinkOpenSettings.openTerminalLinksInCmuxBrowserKey] = .bool(value)
+        if let value = jsonBool(section["openTerminalLinksInZmuxBrowser"]) {
+            snapshot.managedUserDefaults[BrowserLinkOpenSettings.openTerminalLinksInZmuxBrowserKey] = .bool(value)
         }
-        if let value = jsonBool(section["interceptTerminalOpenCommandInCmuxBrowser"]) {
-            snapshot.managedUserDefaults[BrowserLinkOpenSettings.interceptTerminalOpenCommandInCmuxBrowserKey] = .bool(value)
+        if let value = jsonBool(section["interceptTerminalOpenCommandInZmuxBrowser"]) {
+            snapshot.managedUserDefaults[BrowserLinkOpenSettings.interceptTerminalOpenCommandInZmuxBrowserKey] = .bool(value)
         }
         if let values = jsonStringArray(section["hostsToOpenInEmbeddedBrowser"]) {
             let normalized = values
@@ -814,12 +814,12 @@ final class CmuxSettingsFileStore {
 
         for (rawAction, rawBinding) in bindings {
             guard let action = KeyboardShortcutSettings.Action(rawValue: rawAction) else {
-                NSLog("[CmuxSettingsFileStore] ignoring unknown shortcut action '%@' in %@", rawAction, sourcePath)
+                NSLog("[ZmuxSettingsFileStore] ignoring unknown shortcut action '%@' in %@", rawAction, sourcePath)
                 continue
             }
             guard let shortcut = parseShortcutBindingValue(rawBinding, action: action) else {
                 NSLog(
-                    "[CmuxSettingsFileStore] ignoring invalid shortcut binding for '%@' in %@",
+                    "[ZmuxSettingsFileStore] ignoring invalid shortcut binding for '%@' in %@",
                     rawAction,
                     sourcePath
                 )
@@ -1123,7 +1123,7 @@ final class CmuxSettingsFileStore {
     }
 
     private func logInvalid(_ path: String, sourcePath: String) {
-        NSLog("[CmuxSettingsFileStore] ignoring invalid setting '%@' in %@", path, sourcePath)
+        NSLog("[ZmuxSettingsFileStore] ignoring invalid setting '%@' in %@", path, sourcePath)
     }
 
     private func jsonString(_ rawValue: Any?) -> String? {
@@ -1170,8 +1170,8 @@ final class CmuxSettingsFileStore {
             "  // This file uses JSON with comments (JSONC).",
             "  // Uncomment and edit any setting to make it file-managed.",
             "  // Remove a setting to fall back to the value saved in Settings.",
-            "  // cmux creates this template on launch when both settings file locations are missing.",
-            "  // ~/.config/cmux/settings.json takes precedence over the Application Support fallback.",
+            "  // zmux creates this template on launch when both settings file locations are missing.",
+            "  // ~/.config/zmux/settings.json takes precedence over the Application Support fallback.",
             "",
         ]
 
@@ -1225,7 +1225,7 @@ final class CmuxSettingsFileStore {
                     "keepWorkspaceOpenWhenClosingLastSurface": !LastSurfaceCloseShortcutSettings.defaultValue,
                     "focusPaneOnFirstClick": PaneFirstClickFocusSettings.defaultEnabled,
                     "preferredEditor": "",
-                    "openMarkdownInCmuxViewer": CmdClickMarkdownRouteSettings.defaultValue,
+                    "openMarkdownInZmuxViewer": CmdClickMarkdownRouteSettings.defaultValue,
                     "reorderOnNotification": WorkspaceAutoReorderSettings.defaultValue,
                     "sendAnonymousTelemetry": TelemetrySettings.defaultSendAnonymousTelemetry,
                     "warnBeforeQuit": QuitWarningSettings.defaultWarnBeforeQuit,
@@ -1256,8 +1256,8 @@ final class CmuxSettingsFileStore {
                     "showNotificationMessage": SidebarWorkspaceDetailSettings.defaultShowNotificationMessage,
                     "showBranchDirectory": true,
                     "showPullRequests": true,
-                    "openPullRequestLinksInCmuxBrowser": BrowserLinkOpenSettings.defaultOpenSidebarPullRequestLinksInCmuxBrowser,
-                    "openPortLinksInCmuxBrowser": BrowserLinkOpenSettings.defaultOpenSidebarPortLinksInCmuxBrowser,
+                    "openPullRequestLinksInZmuxBrowser": BrowserLinkOpenSettings.defaultOpenSidebarPullRequestLinksInZmuxBrowser,
+                    "openPortLinksInZmuxBrowser": BrowserLinkOpenSettings.defaultOpenSidebarPortLinksInZmuxBrowser,
                     "showSSH": true,
                     "showPorts": true,
                     "showLog": true,
@@ -1301,8 +1301,8 @@ final class CmuxSettingsFileStore {
                     "defaultSearchEngine": BrowserSearchSettings.defaultSearchEngine.rawValue,
                     "showSearchSuggestions": BrowserSearchSettings.defaultSearchSuggestionsEnabled,
                     "theme": BrowserThemeSettings.defaultMode.rawValue,
-                    "openTerminalLinksInCmuxBrowser": BrowserLinkOpenSettings.defaultOpenTerminalLinksInCmuxBrowser,
-                    "interceptTerminalOpenCommandInCmuxBrowser": BrowserLinkOpenSettings.defaultInterceptTerminalOpenCommandInCmuxBrowser,
+                    "openTerminalLinksInZmuxBrowser": BrowserLinkOpenSettings.defaultOpenTerminalLinksInZmuxBrowser,
+                    "interceptTerminalOpenCommandInZmuxBrowser": BrowserLinkOpenSettings.defaultInterceptTerminalOpenCommandInZmuxBrowser,
                     "hostsToOpenInEmbeddedBrowser": [String](),
                     "urlsToAlwaysOpenExternally": [String](),
                     "insecureHttpHostsAllowedInEmbeddedBrowser": BrowserInsecureHTTPSettings.defaultAllowlistPatterns,
@@ -1344,7 +1344,7 @@ final class CmuxSettingsFileStore {
     }
 }
 
-typealias KeyboardShortcutSettingsFileStore = CmuxSettingsFileStore
+typealias KeyboardShortcutSettingsFileStore = ZmuxSettingsFileStore
 
 private struct ResolvedSettingsSnapshot {
     var path: String?
@@ -1368,7 +1368,7 @@ private struct ManagedCustomSettings: Equatable {
     var managedIdentifiers: Set<String> {
         var identifiers: Set<String> = []
         if socketPassword != nil {
-            identifiers.insert(CmuxSettingsFileStore.socketPasswordBackupIdentifier)
+            identifiers.insert(ZmuxSettingsFileStore.socketPasswordBackupIdentifier)
         }
         return identifiers
     }
@@ -1590,7 +1590,7 @@ private final class ShortcutSettingsFileWatcher {
     private let path: String
     private let fileManager: FileManager
     private let onChange: () -> Void
-    private let watchQueue = DispatchQueue(label: "com.cmux.shortcut-settings-file-watch")
+    private let watchQueue = DispatchQueue(label: "com.zmux.shortcut-settings-file-watch")
 
     private var source: DispatchSourceFileSystemObject?
 

@@ -13,7 +13,7 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from cmux import cmux, cmuxError
+from zmux import zmux, zmuxError
 from pane_resize_test_support import (
     clean_line as _clean_line,
     focused_pane_id as _focused_pane_id,
@@ -27,11 +27,11 @@ from pane_resize_test_support import (
 )
 
 
-DEFAULT_SOCKET_PATHS = ["/tmp/cmux-debug.sock", "/tmp/cmux.sock"]
+DEFAULT_SOCKET_PATHS = ["/tmp/zmux-debug.sock", "/tmp/zmux.sock"]
 
 
 def _has_exact_marker_lines(
-    client: cmux,
+    client: zmux,
     workspace_id: str,
     surface_id: str,
     start_marker: str,
@@ -66,17 +66,17 @@ def _extract_segment_lines(
             out.append(line)
 
     if not saw_start:
-        raise cmuxError(f"start marker not found in scrollback: {start_marker}")
+        raise zmuxError(f"start marker not found in scrollback: {start_marker}")
     if require_end and not saw_end:
-        raise cmuxError(f"end marker not found in scrollback: {end_marker}")
+        raise zmuxError(f"end marker not found in scrollback: {end_marker}")
     return out
 
 
 def _run_once(socket_path: str) -> int:
     workspace_id = ""
-    fixture_dir = Path(tempfile.mkdtemp(prefix="cmux-ls-resize-regression-"))
+    fixture_dir = Path(tempfile.mkdtemp(prefix="zmux-ls-resize-regression-"))
     try:
-        with cmux(socket_path) as client:
+        with zmux(socket_path) as client:
             workspace_id = client.new_workspace()
             client.select_workspace(workspace_id)
 
@@ -89,8 +89,8 @@ def _run_once(socket_path: str) -> int:
             for name in expected_names:
                 (fixture_dir / name).write_text(name + "\n", encoding="utf-8")
 
-            start_marker = f"CMUX_LS_SCROLLBACK_START_{secrets.token_hex(4)}"
-            end_marker = f"CMUX_LS_SCROLLBACK_END_{secrets.token_hex(4)}"
+            start_marker = f"ZMUX_LS_SCROLLBACK_START_{secrets.token_hex(4)}"
+            end_marker = f"ZMUX_LS_SCROLLBACK_END_{secrets.token_hex(4)}"
             fixture_arg = shlex.quote(str(fixture_dir))
             run_ls = (
                 f"cd {fixture_arg}; "
@@ -166,7 +166,7 @@ def _run_once(socket_path: str) -> int:
     finally:
         if workspace_id:
             try:
-                with cmux(socket_path) as cleanup_client:
+                with zmux(socket_path) as cleanup_client:
                     cleanup_client.close_workspace(workspace_id)
             except Exception:
                 pass
@@ -174,7 +174,7 @@ def _run_once(socket_path: str) -> int:
 
 
 def main() -> int:
-    env_socket = os.environ.get("CMUX_SOCKET")
+    env_socket = os.environ.get("ZMUX_SOCKET")
     if env_socket:
         return _run_once(env_socket)
 
@@ -182,7 +182,7 @@ def main() -> int:
     for socket_path in DEFAULT_SOCKET_PATHS:
         try:
             return _run_once(socket_path)
-        except cmuxError as exc:
+        except zmuxError as exc:
             text = str(exc)
             recoverable = (
                 "Failed to connect",
@@ -195,7 +195,7 @@ def main() -> int:
 
     if last_error is not None:
         raise last_error
-    raise cmuxError("No socket candidates configured")
+    raise zmuxError("No socket candidates configured")
 
 
 if __name__ == "__main__":

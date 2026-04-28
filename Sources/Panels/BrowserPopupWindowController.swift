@@ -34,7 +34,7 @@ func browserPopupContentRect(
     return NSRect(x: x, y: y, width: clampedWidth, height: clampedHeight)
 }
 
-/// Hosts a popup `CmuxWebView` in a standalone `NSPanel`, created when a page
+/// Hosts a popup `ZmuxWebView` in a standalone `NSPanel`, created when a page
 /// calls `window.open()` (scripted new-window requests).
 ///
 /// Lifecycle:
@@ -43,7 +43,7 @@ func browserPopupContentRect(
 /// - The opener `BrowserPanel` also keeps a strong reference for deterministic
 ///   cleanup when the opener tab or workspace is closed.
 /// NSPanel subclass that intercepts Cmd+W before the swizzled
-/// `cmux_performKeyEquivalent` can dispatch it to the main menu's
+/// `zmux_performKeyEquivalent` can dispatch it to the main menu's
 /// "Close Tab" action (which would close the parent browser tab).
 private class BrowserPopupPanel: NSPanel {
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
@@ -52,7 +52,7 @@ private class BrowserPopupPanel: NSPanel {
         if flags == .command,
            KeyboardLayout.normalizedCharacters(for: event) == "w" {
             #if DEBUG
-            cmuxDebugLog("popup.panel.cmdW close")
+            zmuxDebugLog("popup.panel.cmdW close")
             #endif
             performClose(nil)
             return true
@@ -66,7 +66,7 @@ final class BrowserPopupWindowController: NSObject, NSWindowDelegate {
 
     static let maxNestingDepth = 3
 
-    let webView: CmuxWebView
+    let webView: ZmuxWebView
     private let browserContext: BrowserPopupBrowserContext
     private let panel: NSPanel
     private let urlLabel: NSTextField
@@ -103,9 +103,9 @@ final class BrowserPopupWindowController: NSObject, NSWindowDelegate {
         )
 
         // Create popup web view with WebKit's supplied configuration after
-        // overlaying the opener's browser context so OAuth popups keep cmux's
+        // overlaying the opener's browser context so OAuth popups keep zmux's
         // shared cookie/storage scope and opener linkage.
-        let webView = CmuxWebView(frame: .zero, configuration: configuration)
+        let webView = ZmuxWebView(frame: .zero, configuration: configuration)
         webView.allowsBackForwardNavigationGestures = true
         if #available(macOS 13.3, *) {
             webView.isInspectable = true
@@ -154,7 +154,7 @@ final class BrowserPopupWindowController: NSObject, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
-        panel.identifier = NSUserInterfaceItemIdentifier("cmux.browser-popup")
+        panel.identifier = NSUserInterfaceItemIdentifier("zmux.browser-popup")
         panel.level = NSWindow.Level.normal
         panel.hidesOnDeactivate = false
         panel.isReleasedWhenClosed = false
@@ -239,7 +239,7 @@ final class BrowserPopupWindowController: NSObject, NSWindowDelegate {
         panel.delegate = self
 
         #if DEBUG
-        cmuxDebugLog("popup.init depth=\(nestingDepth) size=\(Int(contentRect.width))x\(Int(contentRect.height)) opener=\(openerPanel?.id.uuidString.prefix(5) ?? "nil")")
+        zmuxDebugLog("popup.init depth=\(nestingDepth) size=\(Int(contentRect.width))x\(Int(contentRect.height)) opener=\(openerPanel?.id.uuidString.prefix(5) ?? "nil")")
         #endif
 
         panel.makeKeyAndOrderFront(self)
@@ -281,7 +281,7 @@ final class BrowserPopupWindowController: NSObject, NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) {
         #if DEBUG
-        cmuxDebugLog("popup.close depth=\(nestingDepth)")
+        zmuxDebugLog("popup.close depth=\(nestingDepth)")
         #endif
 
         closeAllChildPopups()
@@ -315,7 +315,7 @@ final class BrowserPopupWindowController: NSObject, NSWindowDelegate {
         let nextDepth = nestingDepth + 1
         if nextDepth > Self.maxNestingDepth {
             #if DEBUG
-            cmuxDebugLog("popup.nested.blocked depth=\(nextDepth) max=\(Self.maxNestingDepth)")
+            zmuxDebugLog("popup.nested.blocked depth=\(nextDepth) max=\(Self.maxNestingDepth)")
             #endif
             return nil
         }
@@ -356,12 +356,12 @@ final class BrowserPopupWindowController: NSObject, NSWindowDelegate {
         let alert = NSAlert()
         alert.alertStyle = .warning
         alert.messageText = String(localized: "browser.error.insecure.title", defaultValue: "Connection isn\u{2019}t secure")
-        alert.informativeText = String(localized: "browser.error.insecure.message", defaultValue: "\(host) uses plain HTTP, so traffic can be read or modified on the network.\n\nOpen this URL in your default browser, or proceed in cmux.")
+        alert.informativeText = String(localized: "browser.error.insecure.message", defaultValue: "\(host) uses plain HTTP, so traffic can be read or modified on the network.\n\nOpen this URL in your default browser, or proceed in zmux.")
         alert.addButton(withTitle: String(localized: "browser.openInDefaultBrowser", defaultValue: "Open in Default Browser"))
-        alert.addButton(withTitle: String(localized: "browser.proceedInCmux", defaultValue: "Proceed in cmux"))
+        alert.addButton(withTitle: String(localized: "browser.proceedInZmux", defaultValue: "Proceed in zmux"))
         alert.addButton(withTitle: String(localized: "common.cancel", defaultValue: "Cancel"))
         alert.showsSuppressionButton = true
-        alert.suppressionButton?.title = String(localized: "browser.alwaysAllowHost", defaultValue: "Always allow this host in cmux")
+        alert.suppressionButton?.title = String(localized: "browser.alwaysAllowHost", defaultValue: "Always allow this host in zmux")
 
         let handleResponse: (NSApplication.ModalResponse) -> Void = { [weak alert] response in
             if browserShouldPersistInsecureHTTPAllowlistSelection(
@@ -398,7 +398,7 @@ private class PopupUIDelegate: NSObject, WKUIDelegate {
 
     func webViewDidClose(_ webView: WKWebView) {
         #if DEBUG
-        cmuxDebugLog("popup.webViewDidClose")
+        zmuxDebugLog("popup.webViewDidClose")
         #endif
         controller?.closePopup()
     }
@@ -420,7 +420,7 @@ private class PopupUIDelegate: NSObject, WKUIDelegate {
             navigationType: navigationAction.navigationType,
             modifierFlags: navigationAction.modifierFlags,
             buttonNumber: navigationAction.buttonNumber,
-            hasRecentMiddleClickIntent: CmuxWebView.hasRecentMiddleClickIntent(for: webView)
+            hasRecentMiddleClickIntent: ZmuxWebView.hasRecentMiddleClickIntent(for: webView)
         )
 
         if isScriptedPopup {
@@ -567,7 +567,7 @@ private class PopupNavigationDelegate: NSObject, WKNavigationDelegate {
         if browserShouldOpenURLExternally(url) {
             NSWorkspace.shared.open(url)
             #if DEBUG
-            cmuxDebugLog("popup.nav.external url=\(url.absoluteString)")
+            zmuxDebugLog("popup.nav.external url=\(url.absoluteString)")
             #endif
             decisionHandler(.cancel)
             return
@@ -576,7 +576,7 @@ private class PopupNavigationDelegate: NSObject, WKNavigationDelegate {
         // Insecure HTTP → show same prompt as main browser
         if browserShouldBlockInsecureHTTPURL(url) {
             #if DEBUG
-            cmuxDebugLog("popup.nav.insecureHTTP url=\(url.absoluteString)")
+            zmuxDebugLog("popup.nav.insecureHTTP url=\(url.absoluteString)")
             #endif
             controller?.presentInsecureHTTPAlert(for: url, in: webView, decisionHandler: decisionHandler)
             return
@@ -629,14 +629,14 @@ private class PopupNavigationDelegate: NSObject, WKNavigationDelegate {
 
     func webView(_ webView: WKWebView, navigationAction: WKNavigationAction, didBecome download: WKDownload) {
         #if DEBUG
-        cmuxDebugLog("popup.download.didBecome source=navigationAction")
+        zmuxDebugLog("popup.download.didBecome source=navigationAction")
         #endif
         download.delegate = downloadDelegate
     }
 
     func webView(_ webView: WKWebView, navigationResponse: WKNavigationResponse, didBecome download: WKDownload) {
         #if DEBUG
-        cmuxDebugLog("popup.download.didBecome source=navigationResponse")
+        zmuxDebugLog("popup.download.didBecome source=navigationResponse")
         #endif
         download.delegate = downloadDelegate
     }

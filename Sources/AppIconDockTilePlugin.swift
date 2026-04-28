@@ -1,8 +1,8 @@
 import AppKit
 import CoreServices
 
-private let cmuxAppIconDidChangeNotification = Notification.Name("com.cmuxterm.appIconDidChange")
-private let cmuxAppIconModeKey = "appIconMode"
+private let zmuxAppIconDidChangeNotification = Notification.Name("com.zmuxterm.appIconDidChange")
+private let zmuxAppIconModeKey = "appIconMode"
 
 private enum DockTileAppIconMode: String {
     case automatic
@@ -25,10 +25,10 @@ private enum DockTileAppIconMode: String {
     }
 }
 
-final class CmuxDockTilePlugin: NSObject, NSDockTilePlugIn {
+final class ZmuxDockTilePlugin: NSObject, NSDockTilePlugIn {
     // The plugin can stay alive while the app remains in the Dock, even after quit.
     // Keep the state minimal and derive everything from the enclosing app bundle.
-    private let pluginBundle = Bundle(for: CmuxDockTilePlugin.self)
+    private let pluginBundle = Bundle(for: ZmuxDockTilePlugin.self)
     private var iconChangeObserver: NSObjectProtocol?
     private var appearanceObservation: NSKeyValueObservation?
 
@@ -51,7 +51,7 @@ final class CmuxDockTilePlugin: NSObject, NSDockTilePlugIn {
         updateDockTile(dockTile)
 
         iconChangeObserver = DistributedNotificationCenter.default().addObserver(
-            forName: cmuxAppIconDidChangeNotification,
+            forName: zmuxAppIconDidChangeNotification,
             object: nil,
             queue: nil
         ) { [weak self] _ in
@@ -82,7 +82,7 @@ final class CmuxDockTilePlugin: NSObject, NSDockTilePlugIn {
         guard let appBundleURL else { return false }
         // The default untagged Debug app is rebuilt and re-signed in place during CI.
         // Persisting a custom icon there leaves Finder metadata behind and breaks codesign.
-        return appBundleURL.lastPathComponent != "cmux DEV.app"
+        return appBundleURL.lastPathComponent != "zmux DEV.app"
     }
 
     private var appDefaults: UserDefaults? {
@@ -91,7 +91,7 @@ final class CmuxDockTilePlugin: NSObject, NSDockTilePlugIn {
     }
 
     private func updateDockTile(_ dockTile: NSDockTile) {
-        let mode = DockTileAppIconMode(defaultsValue: appDefaults?.string(forKey: cmuxAppIconModeKey))
+        let mode = DockTileAppIconMode(defaultsValue: appDefaults?.string(forKey: zmuxAppIconModeKey))
         let isDarkAppearance = NSApp?.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
         guard let appBundleURL else {
             dockTile.showDefaultAppIcon()

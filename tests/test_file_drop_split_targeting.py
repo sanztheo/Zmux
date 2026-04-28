@@ -14,7 +14,7 @@ import time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from cmux import cmux
+from zmux import zmux
 
 
 def surface_ids_from_layout(layout: dict):
@@ -42,7 +42,7 @@ def surface_ids_from_layout(layout: dict):
 
 
 def main() -> int:
-    with cmux() as client:
+    with zmux() as client:
         try:
             client.activate_app()
         except Exception:

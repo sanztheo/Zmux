@@ -4,8 +4,8 @@ import WebKit
 import AppKit
 import ObjectiveC
 
-private var cmuxBrowserPanelNeedsRenderingStateReattachKey: UInt8 = 0
-let browserOmnibarTextFieldIdentifier = NSUserInterfaceItemIdentifier("cmux.browserOmnibarTextField")
+private var zmuxBrowserPanelNeedsRenderingStateReattachKey: UInt8 = 0
+let browserOmnibarTextFieldIdentifier = NSUserInterfaceItemIdentifier("zmux.browserOmnibarTextField")
 
 private func browserPanelViewObjectID(_ object: AnyObject?) -> String {
     guard let object else { return "nil" }
@@ -29,32 +29,32 @@ private extension NSObject {
 }
 
 private extension WKWebView {
-    private var cmuxBrowserPanelNeedsRenderingStateReattach: Bool {
+    private var zmuxBrowserPanelNeedsRenderingStateReattach: Bool {
         get {
-            (objc_getAssociatedObject(self, &cmuxBrowserPanelNeedsRenderingStateReattachKey) as? NSNumber)?
+            (objc_getAssociatedObject(self, &zmuxBrowserPanelNeedsRenderingStateReattachKey) as? NSNumber)?
                 .boolValue ?? false
         }
         set {
             objc_setAssociatedObject(
                 self,
-                &cmuxBrowserPanelNeedsRenderingStateReattachKey,
+                &zmuxBrowserPanelNeedsRenderingStateReattachKey,
                 NSNumber(value: newValue),
                 .OBJC_ASSOCIATION_RETAIN_NONATOMIC
             )
         }
     }
 
-    var cmuxBrowserPanelRequiresRenderingStateReattach: Bool {
-        cmuxBrowserPanelNeedsRenderingStateReattach
+    var zmuxBrowserPanelRequiresRenderingStateReattach: Bool {
+        zmuxBrowserPanelNeedsRenderingStateReattach
     }
 
-    private func cmuxBrowserPanelApplyRenderingStateRefresh(
+    private func zmuxBrowserPanelApplyRenderingStateRefresh(
         reason: String,
         force: Bool
     ) {
-        guard force || cmuxBrowserPanelNeedsRenderingStateReattach else { return }
+        guard force || zmuxBrowserPanelNeedsRenderingStateReattach else { return }
         guard window != nil else { return }
-        cmuxBrowserPanelNeedsRenderingStateReattach = false
+        zmuxBrowserPanelNeedsRenderingStateReattach = false
 
         let firedSelectors = [
             "viewDidUnhide",
@@ -78,7 +78,7 @@ private extension WKWebView {
 
 #if DEBUG
         if !firedSelectors.isEmpty {
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "\(force ? "browser.localHost.webview.forceRefresh" : "browser.localHost.webview.reattach") " +
                 "web=\(browserPanelViewObjectID(self)) " +
                 "reason=\(reason) selectors=\(firedSelectors.joined(separator: ",")) " +
@@ -88,14 +88,14 @@ private extension WKWebView {
 #endif
     }
 
-    func cmuxBrowserPanelNotifyHidden(reason: String) {
-        cmuxBrowserPanelNeedsRenderingStateReattach = true
+    func zmuxBrowserPanelNotifyHidden(reason: String) {
+        zmuxBrowserPanelNeedsRenderingStateReattach = true
         let firedSelectors = ["viewDidHide", "_exitInWindow"].filter {
             browserPanelCallVoidIfAvailable($0)
         }
 #if DEBUG
         if !firedSelectors.isEmpty {
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "browser.localHost.webview.hidden web=\(browserPanelViewObjectID(self)) " +
                 "reason=\(reason) selectors=\(firedSelectors.joined(separator: ","))"
             )
@@ -103,12 +103,12 @@ private extension WKWebView {
 #endif
     }
 
-    func cmuxBrowserPanelReattachRenderingState(reason: String) {
-        cmuxBrowserPanelApplyRenderingStateRefresh(reason: reason, force: false)
+    func zmuxBrowserPanelReattachRenderingState(reason: String) {
+        zmuxBrowserPanelApplyRenderingStateRefresh(reason: reason, force: false)
     }
 
-    func cmuxBrowserPanelForceRenderingStateRefresh(reason: String) {
-        cmuxBrowserPanelApplyRenderingStateRefresh(reason: reason, force: true)
+    func zmuxBrowserPanelForceRenderingStateRefresh(reason: String) {
+        zmuxBrowserPanelApplyRenderingStateRefresh(reason: reason, force: true)
     }
 }
 
@@ -180,7 +180,7 @@ enum BrowserDevToolsIconColorOption: String, CaseIterable, Identifiable {
             // Matches Bonsplit tab icon tint for active tabs.
             return Color(nsColor: .labelColor)
         case .accent:
-            return cmuxAccentColor()
+            return zmuxAccentColor()
         case .tertiary:
             return Color(nsColor: .tertiaryLabelColor)
         }
@@ -304,7 +304,7 @@ private struct OmnibarAddressButtonStyleBody: View {
 }
 
 private extension View {
-    func cmuxFlatSymbolColorRendering() -> some View {
+    func zmuxFlatSymbolColorRendering() -> some View {
         // `symbolColorRenderingMode(.flat)` is not available in the current SDK
         // used by CI/local builds. Keep this modifier as a compatibility no-op.
         self
@@ -453,12 +453,12 @@ struct BrowserPanelView: View {
     private var remoteSuggestionsEnabled: Bool {
         // Deterministic UI-test hook: force remote path on even if a persisted
         // setting disabled suggestions in previous sessions.
-        if ProcessInfo.processInfo.environment["CMUX_UI_TEST_REMOTE_SUGGESTIONS_JSON"] != nil ||
-            UserDefaults.standard.string(forKey: "CMUX_UI_TEST_REMOTE_SUGGESTIONS_JSON") != nil {
+        if ProcessInfo.processInfo.environment["ZMUX_UI_TEST_REMOTE_SUGGESTIONS_JSON"] != nil ||
+            UserDefaults.standard.string(forKey: "ZMUX_UI_TEST_REMOTE_SUGGESTIONS_JSON") != nil {
             return true
         }
         // Keep UI tests deterministic by disabling network suggestions when requested.
-        if ProcessInfo.processInfo.environment["CMUX_UI_TEST_DISABLE_REMOTE_SUGGESTIONS"] == "1" {
+        if ProcessInfo.processInfo.environment["ZMUX_UI_TEST_DISABLE_REMOTE_SUGGESTIONS"] == "1" {
             return false
         }
         return searchSuggestionsEnabled
@@ -579,8 +579,8 @@ struct BrowserPanelView: View {
         }
         .overlay {
             RoundedRectangle(cornerRadius: FocusFlashPattern.ringCornerRadius)
-                .stroke(cmuxAccentColor().opacity(focusFlashOpacity), lineWidth: 3)
-                .shadow(color: cmuxAccentColor().opacity(focusFlashOpacity * 0.35), radius: 10)
+                .stroke(zmuxAccentColor().opacity(focusFlashOpacity), lineWidth: 3)
+                .shadow(color: zmuxAccentColor().opacity(focusFlashOpacity * 0.35), radius: 10)
                 .padding(FocusFlashPattern.ringInset)
                 .allowsHitTesting(false)
         }
@@ -615,11 +615,11 @@ struct BrowserPanelView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: .webViewDidReceiveClick).filter { [weak panel] note in
             // Only handle clicks from our own webview.
-            guard let webView = note.object as? CmuxWebView else { return false }
+            guard let webView = note.object as? ZmuxWebView else { return false }
             return webView === panel?.webView
         }) { _ in
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "browser.focus.clickIntent panel=\(panel.id.uuidString.prefix(5)) " +
                 "isFocused=\(isFocused ? 1 : 0) " +
                 "addressFocused=\(addressBarFocused ? 1 : 0)"
@@ -875,7 +875,7 @@ struct BrowserPanelView: View {
         return HStack(spacing: 0) {
             Button(action: {
                 #if DEBUG
-                cmuxDebugLog("browser.back panel=\(panel.id.uuidString.prefix(5))")
+                zmuxDebugLog("browser.back panel=\(panel.id.uuidString.prefix(5))")
                 #endif
                 panel.goBack()
             }) {
@@ -891,7 +891,7 @@ struct BrowserPanelView: View {
 
             Button(action: {
                 #if DEBUG
-                cmuxDebugLog("browser.forward panel=\(panel.id.uuidString.prefix(5))")
+                zmuxDebugLog("browser.forward panel=\(panel.id.uuidString.prefix(5))")
                 #endif
                 panel.goForward()
             }) {
@@ -908,12 +908,12 @@ struct BrowserPanelView: View {
             Button(action: {
                 if panel.isLoading {
                     #if DEBUG
-                    cmuxDebugLog("browser.stop panel=\(panel.id.uuidString.prefix(5))")
+                    zmuxDebugLog("browser.stop panel=\(panel.id.uuidString.prefix(5))")
                     #endif
                     panel.stopLoading()
                 } else {
                     #if DEBUG
-                    cmuxDebugLog("browser.reload panel=\(panel.id.uuidString.prefix(5))")
+                    zmuxDebugLog("browser.reload panel=\(panel.id.uuidString.prefix(5))")
                     #endif
                     panel.reload()
                 }
@@ -947,7 +947,7 @@ struct BrowserPanelView: View {
         }) {
             Image(systemName: "cursorarrow.click.2")
                 .symbolRenderingMode(.monochrome)
-                .cmuxFlatSymbolColorRendering()
+                .zmuxFlatSymbolColorRendering()
                 .font(.system(size: devToolsButtonIconSize, weight: .medium))
                 .foregroundStyle(panel.isReactGrabActive ? Color.accentColor : Color.secondary)
                 .frame(width: addressBarButtonSize, height: addressBarButtonSize, alignment: .center)
@@ -964,7 +964,7 @@ struct BrowserPanelView: View {
         }) {
             Image(systemName: devToolsIconOption.rawValue)
                 .symbolRenderingMode(.monochrome)
-                .cmuxFlatSymbolColorRendering()
+                .zmuxFlatSymbolColorRendering()
                 .font(.system(size: devToolsButtonIconSize, weight: .medium))
                 .foregroundStyle(devToolsColorOption.color)
                 .frame(width: addressBarButtonSize, height: addressBarButtonSize, alignment: .center)
@@ -981,7 +981,7 @@ struct BrowserPanelView: View {
         }) {
             Image(systemName: "person.crop.circle")
                 .symbolRenderingMode(.monochrome)
-                .cmuxFlatSymbolColorRendering()
+                .zmuxFlatSymbolColorRendering()
                 .font(.system(size: devToolsButtonIconSize, weight: .medium))
                 .foregroundStyle(devToolsColorOption.color)
                 .frame(width: addressBarButtonSize, height: addressBarButtonSize, alignment: .center)
@@ -1009,7 +1009,7 @@ struct BrowserPanelView: View {
         }) {
             Image(systemName: browserThemeMode.iconName)
                 .symbolRenderingMode(.monochrome)
-                .cmuxFlatSymbolColorRendering()
+                .zmuxFlatSymbolColorRendering()
                 .font(.system(size: devToolsButtonIconSize, weight: .medium))
                 .foregroundStyle(browserThemeModeIconColor)
                 .frame(width: addressBarButtonSize, height: addressBarButtonSize, alignment: .center)
@@ -1231,7 +1231,7 @@ struct BrowserPanelView: View {
         )
         .overlay(
             RoundedRectangle(cornerRadius: omnibarPillCornerRadius, style: .continuous)
-                .stroke(addressBarFocused ? cmuxAccentColor() : Color.clear, lineWidth: 1)
+                .stroke(addressBarFocused ? zmuxAccentColor() : Color.clear, lineWidth: 1)
         )
         .accessibilityElement(children: .contain)
         .background {
@@ -1358,20 +1358,20 @@ struct BrowserPanelView: View {
         reason: String,
         isPanelFocusedOverride: Bool? = nil
     ) {
-        guard let cmuxWebView = panel.webView as? CmuxWebView else { return }
+        guard let zmuxWebView = panel.webView as? ZmuxWebView else { return }
         let isPanelFocused = isPanelFocusedOverride ?? isFocused
         let next = isPanelFocused && !panel.shouldSuppressWebViewFocus()
-        if cmuxWebView.allowsFirstResponderAcquisition != next {
+        if zmuxWebView.allowsFirstResponderAcquisition != next {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "browser.focus.policy.resync panel=\(panel.id.uuidString.prefix(5)) " +
-                "web=\(ObjectIdentifier(cmuxWebView)) old=\(cmuxWebView.allowsFirstResponderAcquisition ? 1 : 0) " +
+                "web=\(ObjectIdentifier(zmuxWebView)) old=\(zmuxWebView.allowsFirstResponderAcquisition ? 1 : 0) " +
                 "new=\(next ? 1 : 0) reason=\(reason) " +
                 "panelFocusedUsed=\(isPanelFocused ? 1 : 0)"
             )
 #endif
         }
-        cmuxWebView.allowsFirstResponderAcquisition = next
+        zmuxWebView.allowsFirstResponderAcquisition = next
     }
 
     private func setAddressBarFocused(_ focused: Bool, reason: String) {
@@ -1458,7 +1458,7 @@ struct BrowserPanelView: View {
         if !detail.isEmpty {
             line += " \(detail)"
         }
-        cmuxDebugLog(line)
+        zmuxDebugLog(line)
     }
 #endif
 
@@ -1802,7 +1802,7 @@ struct BrowserPanelView: View {
 
     private func openDevTools() {
         #if DEBUG
-        cmuxDebugLog("browser.toggleDevTools panel=\(panel.id.uuidString.prefix(5))")
+        zmuxDebugLog("browser.toggleDevTools panel=\(panel.id.uuidString.prefix(5))")
         #endif
         if !panel.toggleDeveloperTools() {
             NSSound.beep()
@@ -1983,10 +1983,10 @@ struct BrowserPanelView: View {
 
     private func refreshSuggestions() {
 #if DEBUG
-        let typingTimingStart = CmuxTypingTiming.start()
+        let typingTimingStart = ZmuxTypingTiming.start()
         defer {
             let trimmedQuery = omnibarState.buffer.trimmingCharacters(in: .whitespacesAndNewlines)
-            CmuxTypingTiming.logDuration(
+            ZmuxTypingTiming.logDuration(
                 path: "browser.omnibar.refreshSuggestions",
                 startedAt: typingTimingStart,
                 extra: "focused=\(addressBarFocused ? 1 : 0) queryLen=\(trimmedQuery.utf8.count) suggestionCount=\(omnibarState.suggestions.count)"
@@ -2200,8 +2200,8 @@ struct BrowserPanelView: View {
     }
 
     private func forcedRemoteSuggestionsForUITest() -> [String]? {
-        let raw = ProcessInfo.processInfo.environment["CMUX_UI_TEST_REMOTE_SUGGESTIONS_JSON"]
-            ?? UserDefaults.standard.string(forKey: "CMUX_UI_TEST_REMOTE_SUGGESTIONS_JSON")
+        let raw = ProcessInfo.processInfo.environment["ZMUX_UI_TEST_REMOTE_SUGGESTIONS_JSON"]
+            ?? UserDefaults.standard.string(forKey: "ZMUX_UI_TEST_REMOTE_SUGGESTIONS_JSON")
         guard let raw,
               let data = raw.data(using: .utf8),
               let parsed = try? JSONSerialization.jsonObject(with: data) as? [Any] else {
@@ -2242,7 +2242,7 @@ struct BrowserPanelView: View {
                       !panel.webView.isHiddenOrHasHiddenAncestor else { return }
                 guard shouldApplyAddressBarExitFallback(in: window) else {
 #if DEBUG
-                    cmuxDebugLog(
+                    zmuxDebugLog(
                         "browser.focus.addressBar.exit.handoff panel=\(panel.id.uuidString.prefix(5)) " +
                         "result=skip_not_focused"
                     )
@@ -2257,7 +2257,7 @@ struct BrowserPanelView: View {
                     panel.noteWebViewFocused()
                 }
 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "browser.focus.addressBar.exit.handoff panel=\(panel.id.uuidString.prefix(5)) " +
                     "focusedWebView=\(focusedWebView ? 1 : 0)"
                 )
@@ -2265,7 +2265,7 @@ struct BrowserPanelView: View {
                 panel.restoreAddressBarPageFocusIfNeeded { restored in
                     guard shouldApplyAddressBarExitFallback(in: window) else {
 #if DEBUG
-                        cmuxDebugLog(
+                        zmuxDebugLog(
                             "browser.focus.addressBar.exit.handoff panel=\(panel.id.uuidString.prefix(5)) " +
                             "result=skip_stale_restore restored=\(restored ? 1 : 0)"
                         )
@@ -2279,7 +2279,7 @@ struct BrowserPanelView: View {
                         let fallbackFocusedWebView = window.makeFirstResponder(panel.webView)
                         hasWebViewResponder = fallbackFocusedWebView
 #if DEBUG
-                        cmuxDebugLog(
+                        zmuxDebugLog(
                             "browser.focus.addressBar.exit.handoff panel=\(panel.id.uuidString.prefix(5)) " +
                             "fallbackFocusedWebView=\(fallbackFocusedWebView ? 1 : 0) " +
                             "restored=\(restored ? 1 : 0)"
@@ -3332,7 +3332,7 @@ private final class OmnibarNativeTextField: NSTextField {
     override func mouseDown(with event: NSEvent) {
         #if DEBUG
         let frType = window?.firstResponder.map { String(describing: type(of: $0)) } ?? "nil"
-        cmuxDebugLog(
+        zmuxDebugLog(
             "browser.omnibarClick win=\(window?.windowNumber ?? -1) " +
             "fr=\(frType) hasEditor=\(currentEditor() == nil ? 0 : 1)"
         )
@@ -3346,7 +3346,7 @@ private final class OmnibarNativeTextField: NSTextField {
             let result = window?.makeFirstResponder(self) ?? false
 #if DEBUG
             let frAfter = window?.firstResponder.map { String(describing: type(of: $0)) } ?? "nil"
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "browser.omnibarClick.makeFirstResponder result=\(result ? 1 : 0) " +
                 "win=\(window?.windowNumber ?? -1) fr=\(frAfter)"
             )
@@ -3408,10 +3408,10 @@ private final class OmnibarNativeTextField: NSTextField {
 
     override func keyDown(with event: NSEvent) {
 #if DEBUG
-        let typingTimingStart = CmuxTypingTiming.start()
+        let typingTimingStart = ZmuxTypingTiming.start()
         var route = "super"
         defer {
-            CmuxTypingTiming.logDuration(
+            ZmuxTypingTiming.logDuration(
                 path: "browser.omnibar.keyDown",
                 startedAt: typingTimingStart,
                 event: event,
@@ -3438,10 +3438,10 @@ private final class OmnibarNativeTextField: NSTextField {
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
 #if DEBUG
-        let typingTimingStart = CmuxTypingTiming.start()
+        let typingTimingStart = ZmuxTypingTiming.start()
         var handled = false
         defer {
-            CmuxTypingTiming.logDuration(
+            ZmuxTypingTiming.logDuration(
                 path: "browser.omnibar.performKeyEquivalent",
                 startedAt: typingTimingStart,
                 event: event,
@@ -3527,7 +3527,7 @@ private struct OmnibarTextFieldRepresentable: NSViewRepresentable {
             if !detail.isEmpty {
                 line += " \(detail)"
             }
-            cmuxDebugLog(line)
+            zmuxDebugLog(line)
         }
 #endif
 
@@ -3691,9 +3691,9 @@ private struct OmnibarTextFieldRepresentable: NSViewRepresentable {
 
         func controlTextDidChange(_ obj: Notification) {
 #if DEBUG
-            let typingTimingStart = CmuxTypingTiming.start()
+            let typingTimingStart = ZmuxTypingTiming.start()
             defer {
-                CmuxTypingTiming.logDuration(
+                ZmuxTypingTiming.logDuration(
                     path: "browser.omnibar.controlTextDidChange",
                     startedAt: typingTimingStart,
                     event: NSApp.currentEvent,
@@ -3715,10 +3715,10 @@ private struct OmnibarTextFieldRepresentable: NSViewRepresentable {
 
         func control(_ control: NSControl, textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
 #if DEBUG
-            let typingTimingStart = CmuxTypingTiming.start()
+            let typingTimingStart = ZmuxTypingTiming.start()
             var handled = false
             defer {
-                CmuxTypingTiming.logDuration(
+                ZmuxTypingTiming.logDuration(
                     path: "browser.omnibar.doCommandBy",
                     startedAt: typingTimingStart,
                     event: NSApp.currentEvent,
@@ -3845,10 +3845,10 @@ private struct OmnibarTextFieldRepresentable: NSViewRepresentable {
 
         func handleKeyEvent(_ event: NSEvent, editor: NSTextView?) -> Bool {
 #if DEBUG
-            let typingTimingStart = CmuxTypingTiming.start()
+            let typingTimingStart = ZmuxTypingTiming.start()
             var handled = false
             defer {
-                CmuxTypingTiming.logDuration(
+                ZmuxTypingTiming.logDuration(
                     path: "browser.omnibar.handleKeyEvent",
                     startedAt: typingTimingStart,
                     event: event,
@@ -4285,7 +4285,7 @@ private struct OmnibarSuggestionsView: View {
                         return "remote"
                     }
                 }()
-                cmuxDebugLog("browser.suggestionClick index=\(idx) kind=\(suggestionKind) textBytes=\(item.listText.utf8.count)")
+                zmuxDebugLog("browser.suggestionClick index=\(idx) kind=\(suggestionKind) textBytes=\(item.listText.utf8.count)")
                 #endif
                 onCommit(item)
             } label: {
@@ -4577,7 +4577,7 @@ struct WebViewRepresentable: NSViewRepresentable {
             let recordedWidthDesc = recordedHostedInspectorSideDockWidth.map {
                 String(format: "%.1f", $0)
             } ?? "nil"
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "browser.panel.hostedInspector stage=\(reason).dockControls " +
                 "host=\(Self.debugObjectID(self)) allowSideDock=\(sideDockAllowed ? 1 : 0) " +
                 "recordedWidth=\(recordedWidthDesc) bounds=\(Self.debugRect(bounds))"
@@ -4589,14 +4589,14 @@ struct WebViewRepresentable: NSViewRepresentable {
                     if (typeof WI === "undefined")
                         return null;
                     const allowSideDock = \(sideDockAllowedLiteral);
-                    if (!WI.__cmuxOriginalUpdateDockNavigationItems && typeof WI._updateDockNavigationItems === "function")
-                        WI.__cmuxOriginalUpdateDockNavigationItems = WI._updateDockNavigationItems;
-                    if (!WI.__cmuxOriginalDockLeft && typeof WI._dockLeft === "function")
-                        WI.__cmuxOriginalDockLeft = WI._dockLeft;
-                    if (!WI.__cmuxOriginalDockRight && typeof WI._dockRight === "function")
-                        WI.__cmuxOriginalDockRight = WI._dockRight;
-                    if (!WI.__cmuxOriginalTogglePreviousDockConfiguration && typeof WI._togglePreviousDockConfiguration === "function")
-                        WI.__cmuxOriginalTogglePreviousDockConfiguration = WI._togglePreviousDockConfiguration;
+                    if (!WI.__zmuxOriginalUpdateDockNavigationItems && typeof WI._updateDockNavigationItems === "function")
+                        WI.__zmuxOriginalUpdateDockNavigationItems = WI._updateDockNavigationItems;
+                    if (!WI.__zmuxOriginalDockLeft && typeof WI._dockLeft === "function")
+                        WI.__zmuxOriginalDockLeft = WI._dockLeft;
+                    if (!WI.__zmuxOriginalDockRight && typeof WI._dockRight === "function")
+                        WI.__zmuxOriginalDockRight = WI._dockRight;
+                    if (!WI.__zmuxOriginalTogglePreviousDockConfiguration && typeof WI._togglePreviousDockConfiguration === "function")
+                        WI.__zmuxOriginalTogglePreviousDockConfiguration = WI._togglePreviousDockConfiguration;
                     function callOriginal(fn, event) {
                         return typeof fn === "function" ? fn.call(WI, event) : null;
                     }
@@ -4610,34 +4610,34 @@ struct WebViewRepresentable: NSViewRepresentable {
                         }
                     }
                     function enforceDockControls() {
-                        const disallowSideDock = !WI.__cmuxAllowSideDock;
+                        const disallowSideDock = !WI.__zmuxAllowSideDock;
                         updateButton(WI._dockLeftTabBarButton, disallowSideDock || WI.dockConfiguration === WI.DockConfiguration.Left);
                         updateButton(WI._dockRightTabBarButton, disallowSideDock || WI.dockConfiguration === WI.DockConfiguration.Right);
                     }
-                    WI.__cmuxAllowSideDock = allowSideDock;
+                    WI.__zmuxAllowSideDock = allowSideDock;
                     WI._dockLeft = function(event) {
-                        if (!WI.__cmuxAllowSideDock)
+                        if (!WI.__zmuxAllowSideDock)
                             return callOriginal(WI._dockBottom, event);
-                        return callOriginal(WI.__cmuxOriginalDockLeft, event);
+                        return callOriginal(WI.__zmuxOriginalDockLeft, event);
                     };
                     WI._dockRight = function(event) {
-                        if (!WI.__cmuxAllowSideDock)
+                        if (!WI.__zmuxAllowSideDock)
                             return callOriginal(WI._dockBottom, event);
-                        return callOriginal(WI.__cmuxOriginalDockRight, event);
+                        return callOriginal(WI.__zmuxOriginalDockRight, event);
                     };
                     WI._togglePreviousDockConfiguration = function(event) {
                         const previousSideDock = WI._previousDockConfiguration === WI.DockConfiguration.Left || WI._previousDockConfiguration === WI.DockConfiguration.Right;
-                        if (!WI.__cmuxAllowSideDock && previousSideDock)
+                        if (!WI.__zmuxAllowSideDock && previousSideDock)
                             return callOriginal(WI._dockBottom, event);
-                        return callOriginal(WI.__cmuxOriginalTogglePreviousDockConfiguration, event);
+                        return callOriginal(WI.__zmuxOriginalTogglePreviousDockConfiguration, event);
                     };
                     WI._updateDockNavigationItems = function(...args) {
-                        if (typeof WI.__cmuxOriginalUpdateDockNavigationItems === "function")
-                            WI.__cmuxOriginalUpdateDockNavigationItems.apply(WI, args);
+                        if (typeof WI.__zmuxOriginalUpdateDockNavigationItems === "function")
+                            WI.__zmuxOriginalUpdateDockNavigationItems.apply(WI, args);
                         enforceDockControls();
                     };
                     WI._updateDockNavigationItems();
-                    return WI.__cmuxAllowSideDock;
+                    return WI.__zmuxAllowSideDock;
                 })();
                 """,
                 completionHandler: nil
@@ -4699,7 +4699,7 @@ struct WebViewRepresentable: NSViewRepresentable {
                 guard let window, let contentView = window.contentView else { return .zero }
                 return contentView.convert(bounds, from: self)
             }()
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "browser.panel.host stage=\(stage) event=\(String(describing: event?.type)) " +
                 "point=\(String(format: "%.1f,%.1f", point.x, point.y)) pass=\(passThrough ? 1 : 0) " +
                 "hostFrameInContent=\(String(format: "%.1f,%.1f %.1fx%.1f", hostRectInContent.origin.x, hostRectInContent.origin.y, hostRectInContent.width, hostRectInContent.height)) " +
@@ -4723,7 +4723,7 @@ struct WebViewRepresentable: NSViewRepresentable {
         ) {
             let pointDesc = point.map { String(format: "%.1f,%.1f", $0.x, $0.y) } ?? "nil"
             let preferredWidthDesc = preferredHostedInspectorWidth.map { String(format: "%.1f", $0) } ?? "nil"
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "browser.panel.hostedInspector stage=\(stage) point=\(pointDesc) " +
                 "host=\(Self.debugObjectID(self)) container=\(Self.debugObjectID(hit.containerView)) " +
                 "page=\(Self.debugObjectID(hit.pageView)) inspector=\(Self.debugObjectID(hit.inspectorView)) " +
@@ -4744,7 +4744,7 @@ struct WebViewRepresentable: NSViewRepresentable {
                     } ?? "nil"
                     lastLoggedHostedInspectorFrames = nil
                     hasLoggedMissingHostedInspectorCandidate = true
-                    cmuxDebugLog(
+                    zmuxDebugLog(
                         "browser.panel.hostedInspector stage=\(reason).candidateMissing " +
                         "host=\(Self.debugObjectID(self)) preferredWidth=\(preferredWidthDesc)"
                     )
@@ -4884,7 +4884,7 @@ struct WebViewRepresentable: NSViewRepresentable {
 
         private func notifyHostedWebKitHidden(reason: String) {
             for webView in hostedWebKitSubviews {
-                webView.cmuxBrowserPanelNotifyHidden(reason: reason)
+                webView.zmuxBrowserPanelNotifyHidden(reason: reason)
             }
         }
 
@@ -4929,9 +4929,9 @@ struct WebViewRepresentable: NSViewRepresentable {
                 }
                 webView.layoutSubtreeIfNeeded()
                 if forceLifecycleRefresh {
-                    webView.cmuxBrowserPanelForceRenderingStateRefresh(reason: reason)
+                    webView.zmuxBrowserPanelForceRenderingStateRefresh(reason: reason)
                 } else {
-                    webView.cmuxBrowserPanelReattachRenderingState(reason: reason)
+                    webView.zmuxBrowserPanelReattachRenderingState(reason: reason)
                 }
                 webView.displayIfNeeded()
             }
@@ -5167,7 +5167,7 @@ struct WebViewRepresentable: NSViewRepresentable {
             adaptiveBottomDockRequestCooldownDeadline = now.addingTimeInterval(Self.adaptiveBottomDockRequestCooldown)
             updateHostedInspectorDockControlAvailabilityIfNeeded(reason: reason)
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "browser.panel.hostedInspector stage=\(reason).adaptiveBottomDock " +
                 "host=\(Self.debugObjectID(self)) bounds=\(Self.debugRect(bounds))"
             )
@@ -5795,7 +5795,7 @@ struct WebViewRepresentable: NSViewRepresentable {
                     let preferredWidthDesc = preferredHostedInspectorWidth.map {
                         String(format: "%.1f", $0)
                     } ?? "nil"
-                    cmuxDebugLog(
+                    zmuxDebugLog(
                         "browser.panel.hostedInspector stage=\(reason).captureMissingCandidate " +
                         "host=\(Self.debugObjectID(self)) preferredWidth=\(preferredWidthDesc)"
                     )
@@ -5901,7 +5901,7 @@ struct WebViewRepresentable: NSViewRepresentable {
 
             let isLiveDrag = reason == "drag"
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "browser.panel.hostedInspector stage=\(reason).reapply " +
                 "host=\(Self.debugObjectID(self)) preferredWidth=\(String(format: "%.1f", preferredWidth)) " +
                 "liveDrag=\(isLiveDrag ? 1 : 0) " +
@@ -5969,7 +5969,7 @@ struct WebViewRepresentable: NSViewRepresentable {
         if let details, !details.isEmpty {
             line += " \(details)"
         }
-        cmuxDebugLog(line)
+        zmuxDebugLog(line)
     }
 
     private static func objectID(_ object: AnyObject?) -> String {
@@ -6060,7 +6060,7 @@ struct WebViewRepresentable: NSViewRepresentable {
         for webView: WKWebView,
         relativeTo expectedWindow: NSWindow?
     ) -> Bool {
-        webView.cmuxIsManagedByExternalFullscreenWindow(relativeTo: expectedWindow)
+        webView.zmuxIsManagedByExternalFullscreenWindow(relativeTo: expectedWindow)
     }
 
     private static func localInlineTransferRoot(for webView: WKWebView) -> NSView? {
@@ -6106,7 +6106,7 @@ struct WebViewRepresentable: NSViewRepresentable {
 
         append(directTransferChild(of: sourceSuperview, containing: primaryWebView) ?? primaryWebView)
 
-        if let inspectorFrontend = primaryWebView.cmuxInspectorFrontendWebView() {
+        if let inspectorFrontend = primaryWebView.zmuxInspectorFrontendWebView() {
             append(directTransferChild(of: sourceSuperview, containing: inspectorFrontend) ?? inspectorFrontend)
         }
 
@@ -6140,7 +6140,7 @@ struct WebViewRepresentable: NSViewRepresentable {
         var movedSubviewCount = 0
         var reusedSourceLocalFrames = false
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "browser.localHost.reparent.batch reason=\(reason) source=\(Self.objectID(sourceSuperview)) " +
             "container=\(Self.objectID(container)) count=\(relatedSubviews.count) " +
             "sourceType=\(String(describing: type(of: sourceSuperview))) targetType=\(String(describing: type(of: container)))"
@@ -6166,7 +6166,7 @@ struct WebViewRepresentable: NSViewRepresentable {
             view.frame = targetFrame
             movedSubviewCount += 1
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "browser.localHost.reparent.batch.item reason=\(reason) class=\(className) " +
                 "view=\(Self.objectID(view))"
             )
@@ -6247,7 +6247,7 @@ struct WebViewRepresentable: NSViewRepresentable {
             coordinator.lastPortalHostId = nil
             coordinator.lastSynchronizedHostGeometryRevision = 0
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "browser.localHost.reparent.skip web=\(Self.objectID(webView)) " +
                 "reason=offWindowReplacementHost super=\(Self.objectID(webView.superview)) " +
                 "host=\(Self.objectID(host)) slot=\(Self.objectID(slotView))"
@@ -6265,7 +6265,7 @@ struct WebViewRepresentable: NSViewRepresentable {
 
 #if DEBUG
         if shouldPreserveExternalFullscreenHost {
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "browser.localHost.reparent.skip web=\(Self.objectID(webView)) " +
                 "reason=fullscreenExternalHost host=\(Self.objectID(host)) " +
                 "slot=\(Self.objectID(slotView)) state=\(String(describing: webView.fullscreenState))"
@@ -6278,7 +6278,7 @@ struct WebViewRepresentable: NSViewRepresentable {
             width: preferredAttachedWidthState.width,
             widthFraction: preferredAttachedWidthState.widthFraction
         )
-        host.setHostedInspectorFrontendWebView(webView.cmuxInspectorFrontendWebView())
+        host.setHostedInspectorFrontendWebView(webView.zmuxInspectorFrontendWebView())
         host.onPreferredHostedInspectorWidthChanged = { [weak browserPanel = panel] width, _ in
             guard let browserPanel else { return }
             browserPanel.recordPreferredAttachedDeveloperToolsWidth(
@@ -6335,7 +6335,7 @@ struct WebViewRepresentable: NSViewRepresentable {
                         : "localInline.reconcile.existingHost"
                 )
             }
-            host.setHostedInspectorFrontendWebView(webView.cmuxInspectorFrontendWebView())
+            host.setHostedInspectorFrontendWebView(webView.zmuxInspectorFrontendWebView())
             let didRevealDeveloperToolsAfterAttach =
                 !wasDeveloperToolsVisible && panel.isDeveloperToolsVisible()
             webView.needsLayout = true
@@ -6369,7 +6369,7 @@ struct WebViewRepresentable: NSViewRepresentable {
                         reason: "localInline.reconcile.async"
                     )
                 }
-                host.setHostedInspectorFrontendWebView(webView.cmuxInspectorFrontendWebView())
+                host.setHostedInspectorFrontendWebView(webView.zmuxInspectorFrontendWebView())
                 host.refreshHostedWebKitPresentation(
                     reason: didAttachWebViewToLocalHost
                         ? "localInline.update.async"
@@ -6466,7 +6466,7 @@ struct WebViewRepresentable: NSViewRepresentable {
             )
 #if DEBUG
         if !isCurrentPaneOwner && (shouldAttachWebView || host.window != nil) {
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "browser.portal.owner.skip panel=\(panel.id.uuidString.prefix(5)) " +
                 "viewPane=\(paneId.id.uuidString.prefix(5)) " +
                 "currentPane=\(paneDropContext?.paneId.id.uuidString.prefix(5) ?? "nil") " +
@@ -6677,7 +6677,7 @@ struct WebViewRepresentable: NSViewRepresentable {
         // Focus handling. Avoid fighting the address bar when it is focused.
         guard let window = nsView.window else {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "browser.focus.content.apply panel=\(panel.id.uuidString.prefix(5)) " +
                 "action=skip reason=no_window shouldFocus=\(shouldFocusWebView ? 1 : 0) " +
                 "panelFocused=\(isPanelFocused ? 1 : 0)"
@@ -6691,7 +6691,7 @@ struct WebViewRepresentable: NSViewRepresentable {
         if shouldFocusWebView {
             if panel.shouldSuppressWebViewFocus() {
 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "browser.focus.content.apply panel=\(panel.id.uuidString.prefix(5)) " +
                     "action=skip reason=suppressed panelFocused=\(isPanelFocused ? 1 : 0)"
                 )
@@ -6700,7 +6700,7 @@ struct WebViewRepresentable: NSViewRepresentable {
             }
             if responderChainContains(window.firstResponder, target: webView) {
 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "browser.focus.content.apply panel=\(panel.id.uuidString.prefix(5)) " +
                     "action=skip reason=already_first_responder_chain"
                 )
@@ -6712,7 +6712,7 @@ struct WebViewRepresentable: NSViewRepresentable {
                 panel.noteWebViewFocused()
             }
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "browser.focus.content.apply panel=\(panel.id.uuidString.prefix(5)) " +
                 "action=focus result=\(result ? 1 : 0) fr=\(responderDescription(window.firstResponder))"
             )
@@ -6723,7 +6723,7 @@ struct WebViewRepresentable: NSViewRepresentable {
             // clearing first responder here can undo programmatic webview focus (socket tests).
             let result = window.makeFirstResponder(nil)
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "browser.focus.content.apply panel=\(panel.id.uuidString.prefix(5)) " +
                 "action=resign result=\(result ? 1 : 0) fr=\(responderDescription(window.firstResponder))"
             )
@@ -6736,19 +6736,19 @@ struct WebViewRepresentable: NSViewRepresentable {
         webView: WKWebView,
         isPanelFocused: Bool
     ) {
-        guard let cmuxWebView = webView as? CmuxWebView else { return }
+        guard let zmuxWebView = webView as? ZmuxWebView else { return }
         let next = isPanelFocused && !panel.shouldSuppressWebViewFocus()
-        if cmuxWebView.allowsFirstResponderAcquisition != next {
+        if zmuxWebView.allowsFirstResponderAcquisition != next {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "browser.focus.policy panel=\(panel.id.uuidString.prefix(5)) " +
-                "web=\(ObjectIdentifier(cmuxWebView)) old=\(cmuxWebView.allowsFirstResponderAcquisition ? 1 : 0) " +
+                "web=\(ObjectIdentifier(zmuxWebView)) old=\(zmuxWebView.allowsFirstResponderAcquisition ? 1 : 0) " +
                 "new=\(next ? 1 : 0) isPanelFocused=\(isPanelFocused ? 1 : 0) " +
                 "suppress=\(panel.shouldSuppressWebViewFocus() ? 1 : 0)"
             )
 #endif
         }
-        cmuxWebView.allowsFirstResponderAcquisition = next
+        zmuxWebView.allowsFirstResponderAcquisition = next
     }
 
     static func dismantleNSView(_ nsView: NSView, coordinator: Coordinator) {

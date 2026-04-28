@@ -1,30 +1,30 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-APP_NAME="cmux STAGING"
-BUNDLE_ID="com.cmuxterm.app.staging"
-BASE_APP_NAME="cmux"
+APP_NAME="zmux STAGING"
+BUNDLE_ID="com.zmuxterm.app.staging"
+BASE_APP_NAME="zmux"
 DERIVED_DATA=""
 NAME_SET=0
 BUNDLE_SET=0
 DERIVED_SET=0
 TAG=""
-LAST_SOCKET_PATH_DIR="$HOME/Library/Application Support/cmux"
+LAST_SOCKET_PATH_DIR="$HOME/Library/Application Support/zmux"
 LAST_SOCKET_PATH_FILE="${LAST_SOCKET_PATH_DIR}/last-socket-path"
 
 write_last_socket_path() {
   local socket_path="$1"
   mkdir -p "$LAST_SOCKET_PATH_DIR"
   echo "$socket_path" > "$LAST_SOCKET_PATH_FILE" || true
-  echo "$socket_path" > /tmp/cmux-last-socket-path || true
+  echo "$socket_path" > /tmp/zmux-last-socket-path || true
 }
 
 usage() {
   cat <<'EOF'
 Usage: ./scripts/reloads.sh [options]
 
-Release build with isolated "cmux STAGING" identity. Runs side-by-side with
-the production cmux app.
+Release build with isolated "zmux STAGING" identity. Runs side-by-side with
+the production zmux app.
 
 Options:
   --tag <name>           Short tag for parallel builds (e.g., feature-xyz-lol).
@@ -109,19 +109,19 @@ if [[ -n "$TAG" ]]; then
   TAG_ID="$(sanitize_bundle "$TAG")"
   TAG_SLUG="$(sanitize_path "$TAG")"
   if [[ "$NAME_SET" -eq 0 ]]; then
-    APP_NAME="cmux STAGING ${TAG}"
+    APP_NAME="zmux STAGING ${TAG}"
   fi
   if [[ "$BUNDLE_SET" -eq 0 ]]; then
-    BUNDLE_ID="com.cmuxterm.app.staging.${TAG_ID}"
+    BUNDLE_ID="com.zmuxterm.app.staging.${TAG_ID}"
   fi
   if [[ "$DERIVED_SET" -eq 0 ]]; then
-    DERIVED_DATA="/tmp/cmux-staging-${TAG_SLUG}"
+    DERIVED_DATA="/tmp/zmux-staging-${TAG_SLUG}"
   fi
 fi
 
 XCODEBUILD_ARGS=(
   -project GhosttyTabs.xcodeproj
-  -scheme cmux
+  -scheme zmux
   -configuration Release
   -destination 'platform=macOS'
 )
@@ -181,7 +181,7 @@ fi
 
 # Staging always copies the built app and patches the plist to set an isolated
 # socket path, bundle id, and display name. This prevents conflicts with the
-# production cmux app.
+# production zmux app.
 STAGING_APP_PATH="$(dirname "$APP_PATH")/${APP_NAME}.app"
 rm -rf "$STAGING_APP_PATH"
 cp -R "$APP_PATH" "$STAGING_APP_PATH"
@@ -197,23 +197,23 @@ if [[ -f "$INFO_PLIST" ]]; then
   # Inject staging socket paths via LSEnvironment so the Release binary
   # (which defaults to the per-user stable socket) uses isolated sockets instead.
   STAGING_SLUG="${TAG_SLUG:-staging}"
-  APP_SUPPORT_DIR="$HOME/Library/Application Support/cmux"
-  CMUXD_SOCKET="${APP_SUPPORT_DIR}/cmuxd-${STAGING_SLUG}.sock"
-  CMUX_SOCKET="/tmp/cmux-${STAGING_SLUG}.sock"
-  write_last_socket_path "$CMUX_SOCKET"
+  APP_SUPPORT_DIR="$HOME/Library/Application Support/zmux"
+  ZMUXD_SOCKET="${APP_SUPPORT_DIR}/zmuxd-${STAGING_SLUG}.sock"
+  ZMUX_SOCKET="/tmp/zmux-${STAGING_SLUG}.sock"
+  write_last_socket_path "$ZMUX_SOCKET"
   /usr/libexec/PlistBuddy -c "Add :LSEnvironment dict" "$INFO_PLIST" 2>/dev/null || true
-  /usr/libexec/PlistBuddy -c "Set :LSEnvironment:CMUXD_UNIX_PATH \"${CMUXD_SOCKET}\"" "$INFO_PLIST" 2>/dev/null \
-    || /usr/libexec/PlistBuddy -c "Add :LSEnvironment:CMUXD_UNIX_PATH string \"${CMUXD_SOCKET}\"" "$INFO_PLIST"
-  /usr/libexec/PlistBuddy -c "Set :LSEnvironment:CMUX_SOCKET_PATH \"${CMUX_SOCKET}\"" "$INFO_PLIST" 2>/dev/null \
-    || /usr/libexec/PlistBuddy -c "Add :LSEnvironment:CMUX_SOCKET_PATH string \"${CMUX_SOCKET}\"" "$INFO_PLIST"
-  if [[ -S "$CMUXD_SOCKET" ]]; then
-    for PID in $(lsof -t "$CMUXD_SOCKET" 2>/dev/null); do
+  /usr/libexec/PlistBuddy -c "Set :LSEnvironment:ZMUXD_UNIX_PATH \"${ZMUXD_SOCKET}\"" "$INFO_PLIST" 2>/dev/null \
+    || /usr/libexec/PlistBuddy -c "Add :LSEnvironment:ZMUXD_UNIX_PATH string \"${ZMUXD_SOCKET}\"" "$INFO_PLIST"
+  /usr/libexec/PlistBuddy -c "Set :LSEnvironment:ZMUX_SOCKET_PATH \"${ZMUX_SOCKET}\"" "$INFO_PLIST" 2>/dev/null \
+    || /usr/libexec/PlistBuddy -c "Add :LSEnvironment:ZMUX_SOCKET_PATH string \"${ZMUX_SOCKET}\"" "$INFO_PLIST"
+  if [[ -S "$ZMUXD_SOCKET" ]]; then
+    for PID in $(lsof -t "$ZMUXD_SOCKET" 2>/dev/null); do
       kill "$PID" 2>/dev/null || true
     done
-    rm -f "$CMUXD_SOCKET"
+    rm -f "$ZMUXD_SOCKET"
   fi
-  if [[ -S "$CMUX_SOCKET" ]]; then
-    rm -f "$CMUX_SOCKET"
+  if [[ -S "$ZMUX_SOCKET" ]]; then
+    rm -f "$ZMUX_SOCKET"
   fi
   /usr/bin/codesign --force --sign - --timestamp=none --generate-entitlement-der "$STAGING_APP_PATH" >/dev/null 2>&1 || true
 fi
@@ -225,33 +225,33 @@ sleep 0.3
 # Kill any running staging instance; allow side-by-side with the main and dev apps.
 pkill -f "${APP_NAME}.app/Contents/MacOS/${BASE_APP_NAME}" || true
 sleep 0.3
-CMUXD_SRC="$PWD/cmuxd/zig-out/bin/cmuxd"
-if [[ -d "$PWD/cmuxd" ]]; then
-  (cd "$PWD/cmuxd" && zig build -Doptimize=ReleaseFast)
+ZMUXD_SRC="$PWD/zmuxd/zig-out/bin/zmuxd"
+if [[ -d "$PWD/zmuxd" ]]; then
+  (cd "$PWD/zmuxd" && zig build -Doptimize=ReleaseFast)
 fi
-if [[ -x "$CMUXD_SRC" ]]; then
+if [[ -x "$ZMUXD_SRC" ]]; then
   BIN_DIR="$APP_PATH/Contents/Resources/bin"
   mkdir -p "$BIN_DIR"
-  cp "$CMUXD_SRC" "$BIN_DIR/cmuxd"
-  chmod +x "$BIN_DIR/cmuxd"
+  cp "$ZMUXD_SRC" "$BIN_DIR/zmuxd"
+  chmod +x "$BIN_DIR/zmuxd"
 fi
-# Avoid inheriting cmux/ghostty environment variables from the terminal that
-# runs this script (often inside another cmux instance), which can cause
+# Avoid inheriting zmux/ghostty environment variables from the terminal that
+# runs this script (often inside another zmux instance), which can cause
 # socket and resource-path conflicts.
 OPEN_CLEAN_ENV=(
   env
-  -u CMUX_SOCKET_PATH
-  -u CMUX_TAB_ID
-  -u CMUX_PANEL_ID
-  -u CMUXD_UNIX_PATH
-  -u CMUX_TAG
-  -u CMUX_BUNDLE_ID
-  -u CMUX_SHELL_INTEGRATION
+  -u ZMUX_SOCKET_PATH
+  -u ZMUX_TAB_ID
+  -u ZMUX_PANEL_ID
+  -u ZMUXD_UNIX_PATH
+  -u ZMUX_TAG
+  -u ZMUX_BUNDLE_ID
+  -u ZMUX_SHELL_INTEGRATION
   -u GHOSTTY_BIN_DIR
   -u GHOSTTY_RESOURCES_DIR
   -u GHOSTTY_SHELL_FEATURES
   # Dev shells (including CI/Codex) often force-disable paging by exporting these.
-  # Don't leak that into cmux, otherwise `git diff` won't page even with PAGER=less.
+  # Don't leak that into zmux, otherwise `git diff` won't page even with PAGER=less.
   -u GIT_PAGER
   -u GH_PAGER
   -u TERMINFO
@@ -260,7 +260,7 @@ OPEN_CLEAN_ENV=(
 
 # Always inject staging socket paths via env to ensure they take effect
 # (LSEnvironment requires app restart to pick up plist changes).
-"${OPEN_CLEAN_ENV[@]}" CMUX_SOCKET_PATH="$CMUX_SOCKET" CMUXD_UNIX_PATH="$CMUXD_SOCKET" open -g "$APP_PATH"
+"${OPEN_CLEAN_ENV[@]}" ZMUX_SOCKET_PATH="$ZMUX_SOCKET" ZMUXD_UNIX_PATH="$ZMUXD_SOCKET" open -g "$APP_PATH"
 
 # Safety: ensure only one instance is running.
 sleep 0.2

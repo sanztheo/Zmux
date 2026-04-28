@@ -637,7 +637,7 @@ fileprivate final class VsyncIOSurfaceTimelineState {
     }
 }
 
-fileprivate func cmuxVsyncIOSurfaceTimelineCallback(
+fileprivate func zmuxVsyncIOSurfaceTimelineCallback(
     _ displayLink: CVDisplayLink,
     _ inNow: UnsafePointer<CVTimeStamp>,
     _ inOutputTime: UnsafePointer<CVTimeStamp>,
@@ -896,7 +896,7 @@ class TabManager: ObservableObject {
     @Published private(set) var pendingBackgroundWorkspaceLoadIds: Set<UUID> = []
     @Published private(set) var debugPinnedWorkspaceLoadIds: Set<UUID> = []
 
-    /// Global monotonically increasing counter for CMUX_PORT ordinal assignment.
+    /// Global monotonically increasing counter for ZMUX_PORT ordinal assignment.
     /// Static so port ranges don't overlap across multiple windows (each window has its own TabManager).
     private static var nextPortOrdinal: Int = 0
     private nonisolated static let initialWorkspaceGitProbeDelays: [TimeInterval] = [0, 0.5, 1.5, 3.0, 6.0, 10.0]
@@ -956,7 +956,7 @@ class TabManager: ObservableObject {
             let switchDtMs = debugWorkspaceSwitchStartTime > 0
                 ? (CACurrentMediaTime() - debugWorkspaceSwitchStartTime) * 1000
                 : 0
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "ws.select.didSet id=\(switchId) from=\(Self.debugShortWorkspaceId(previousTabId)) " +
                 "to=\(Self.debugShortWorkspaceId(selectedTabId)) dt=\(Self.debugMsText(switchDtMs))"
             )
@@ -974,7 +974,7 @@ class TabManager: ObservableObject {
                 let dtMs = self.debugWorkspaceSwitchStartTime > 0
                     ? (CACurrentMediaTime() - self.debugWorkspaceSwitchStartTime) * 1000
                     : 0
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "ws.select.asyncDone id=\(self.debugWorkspaceSwitchId) dt=\(Self.debugMsText(dtMs)) " +
                     "selected=\(Self.debugShortWorkspaceId(self.selectedTabId))"
                 )
@@ -993,7 +993,7 @@ class TabManager: ObservableObject {
     private let panelTitleUpdateCoalescer = NotificationBurstCoalescer(delay: 1.0 / 30.0)
     private var recentlyClosedBrowsers = RecentlyClosedBrowserStack(capacity: 20)
     private let initialWorkspaceGitProbeQueue = DispatchQueue(
-        label: "com.cmux.initial-workspace-git-probe",
+        label: "com.zmux.initial-workspace-git-probe",
         qos: .utility
     )
     private var workspaceGitProbeStateByKey: [WorkspaceGitProbeKey: WorkspaceGitProbeState] = [:]
@@ -1430,7 +1430,7 @@ class TabManager: ObservableObject {
             workspacePullRequestNextPollAtByKey[key] = .distantPast
         }
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "workspace.prRefresh.schedule workspace=\(workspaceId.uuidString.prefix(5)) " +
             "panel=\(panelId.uuidString.prefix(5)) reason=\(reason)"
         )
@@ -1570,7 +1570,7 @@ class TabManager: ObservableObject {
                     return "#\(resolvedPullRequest.number):\(resolvedPullRequest.statusRawValue)"
                 }
             }()
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "workspace.prRefresh.apply workspace=\(result.workspaceId.uuidString.prefix(5)) " +
                 "panel=\(result.panelId.uuidString.prefix(5)) result=\(label) reason=\(reason)"
             )
@@ -1931,7 +1931,7 @@ class TabManager: ObservableObject {
             let handled = startOrFocusTerminalSearch(panel.surface)
             NSLog("Find: startSearch workspace=%@ panel=%@", panel.workspaceId.uuidString, panel.id.uuidString)
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "find.startSearch workspace=\(panel.workspaceId.uuidString.prefix(5)) " +
                 "panel=\(panel.id.uuidString.prefix(5)) existing=\(hadExistingSearch ? "yes" : "no") " +
                 "handled=\(handled ? 1 : 0) " +
@@ -1991,7 +1991,7 @@ class TabManager: ObservableObject {
         title: String,
         workingDirectory: String?,
         portOrdinal: Int,
-        configTemplate: CmuxSurfaceConfigTemplate?,
+        configTemplate: ZmuxSurfaceConfigTemplate?,
         initialTerminalCommand: String?,
         initialTerminalInput: String? = nil,
         initialTerminalEnvironment: [String: String]
@@ -2043,10 +2043,10 @@ class TabManager: ObservableObject {
     ) {
         let env = ProcessInfo.processInfo.environment
         let isEnabled: Bool = {
-            if let raw = env["CMUX_DEV_MUTATE_WORKSPACE_SELECTION_DURING_CREATION"] {
+            if let raw = env["ZMUX_DEV_MUTATE_WORKSPACE_SELECTION_DURING_CREATION"] {
                 return raw == "1" || raw.caseInsensitiveCompare("true") == .orderedSame
             }
-            return UserDefaults.standard.bool(forKey: "cmuxDevMutateWorkspaceSelectionDuringCreation")
+            return UserDefaults.standard.bool(forKey: "zmuxDevMutateWorkspaceSelectionDuringCreation")
         }()
         guard isEnabled,
               let selectedTabId = snapshot.selectedTabId,
@@ -2054,7 +2054,7 @@ class TabManager: ObservableObject {
               tabs.contains(where: { $0.id == targetId }) else {
             return
         }
-        cmuxDebugLog(
+        zmuxDebugLog(
             "workspace.create.devSelectionMutation from=\(selectedTabId.uuidString.prefix(5)) " +
             "to=\(targetId.uuidString.prefix(5))"
         )
@@ -2185,7 +2185,7 @@ class TabManager: ObservableObject {
            terminalPanel.surface.surface != nil {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 UserDefaults.standard.set(true, forKey: WelcomeSettings.shownKey)
-                terminalPanel.sendText("cmux welcome\n")
+                terminalPanel.sendText("zmux welcome\n")
             }
             return
         }
@@ -2205,7 +2205,7 @@ class TabManager: ObservableObject {
             panelsCancellable?.cancel()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 UserDefaults.standard.set(true, forKey: WelcomeSettings.shownKey)
-                terminalPanel.sendText("cmux welcome\n")
+                terminalPanel.sendText("zmux welcome\n")
             }
         }
 
@@ -2268,7 +2268,7 @@ class TabManager: ObservableObject {
         }
 
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "workspace.gitProbe.schedule workspace=\(workspaceId.uuidString.prefix(5)) " +
             "panel=\(panelId.uuidString.prefix(5)) dir=\(normalizedDirectory) reason=\(reason)"
         )
@@ -2402,7 +2402,7 @@ class TabManager: ObservableObject {
             clearWorkspaceGitProbe(probeKey)
             didClearProbe = true
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "workspace.gitProbe.skip workspace=\(probeKey.workspaceId.uuidString.prefix(5)) " +
                 "panel=\(probeKey.panelId.uuidString.prefix(5)) reason=directoryChanged " +
                 "expected=\(expectedDirectory) current=\(currentDirectory)"
@@ -2478,7 +2478,7 @@ class TabManager: ObservableObject {
                 return "#\(pullRequest.number):\(pullRequest.status.rawValue)"
             }
         }()
-        cmuxDebugLog(
+        zmuxDebugLog(
             "workspace.gitProbe.apply workspace=\(probeKey.workspaceId.uuidString.prefix(5)) " +
             "panel=\(probeKey.panelId.uuidString.prefix(5)) branch=\(branchLabel) dirty=\(snapshot.isDirty ? 1 : 0) " +
             "pr=\(prLabel)"
@@ -2664,7 +2664,7 @@ class TabManager: ObservableObject {
             )
             if unresolvedBranches.isEmpty {
 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "workspace.prRefresh.repo.cache repo=\(repoSlug) " +
                     "branches=\(cachedEntry.pullRequestsByBranch.count)"
                 )
@@ -2681,7 +2681,7 @@ class TabManager: ObservableObject {
                 authHeader: authHeader
             )
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "workspace.prRefresh.repo.cache.miss repo=\(repoSlug) " +
                 "branchLookups=\(unresolvedBranches.count) transient=\(lookupOutcome.transientBranches.count)"
             )
@@ -2706,7 +2706,7 @@ class TabManager: ObservableObject {
                 authHeader: authHeader
             ) else {
 #if DEBUG
-                cmuxDebugLog("workspace.prRefresh.repo.fail repo=\(repoSlug) page=\(page) status=nil")
+                zmuxDebugLog("workspace.prRefresh.repo.fail repo=\(repoSlug) page=\(page) status=nil")
 #endif
                 return .transientFailure
             }
@@ -2714,7 +2714,7 @@ class TabManager: ObservableObject {
             guard response.statusCode == 200,
                   let pullRequests = decodeJSON([WorkspacePullRequestRESTItem].self, from: response.data) else {
 #if DEBUG
-                cmuxDebugLog("workspace.prRefresh.repo.fail repo=\(repoSlug) page=\(page) status=\(response.statusCode)")
+                zmuxDebugLog("workspace.prRefresh.repo.fail repo=\(repoSlug) page=\(page) status=\(response.statusCode)")
 #endif
                 return .transientFailure
             }
@@ -2752,7 +2752,7 @@ class TabManager: ObservableObject {
             )
         }
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "workspace.prRefresh.repo.success repo=\(repoSlug) pages=\(fetchedPageCount) " +
             "branches=\(lookupOutcome.cacheEntry.pullRequestsByBranch.count) " +
             "branchLookups=\(unresolvedBranches.count) transient=\(lookupOutcome.transientBranches.count)"
@@ -2860,7 +2860,7 @@ class TabManager: ObservableObject {
             authHeader: authHeader
         ) else {
 #if DEBUG
-            cmuxDebugLog("workspace.prRefresh.branch.fail repo=\(repoSlug) branch=\(branch) status=nil")
+            zmuxDebugLog("workspace.prRefresh.branch.fail repo=\(repoSlug) branch=\(branch) status=nil")
 #endif
             return .transientFailure
         }
@@ -2868,7 +2868,7 @@ class TabManager: ObservableObject {
         guard response.statusCode == 200,
               let pullRequests = decodeJSON([WorkspacePullRequestRESTItem].self, from: response.data) else {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "workspace.prRefresh.branch.fail repo=\(repoSlug) " +
                 "branch=\(branch) status=\(response.statusCode)"
             )
@@ -2937,7 +2937,7 @@ class TabManager: ObservableObject {
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
-        request.setValue("cmux-workspace-pr-poller", forHTTPHeaderField: "User-Agent")
+        request.setValue("zmux-workspace-pr-poller", forHTTPHeaderField: "User-Agent")
         if let authHeader, !authHeader.isEmpty {
             request.setValue(authHeader, forHTTPHeaderField: "Authorization")
         }
@@ -3638,7 +3638,7 @@ class TabManager: ObservableObject {
         for workspace in currentTabs {
             guard let tabSnapshot = snapshotTabsById[workspace.id] else {
 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "workspace.create.reentrantSnapshotFallback " +
                     "snapshotCount=\(snapshot.tabs.count) liveCount=\(currentTabs.count)"
                 )
@@ -3679,7 +3679,7 @@ class TabManager: ObservableObject {
         return candidates.first
     }
 
-    private func inheritedTerminalConfigForNewWorkspace() -> CmuxSurfaceConfigTemplate? {
+    private func inheritedTerminalConfigForNewWorkspace() -> ZmuxSurfaceConfigTemplate? {
         inheritedTerminalConfigForNewWorkspace(workspace: selectedWorkspace)
     }
 
@@ -3702,11 +3702,11 @@ class TabManager: ObservableObject {
 
     func inheritedTerminalConfigForNewWorkspace(
         workspace: Workspace?
-    ) -> CmuxSurfaceConfigTemplate? {
+    ) -> ZmuxSurfaceConfigTemplate? {
         guard let fontPoints = cachedInheritedTerminalFontPointsForNewWorkspace(workspace: workspace) else {
             return nil
         }
-        var config = CmuxSurfaceConfigTemplate()
+        var config = ZmuxSurfaceConfigTemplate()
         config.fontSize = fontPoints
         return config
     }
@@ -3723,13 +3723,13 @@ class TabManager: ObservableObject {
 
     private func workspaceCreationConfigTemplate(
         inheritedTerminalFontPoints: Float?
-    ) -> CmuxSurfaceConfigTemplate? {
+    ) -> ZmuxSurfaceConfigTemplate? {
         guard let inheritedTerminalFontPoints, inheritedTerminalFontPoints > 0 else {
             return nil
         }
         // Rebuild a clean Swift-owned template instead of carrying over any pointer-backed
         // inherited config state from the source workspace.
-        var config = CmuxSurfaceConfigTemplate()
+        var config = ZmuxSurfaceConfigTemplate()
         config.fontSize = inheritedTerminalFontPoints
         return config
     }
@@ -4391,7 +4391,7 @@ class TabManager: ObservableObject {
 
     private func isCloseConfirmationMainWindow(_ candidate: NSWindow) -> Bool {
         guard let raw = candidate.identifier?.rawValue else { return false }
-        return raw == "cmux.main" || raw.hasPrefix("cmux.main.")
+        return raw == "zmux.main" || raw.hasPrefix("zmux.main.")
     }
 
     private struct CloseOtherTabsInFocusedPanePlan {
@@ -4533,7 +4533,7 @@ class TabManager: ObservableObject {
     private func closePanelWithConfirmation(tab: Workspace, panelId: UUID) {
         guard tab.panels[panelId] != nil else {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "surface.close.shortcut.skip tab=\(tab.id.uuidString.prefix(5)) " +
                 "panel=\(panelId.uuidString.prefix(5)) reason=missingPanel"
             )
@@ -4552,7 +4552,7 @@ class TabManager: ObservableObject {
         }()
         let closesWorkspaceOnLastSurfaceShortcut = shouldCloseWorkspaceOnLastSurfaceShortcut(tab, panelId: panelId)
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "surface.close.shortcut.begin tab=\(tab.id.uuidString.prefix(5)) " +
             "panel=\(panelId.uuidString.prefix(5)) kind=\(panelKind) " +
             "panelCount=\(tab.panels.count) bonsplitTabs=\(bonsplitTabCount) " +
@@ -4568,7 +4568,7 @@ class TabManager: ObservableObject {
         }
         let closed = tab.closePanel(panelId)
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "surface.close.shortcut tab=\(tab.id.uuidString.prefix(5)) " +
             "panel=\(panelId.uuidString.prefix(5)) closed=\(closed ? 1 : 0) " +
             "panelsAfterCall=\(tab.panels.count)"
@@ -4629,7 +4629,7 @@ class TabManager: ObservableObject {
         guard tab.panels[surfaceId] != nil else { return }
 
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "surface.close.runtime tab=\(tabId.uuidString.prefix(5)) " +
             "surface=\(surfaceId.uuidString.prefix(5)) panelsBefore=\(tab.panels.count)"
         )
@@ -4641,7 +4641,7 @@ class TabManager: ObservableObject {
         reconcileFocusedPanelFromFirstResponderForKeyboard()
         let closed = tab.closePanel(surfaceId, force: true)
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "surface.close.runtime.done tab=\(tabId.uuidString.prefix(5)) " +
             "surface=\(surfaceId.uuidString.prefix(5)) closed=\(closed ? 1 : 0) panelsAfter=\(tab.panels.count)"
         )
@@ -4660,7 +4660,7 @@ class TabManager: ObservableObject {
             tab.panels.count <= 1 && tab.shouldDemoteWorkspaceAfterChildExit(surfaceId: surfaceId)
 
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "surface.close.childExited tab=\(tabId.uuidString.prefix(5)) " +
             "surface=\(surfaceId.uuidString.prefix(5)) panels=\(tab.panels.count) workspaces=\(tabs.count) " +
             "remoteWorkspace=\(tab.isRemoteWorkspace ? 1 : 0) keepRemote=\(keepsRemoteWorkspaceOpen ? 1 : 0)"
@@ -4699,7 +4699,7 @@ class TabManager: ObservableObject {
 
     private func workspaceNeedsConfirmClose(_ workspace: Workspace) -> Bool {
 #if DEBUG
-        if ProcessInfo.processInfo.environment["CMUX_UI_TEST_FORCE_CONFIRM_CLOSE_WORKSPACE"] == "1" {
+        if ProcessInfo.processInfo.environment["ZMUX_UI_TEST_FORCE_CONFIRM_CLOSE_WORKSPACE"] == "1" {
             return true
         }
 #endif
@@ -4778,7 +4778,7 @@ class TabManager: ObservableObject {
 
         let didRequestExplicitWebViewFocus = browserPanel.requestExplicitWebViewFocus()
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "reactGrab.pasteback h1.focusRequestResult " +
             "workspace=\(workspace.id.uuidString.prefix(5)) " +
             "browser=\(browserPanel.id.uuidString.prefix(5)) " +
@@ -4871,7 +4871,7 @@ class TabManager: ObservableObject {
         ) else {
             pendingWorkspaceUnfocusTarget = nil
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "ws.unfocus.drop tab=\(Self.debugShortWorkspaceId(pending.tabId)) panel=\(String(pending.panelId.uuidString.prefix(5))) reason=selected_again"
             )
 #endif
@@ -4882,12 +4882,12 @@ class TabManager: ObservableObject {
 #if DEBUG
         if let snapshot = debugCurrentWorkspaceSwitchSnapshot() {
             let dtMs = (CACurrentMediaTime() - snapshot.startedAt) * 1000
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "ws.unfocus.complete id=\(snapshot.id) dt=\(Self.debugMsText(dtMs)) " +
                 "tab=\(Self.debugShortWorkspaceId(pending.tabId)) panel=\(String(pending.panelId.uuidString.prefix(5))) reason=\(reason)"
             )
         } else {
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "ws.unfocus.complete id=none tab=\(Self.debugShortWorkspaceId(pending.tabId)) " +
                 "panel=\(String(pending.panelId.uuidString.prefix(5))) reason=\(reason)"
             )
@@ -4910,13 +4910,13 @@ class TabManager: ObservableObject {
             ) {
                 unfocusWorkspacePanel(tabId: current.tabId, panelId: current.panelId)
 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "ws.unfocus.flush tab=\(Self.debugShortWorkspaceId(current.tabId)) panel=\(String(current.panelId.uuidString.prefix(5))) reason=replaced"
                 )
 #endif
             } else {
 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "ws.unfocus.drop tab=\(Self.debugShortWorkspaceId(current.tabId)) panel=\(String(current.panelId.uuidString.prefix(5))) reason=replaced_selected"
                 )
 #endif
@@ -4927,12 +4927,12 @@ class TabManager: ObservableObject {
 #if DEBUG
         if let snapshot = debugCurrentWorkspaceSwitchSnapshot() {
             let dtMs = (CACurrentMediaTime() - snapshot.startedAt) * 1000
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "ws.unfocus.defer id=\(snapshot.id) dt=\(Self.debugMsText(dtMs)) " +
                 "tab=\(Self.debugShortWorkspaceId(next.tabId)) panel=\(String(next.panelId.uuidString.prefix(5)))"
             )
         } else {
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "ws.unfocus.defer id=none tab=\(Self.debugShortWorkspaceId(next.tabId)) panel=\(String(next.panelId.uuidString.prefix(5)))"
             )
         }
@@ -5040,13 +5040,13 @@ class TabManager: ObservableObject {
     }
 
     private func windowTitle(for tab: Workspace?) -> String {
-        guard let tab else { return "cmux" }
+        guard let tab else { return "zmux" }
         let trimmedTitle = tab.title.trimmingCharacters(in: .whitespacesAndNewlines)
         if !trimmedTitle.isEmpty {
             return trimmedTitle
         }
         let trimmedDirectory = tab.currentDirectory.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmedDirectory.isEmpty ? "cmux" : trimmedDirectory
+        return trimmedDirectory.isEmpty ? "zmux" : trimmedDirectory
     }
 
     func focusTab(_ tabId: UUID, surfaceId: UUID? = nil, suppressFlash: Bool = false) {
@@ -5091,13 +5091,13 @@ class TabManager: ObservableObject {
     func focusTabFromNotification(_ tabId: UUID, surfaceId: UUID? = nil) -> Bool {
         guard let tab = tabs.first(where: { $0.id == tabId }) else {
 #if DEBUG
-            cmuxDebugLog("notification.focus.fail tab=\(tabId.uuidString.prefix(5)) reason=missingTab")
+            zmuxDebugLog("notification.focus.fail tab=\(tabId.uuidString.prefix(5)) reason=missingTab")
 #endif
             return false
         }
         if let surfaceId, tab.panels[surfaceId] == nil {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "notification.focus.fail tab=\(tabId.uuidString.prefix(5)) " +
                 "panel=\(surfaceId.uuidString.prefix(5)) reason=missingPanel"
             )
@@ -5165,7 +5165,7 @@ class TabManager: ObservableObject {
         if !isWorkspaceCycleHot {
             isWorkspaceCycleHot = true
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "ws.hot.on id=\(switchId) gen=\(generation) dt=\(Self.debugMsText(switchDtMs))"
             )
 #endif
@@ -5175,7 +5175,7 @@ class TabManager: ObservableObject {
         workspaceCycleCooldownTask?.cancel()
 #if DEBUG
         if hadPendingCooldown {
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "ws.hot.cancelPrev id=\(switchId) gen=\(generation) dt=\(Self.debugMsText(switchDtMs))"
             )
         }
@@ -5190,7 +5190,7 @@ class TabManager: ObservableObject {
                     let dtMs = self.debugWorkspaceSwitchStartTime > 0
                         ? (CACurrentMediaTime() - self.debugWorkspaceSwitchStartTime) * 1000
                         : 0
-                    cmuxDebugLog(
+                    zmuxDebugLog(
                         "ws.hot.cooldownCanceled id=\(self.debugWorkspaceSwitchId) gen=\(generation) dt=\(Self.debugMsText(dtMs))"
                     )
                 }
@@ -5204,7 +5204,7 @@ class TabManager: ObservableObject {
                 let dtMs = self.debugWorkspaceSwitchStartTime > 0
                     ? (CACurrentMediaTime() - self.debugWorkspaceSwitchStartTime) * 1000
                     : 0
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "ws.hot.off id=\(self.debugWorkspaceSwitchId) gen=\(generation) dt=\(Self.debugMsText(dtMs))"
                 )
 #endif
@@ -5247,7 +5247,7 @@ class TabManager: ObservableObject {
         debugWorkspaceSwitchCounter &+= 1
         debugWorkspaceSwitchId = debugWorkspaceSwitchCounter
         debugWorkspaceSwitchStartTime = CACurrentMediaTime()
-        cmuxDebugLog(
+        zmuxDebugLog(
             "ws.switch.begin id=\(debugWorkspaceSwitchId) trigger=\(trigger) " +
             "from=\(Self.debugShortWorkspaceId(from)) to=\(Self.debugShortWorkspaceId(to)) " +
             "hot=\(isWorkspaceCycleHot ? 1 : 0) tabs=\(tabs.count)"
@@ -5356,11 +5356,11 @@ class TabManager: ObservableObject {
     }
 
     func applySurfaceTabBarButtons(
-        _ buttons: [CmuxSurfaceTabBarButton],
+        _ buttons: [ZmuxSurfaceTabBarButton],
         sourcePath: String?,
         globalConfigPath: String,
         terminalCommandSourcePaths: [String: String],
-        workspaceCommands: [String: CmuxResolvedCommand]
+        workspaceCommands: [String: ZmuxResolvedCommand]
     ) {
         for workspace in tabs {
             workspace.applySurfaceTabBarButtons(
@@ -6103,7 +6103,7 @@ class TabManager: ObservableObject {
         didSetupUITestFocusShortcuts = true
 
         let env = ProcessInfo.processInfo.environment
-        guard env["CMUX_UI_TEST_FOCUS_SHORTCUTS"] == "1" else { return }
+        guard env["ZMUX_UI_TEST_FOCUS_SHORTCUTS"] == "1" else { return }
 
         // UI tests can't record arrow keys via the shortcut recorder. Use letter-based shortcuts
         // so tests can reliably drive pane navigation without mouse clicks.
@@ -6130,14 +6130,14 @@ class TabManager: ObservableObject {
         didSetupSplitCloseRightUITest = true
 
         let env = ProcessInfo.processInfo.environment
-        guard env["CMUX_UI_TEST_SPLIT_CLOSE_RIGHT_SETUP"] == "1" else { return }
-        guard let path = env["CMUX_UI_TEST_SPLIT_CLOSE_RIGHT_PATH"], !path.isEmpty else { return }
-        let visualMode = env["CMUX_UI_TEST_SPLIT_CLOSE_RIGHT_VISUAL"] == "1"
-        let shotsDir = (env["CMUX_UI_TEST_SPLIT_CLOSE_RIGHT_SHOTS_DIR"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        let visualIterations = Int((env["CMUX_UI_TEST_SPLIT_CLOSE_RIGHT_ITERATIONS"] ?? "20").trimmingCharacters(in: .whitespacesAndNewlines)) ?? 20
-        let burstFrames = Int((env["CMUX_UI_TEST_SPLIT_CLOSE_RIGHT_BURST_FRAMES"] ?? "6").trimmingCharacters(in: .whitespacesAndNewlines)) ?? 6
-        let closeDelayMs = Int((env["CMUX_UI_TEST_SPLIT_CLOSE_RIGHT_CLOSE_DELAY_MS"] ?? "70").trimmingCharacters(in: .whitespacesAndNewlines)) ?? 70
-        let pattern = (env["CMUX_UI_TEST_SPLIT_CLOSE_RIGHT_PATTERN"] ?? "close_right")
+        guard env["ZMUX_UI_TEST_SPLIT_CLOSE_RIGHT_SETUP"] == "1" else { return }
+        guard let path = env["ZMUX_UI_TEST_SPLIT_CLOSE_RIGHT_PATH"], !path.isEmpty else { return }
+        let visualMode = env["ZMUX_UI_TEST_SPLIT_CLOSE_RIGHT_VISUAL"] == "1"
+        let shotsDir = (env["ZMUX_UI_TEST_SPLIT_CLOSE_RIGHT_SHOTS_DIR"] ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let visualIterations = Int((env["ZMUX_UI_TEST_SPLIT_CLOSE_RIGHT_ITERATIONS"] ?? "20").trimmingCharacters(in: .whitespacesAndNewlines)) ?? 20
+        let burstFrames = Int((env["ZMUX_UI_TEST_SPLIT_CLOSE_RIGHT_BURST_FRAMES"] ?? "6").trimmingCharacters(in: .whitespacesAndNewlines)) ?? 6
+        let closeDelayMs = Int((env["ZMUX_UI_TEST_SPLIT_CLOSE_RIGHT_CLOSE_DELAY_MS"] ?? "70").trimmingCharacters(in: .whitespacesAndNewlines)) ?? 70
+        let pattern = (env["ZMUX_UI_TEST_SPLIT_CLOSE_RIGHT_PATTERN"] ?? "close_right")
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
@@ -6414,13 +6414,13 @@ class TabManager: ObservableObject {
             try? await Task.sleep(nanoseconds: 180_000_000)
 
             // Fill left panes with visible content.
-            sendText(topLeftId, "printf '\\033[2J\\033[H'; for i in {1..200}; do echo CMUX_SPLIT_TOPLEFT_\(i); done; printf '\\033[HCMUX_MARKER_TOPLEFT\\n'\r")
-            sendText(topRight.id, "printf '\\033[2J\\033[H'; for i in {1..200}; do echo CMUX_SPLIT_TOPRIGHT_\(i); done; printf '\\033[HCMUX_MARKER_TOPRIGHT\\n'\r")
+            sendText(topLeftId, "printf '\\033[2J\\033[H'; for i in {1..200}; do echo ZMUX_SPLIT_TOPLEFT_\(i); done; printf '\\033[HZMUX_MARKER_TOPLEFT\\n'\r")
+            sendText(topRight.id, "printf '\\033[2J\\033[H'; for i in {1..200}; do echo ZMUX_SPLIT_TOPRIGHT_\(i); done; printf '\\033[HZMUX_MARKER_TOPRIGHT\\n'\r")
             if let bottomLeft {
-                sendText(bottomLeft.id, "printf '\\033[2J\\033[H'; for i in {1..200}; do echo CMUX_SPLIT_BOTTOMLEFT_\(i); done; printf '\\033[HCMUX_MARKER_BOTTOMLEFT\\n'\r")
+                sendText(bottomLeft.id, "printf '\\033[2J\\033[H'; for i in {1..200}; do echo ZMUX_SPLIT_BOTTOMLEFT_\(i); done; printf '\\033[HZMUX_MARKER_BOTTOMLEFT\\n'\r")
             }
             if let bottomRight {
-                sendText(bottomRight.id, "printf '\\033[2J\\033[H'; for i in {1..200}; do echo CMUX_SPLIT_BOTTOMRIGHT_\(i); done; printf '\\033[HCMUX_MARKER_BOTTOMRIGHT\\n'\r")
+                sendText(bottomRight.id, "printf '\\033[2J\\033[H'; for i in {1..200}; do echo ZMUX_SPLIT_BOTTOMRIGHT_\(i); done; printf '\\033[HZMUX_MARKER_BOTTOMRIGHT\\n'\r")
             }
             // Give shell output a moment to paint before we start the close timeline.
             try? await Task.sleep(nanoseconds: 180_000_000)
@@ -6612,7 +6612,7 @@ class TabManager: ObservableObject {
 	            }
 	            st.link = link
 
-	            CVDisplayLinkSetOutputCallback(link, cmuxVsyncIOSurfaceTimelineCallback, ctx)
+	            CVDisplayLinkSetOutputCallback(link, zmuxVsyncIOSurfaceTimelineCallback, ctx)
 	            CVDisplayLinkStart(link)
 	        }
 
@@ -6641,9 +6641,9 @@ class TabManager: ObservableObject {
         didSetupChildExitSplitUITest = true
 
         let env = ProcessInfo.processInfo.environment
-        guard env["CMUX_UI_TEST_CHILD_EXIT_SPLIT_SETUP"] == "1" else { return }
-        guard let path = env["CMUX_UI_TEST_CHILD_EXIT_SPLIT_PATH"], !path.isEmpty else { return }
-        let requestedIterations = Int(env["CMUX_UI_TEST_CHILD_EXIT_SPLIT_ITERATIONS"] ?? "1") ?? 1
+        guard env["ZMUX_UI_TEST_CHILD_EXIT_SPLIT_SETUP"] == "1" else { return }
+        guard let path = env["ZMUX_UI_TEST_CHILD_EXIT_SPLIT_PATH"], !path.isEmpty else { return }
+        let requestedIterations = Int(env["ZMUX_UI_TEST_CHILD_EXIT_SPLIT_ITERATIONS"] ?? "1") ?? 1
         let iterations = max(1, min(requestedIterations, 20))
 
         func write(_ updates: [String: String]) {
@@ -6794,21 +6794,21 @@ class TabManager: ObservableObject {
         didSetupChildExitKeyboardUITest = true
 
         let env = ProcessInfo.processInfo.environment
-        guard env["CMUX_UI_TEST_CHILD_EXIT_KEYBOARD_SETUP"] == "1" else { return }
-        guard let path = env["CMUX_UI_TEST_CHILD_EXIT_KEYBOARD_PATH"], !path.isEmpty else { return }
-        let autoTrigger = env["CMUX_UI_TEST_CHILD_EXIT_KEYBOARD_AUTO_TRIGGER"] == "1"
-        let strictKeyOnly = env["CMUX_UI_TEST_CHILD_EXIT_KEYBOARD_STRICT"] == "1"
-        let triggerMode = (env["CMUX_UI_TEST_CHILD_EXIT_KEYBOARD_TRIGGER_MODE"] ?? "shell_input")
+        guard env["ZMUX_UI_TEST_CHILD_EXIT_KEYBOARD_SETUP"] == "1" else { return }
+        guard let path = env["ZMUX_UI_TEST_CHILD_EXIT_KEYBOARD_PATH"], !path.isEmpty else { return }
+        let autoTrigger = env["ZMUX_UI_TEST_CHILD_EXIT_KEYBOARD_AUTO_TRIGGER"] == "1"
+        let strictKeyOnly = env["ZMUX_UI_TEST_CHILD_EXIT_KEYBOARD_STRICT"] == "1"
+        let triggerMode = (env["ZMUX_UI_TEST_CHILD_EXIT_KEYBOARD_TRIGGER_MODE"] ?? "shell_input")
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let useEarlyCtrlShiftTrigger = triggerMode == "early_ctrl_shift_d"
         let useEarlyCtrlDTrigger = triggerMode == "early_ctrl_d"
         let useEarlyTrigger = useEarlyCtrlShiftTrigger || useEarlyCtrlDTrigger
         let triggerUsesShift = triggerMode == "ctrl_shift_d" || useEarlyCtrlShiftTrigger
-        let layout = (env["CMUX_UI_TEST_CHILD_EXIT_KEYBOARD_LAYOUT"] ?? "lr")
+        let layout = (env["ZMUX_UI_TEST_CHILD_EXIT_KEYBOARD_LAYOUT"] ?? "lr")
             .trimmingCharacters(in: .whitespacesAndNewlines)
         let expectedPanelsAfter = max(
             1,
-            Int((env["CMUX_UI_TEST_CHILD_EXIT_KEYBOARD_EXPECTED_PANELS_AFTER"] ?? "1")
+            Int((env["ZMUX_UI_TEST_CHILD_EXIT_KEYBOARD_EXPECTED_PANELS_AFTER"] ?? "1")
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             ) ?? 1
         )
@@ -7462,18 +7462,18 @@ enum ResizeDirection {
 }
 
 extension Notification.Name {
-    static let commandPaletteToggleRequested = Notification.Name("cmux.commandPaletteToggleRequested")
-    static let commandPaletteRequested = Notification.Name("cmux.commandPaletteRequested")
-    static let commandPaletteSwitcherRequested = Notification.Name("cmux.commandPaletteSwitcherRequested")
-    static let commandPaletteSubmitRequested = Notification.Name("cmux.commandPaletteSubmitRequested")
-    static let commandPaletteDismissRequested = Notification.Name("cmux.commandPaletteDismissRequested")
-    static let commandPaletteRenameTabRequested = Notification.Name("cmux.commandPaletteRenameTabRequested")
-    static let commandPaletteRenameWorkspaceRequested = Notification.Name("cmux.commandPaletteRenameWorkspaceRequested")
-    static let commandPaletteEditWorkspaceDescriptionRequested = Notification.Name("cmux.commandPaletteEditWorkspaceDescriptionRequested")
-    static let commandPaletteMoveSelection = Notification.Name("cmux.commandPaletteMoveSelection")
-    static let commandPaletteRenameInputInteractionRequested = Notification.Name("cmux.commandPaletteRenameInputInteractionRequested")
-    static let commandPaletteRenameInputDeleteBackwardRequested = Notification.Name("cmux.commandPaletteRenameInputDeleteBackwardRequested")
-    static let feedbackComposerRequested = Notification.Name("cmux.feedbackComposerRequested")
+    static let commandPaletteToggleRequested = Notification.Name("zmux.commandPaletteToggleRequested")
+    static let commandPaletteRequested = Notification.Name("zmux.commandPaletteRequested")
+    static let commandPaletteSwitcherRequested = Notification.Name("zmux.commandPaletteSwitcherRequested")
+    static let commandPaletteSubmitRequested = Notification.Name("zmux.commandPaletteSubmitRequested")
+    static let commandPaletteDismissRequested = Notification.Name("zmux.commandPaletteDismissRequested")
+    static let commandPaletteRenameTabRequested = Notification.Name("zmux.commandPaletteRenameTabRequested")
+    static let commandPaletteRenameWorkspaceRequested = Notification.Name("zmux.commandPaletteRenameWorkspaceRequested")
+    static let commandPaletteEditWorkspaceDescriptionRequested = Notification.Name("zmux.commandPaletteEditWorkspaceDescriptionRequested")
+    static let commandPaletteMoveSelection = Notification.Name("zmux.commandPaletteMoveSelection")
+    static let commandPaletteRenameInputInteractionRequested = Notification.Name("zmux.commandPaletteRenameInputInteractionRequested")
+    static let commandPaletteRenameInputDeleteBackwardRequested = Notification.Name("zmux.commandPaletteRenameInputDeleteBackwardRequested")
+    static let feedbackComposerRequested = Notification.Name("zmux.feedbackComposerRequested")
     static let ghosttyDidSetTitle = Notification.Name("ghosttyDidSetTitle")
     static let ghosttyDidFocusTab = Notification.Name("ghosttyDidFocusTab")
     static let ghosttyDidFocusSurface = Notification.Name("ghosttyDidFocusSurface")
@@ -7485,6 +7485,6 @@ extension Notification.Name {
     static let browserDidFocusAddressBar = Notification.Name("browserDidFocusAddressBar")
     static let browserDidBlurAddressBar = Notification.Name("browserDidBlurAddressBar")
     static let webViewDidReceiveClick = Notification.Name("webViewDidReceiveClick")
-    static let terminalPortalVisibilityDidChange = Notification.Name("cmux.terminalPortalVisibilityDidChange")
-    static let browserPortalRegistryDidChange = Notification.Name("cmux.browserPortalRegistryDidChange")
+    static let terminalPortalVisibilityDidChange = Notification.Name("zmux.terminalPortalVisibilityDidChange")
+    static let browserPortalRegistryDidChange = Notification.Name("zmux.browserPortalRegistryDidChange")
 }

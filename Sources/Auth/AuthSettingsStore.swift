@@ -1,4 +1,4 @@
-import CMUXAuthCore
+import ZMUXAuthCore
 import Foundation
 
 struct AuthTeamSummary: Codable, Equatable, Identifiable, Sendable {
@@ -17,7 +17,7 @@ enum SettingsPIIDisplayMode: String, CaseIterable, Identifiable, Sendable {
     case visible
     case hidden
 
-    static let key = "cmux.settings.piiDisplayMode"
+    static let key = "zmux.settings.piiDisplayMode"
     static let defaultValue = visible.rawValue
 
     var id: String { rawValue }
@@ -40,8 +40,8 @@ enum SettingsPIIDisplayMode: String, CaseIterable, Identifiable, Sendable {
 
 final class AuthSettingsStore {
     private enum Keys {
-        static let selectedTeamID = "cmux.auth.selectedTeamID"
-        static let cachedUser = "cmux.auth.cachedUser"
+        static let selectedTeamID = "zmux.auth.selectedTeamID"
+        static let cachedUser = "zmux.auth.cachedUser"
     }
 
     let userDefaults: UserDefaults
@@ -65,12 +65,12 @@ final class AuthSettingsStore {
         }
     }
 
-    func cachedUser() -> CMUXAuthUser? {
+    func cachedUser() -> ZMUXAuthUser? {
         guard let data = userDefaults.data(forKey: Keys.cachedUser) else { return nil }
-        return try? decoder.decode(CMUXAuthUser.self, from: data)
+        return try? decoder.decode(ZMUXAuthUser.self, from: data)
     }
 
-    func saveCachedUser(_ user: CMUXAuthUser?) {
+    func saveCachedUser(_ user: ZMUXAuthUser?) {
         guard let user else {
             userDefaults.removeObject(forKey: Keys.cachedUser)
             return

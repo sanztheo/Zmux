@@ -795,7 +795,7 @@ final class FeedButtonStyleDebugWindowController: NSWindowController, NSWindowDe
         window.titlebarAppearsTransparent = false
         window.isMovableByWindowBackground = true
         window.isReleasedWhenClosed = false
-        window.identifier = NSUserInterfaceItemIdentifier("cmux.feedButtonStyleDebug")
+        window.identifier = NSUserInterfaceItemIdentifier("zmux.feedButtonStyleDebug")
         window.minSize = NSSize(width: 460, height: 520)
         window.center()
         window.contentView = NSHostingView(rootView: FeedButtonStyleDebugView())

@@ -6,10 +6,10 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from cmux import cmux, cmuxError
+from zmux import zmux, zmuxError
 
 
-SOCKET_PATH = os.environ.get("CMUX_SOCKET", "/tmp/cmux-debug.sock")
+SOCKET_PATH = os.environ.get("ZMUX_SOCKET", "/tmp/zmux-debug.sock")
 
 # Methods expected to be present in system.capabilities for the browser v2 surface.
 EXPECTED_BROWSER_METHODS = {
@@ -119,22 +119,22 @@ WKWEBVIEW_NOT_SUPPORTED = {
 
 def _must(cond: bool, msg: str) -> None:
     if not cond:
-        raise cmuxError(msg)
+        raise zmuxError(msg)
 
 
-def _expect_not_supported(c: cmux, method: str, params: dict) -> None:
+def _expect_not_supported(c: zmux, method: str, params: dict) -> None:
     try:
         c._call(method, params)
-    except cmuxError as exc:
+    except zmuxError as exc:
         text = str(exc)
         if "not_supported" in text:
             return
-        raise cmuxError(f"Expected not_supported for {method}, got: {text}")
-    raise cmuxError(f"Expected not_supported for {method}, but call succeeded")
+        raise zmuxError(f"Expected not_supported for {method}, got: {text}")
+    raise zmuxError(f"Expected not_supported for {method}, but call succeeded")
 
 
 def main() -> int:
-    with cmux(SOCKET_PATH) as c:
+    with zmux(SOCKET_PATH) as c:
         caps = c.capabilities() or {}
         methods = set(caps.get("methods") or [])
 

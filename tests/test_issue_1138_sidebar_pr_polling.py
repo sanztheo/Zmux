@@ -80,7 +80,7 @@ def _git_stub() -> str:
         fi
 
         if [ "$1" = "remote" ] && [ "$2" = "get-url" ] && [ "$3" = "origin" ]; then
-          printf 'https://github.com/manaflow-ai/cmux.git\\n'
+          printf 'https://github.com/manaflow-ai/zmux.git\\n'
           exit 0
         fi
 
@@ -98,7 +98,7 @@ def _gh_stub() -> str:
     return textwrap.dedent(
         """\
         #!/bin/sh
-        args_log="${CMUX_TEST_GH_ARGS_LOG:?}"
+        args_log="${ZMUX_TEST_GH_ARGS_LOG:?}"
         printf '%s\\n' "$*" >> "$args_log"
         exit 0
         """
@@ -108,70 +108,70 @@ def _gh_stub() -> str:
 def _shell_command(kind: str, scenario: str) -> str:
     shared = {
         "prompt_does_not_call_gh": (
-            'cd "$CMUX_TEST_REPO"\n'
-            '_cmux_prompt_entry\n'
+            'cd "$ZMUX_TEST_REPO"\n'
+            '_zmux_prompt_entry\n'
             'sleep 1\n'
-            '_cmux_cleanup\n'
+            '_zmux_cleanup\n'
         ),
         "merge_action": (
-            'cd "$CMUX_TEST_REPO"\n'
-            '_cmux_pr_command_entry "gh pr merge"\n'
-            '_cmux_prompt_entry\n'
+            'cd "$ZMUX_TEST_REPO"\n'
+            '_zmux_pr_command_entry "gh pr merge"\n'
+            '_zmux_prompt_entry\n'
             'sleep 1\n'
-            '_cmux_cleanup\n'
+            '_zmux_cleanup\n'
         ),
         "close_action_target": (
-            'cd "$CMUX_TEST_REPO"\n'
-            '_cmux_pr_command_entry "gh pr close 2580"\n'
-            '_cmux_prompt_entry\n'
+            'cd "$ZMUX_TEST_REPO"\n'
+            '_zmux_pr_command_entry "gh pr close 2580"\n'
+            '_zmux_prompt_entry\n'
             'sleep 1\n'
-            '_cmux_cleanup\n'
+            '_zmux_cleanup\n'
         ),
         "failed_merge_no_action": (
-            'cd "$CMUX_TEST_REPO"\n'
-            '_cmux_pr_command_entry "gh pr merge"\n'
+            'cd "$ZMUX_TEST_REPO"\n'
+            '_zmux_pr_command_entry "gh pr merge"\n'
             'false\n'
-            '_cmux_prompt_entry\n'
+            '_zmux_prompt_entry\n'
             'sleep 1\n'
-            '_cmux_cleanup\n'
+            '_zmux_cleanup\n'
         ),
         "non_pr_gh_no_action": (
-            'cd "$CMUX_TEST_REPO"\n'
-            '_cmux_pr_command_entry "gh issue view 1"\n'
-            '_cmux_prompt_entry\n'
+            'cd "$ZMUX_TEST_REPO"\n'
+            '_zmux_pr_command_entry "gh issue view 1"\n'
+            '_zmux_prompt_entry\n'
             'sleep 1\n'
-            '_cmux_cleanup\n'
+            '_zmux_cleanup\n'
         ),
         "head_change_clears_pr": (
-            'cd "$CMUX_TEST_REPO"\n'
-            '_cmux_prompt_entry\n'
+            'cd "$ZMUX_TEST_REPO"\n'
+            '_zmux_prompt_entry\n'
             'sleep 1\n'
-            'printf \'ref: refs/heads/feature/new\\n\' > "$CMUX_TEST_HEAD_FILE"\n'
-            '_cmux_prompt_entry\n'
+            'printf \'ref: refs/heads/feature/new\\n\' > "$ZMUX_TEST_HEAD_FILE"\n'
+            '_zmux_prompt_entry\n'
             'sleep 2\n'
-            '_cmux_cleanup\n'
+            '_zmux_cleanup\n'
         ),
     }[scenario]
 
     if kind == "zsh":
         return textwrap.dedent(
             f"""\
-            source "$CMUX_TEST_SCRIPT"
-            _cmux_send() {{ print -r -- "$1" >> "$CMUX_TEST_SEND_LOG"; }}
-            _cmux_prompt_entry() {{ _cmux_precmd; }}
-            _cmux_pr_command_entry() {{ _cmux_preexec "$1"; }}
-            _cmux_cleanup() {{ _cmux_zshexit; }}
+            source "$ZMUX_TEST_SCRIPT"
+            _zmux_send() {{ print -r -- "$1" >> "$ZMUX_TEST_SEND_LOG"; }}
+            _zmux_prompt_entry() {{ _zmux_precmd; }}
+            _zmux_pr_command_entry() {{ _zmux_preexec "$1"; }}
+            _zmux_cleanup() {{ _zmux_zshexit; }}
             {shared}"""
         )
 
     if kind == "bash":
         return textwrap.dedent(
             f"""\
-            source "$CMUX_TEST_SCRIPT"
-            _cmux_send() {{ printf '%s\\n' "$1" >> "$CMUX_TEST_SEND_LOG"; }}
-            _cmux_prompt_entry() {{ _cmux_prompt_command; }}
-            _cmux_pr_command_entry() {{ _cmux_bash_preexec_hook "$1"; }}
-            _cmux_cleanup() {{ type _cmux_bash_cleanup >/dev/null 2>&1 && _cmux_bash_cleanup; }}
+            source "$ZMUX_TEST_SCRIPT"
+            _zmux_send() {{ printf '%s\\n' "$1" >> "$ZMUX_TEST_SEND_LOG"; }}
+            _zmux_prompt_entry() {{ _zmux_prompt_command; }}
+            _zmux_pr_command_entry() {{ _zmux_bash_preexec_hook "$1"; }}
+            _zmux_cleanup() {{ type _zmux_bash_cleanup >/dev/null 2>&1 && _zmux_bash_cleanup; }}
             {shared}"""
         )
 
@@ -188,7 +188,7 @@ def _run_case(base: Path, *, shell: str, shell_args: list[str], script: Path, sc
     bindir = base / "bin"
     repo = base / "repo"
     repo_git = repo / ".git"
-    socket_path = base / "cmux.sock"
+    socket_path = base / "zmux.sock"
     send_log = base / f"{shell}-{scenario}-send.log"
     gh_args_log = base / f"{shell}-{scenario}-gh-args.log"
     head_file = repo_git / "HEAD"
@@ -202,14 +202,14 @@ def _run_case(base: Path, *, shell: str, shell_args: list[str], script: Path, sc
 
     env = dict(os.environ)
     env["PATH"] = f"{bindir}:{env.get('PATH', '')}"
-    env["CMUX_SOCKET_PATH"] = str(socket_path)
-    env["CMUX_TAB_ID"] = "00000000-0000-0000-0000-000000000001"
-    env["CMUX_PANEL_ID"] = "00000000-0000-0000-0000-000000000002"
-    env["CMUX_TEST_SCRIPT"] = str(script)
-    env["CMUX_TEST_REPO"] = str(repo)
-    env["CMUX_TEST_SEND_LOG"] = str(send_log)
-    env["CMUX_TEST_GH_ARGS_LOG"] = str(gh_args_log)
-    env["CMUX_TEST_HEAD_FILE"] = str(head_file)
+    env["ZMUX_SOCKET_PATH"] = str(socket_path)
+    env["ZMUX_TAB_ID"] = "00000000-0000-0000-0000-000000000001"
+    env["ZMUX_PANEL_ID"] = "00000000-0000-0000-0000-000000000002"
+    env["ZMUX_TEST_SCRIPT"] = str(script)
+    env["ZMUX_TEST_REPO"] = str(repo)
+    env["ZMUX_TEST_SEND_LOG"] = str(send_log)
+    env["ZMUX_TEST_GH_ARGS_LOG"] = str(gh_args_log)
+    env["ZMUX_TEST_HEAD_FILE"] = str(head_file)
 
     with BoundUnixSocket(socket_path):
         result = subprocess.run(
@@ -271,8 +271,8 @@ def _run_case(base: Path, *, shell: str, shell_args: list[str], script: Path, sc
 def main() -> int:
     root = Path(__file__).resolve().parents[1]
     cases = [
-        ("zsh", ["-f", "-c"], root / "Resources" / "shell-integration" / "cmux-zsh-integration.zsh"),
-        ("bash", ["--noprofile", "--norc", "-c"], root / "Resources" / "shell-integration" / "cmux-bash-integration.bash"),
+        ("zsh", ["-f", "-c"], root / "Resources" / "shell-integration" / "zmux-zsh-integration.zsh"),
+        ("bash", ["--noprofile", "--norc", "-c"], root / "Resources" / "shell-integration" / "zmux-bash-integration.bash"),
     ]
     scenarios = [
         "prompt_does_not_call_gh",
@@ -283,7 +283,7 @@ def main() -> int:
         "head_change_clears_pr",
     ]
 
-    base = Path("/tmp") / f"cmux_issue_1138_pr_poll_{os.getpid()}"
+    base = Path("/tmp") / f"zmux_issue_1138_pr_poll_{os.getpid()}"
     try:
         shutil.rmtree(base, ignore_errors=True)
         base.mkdir(parents=True, exist_ok=True)

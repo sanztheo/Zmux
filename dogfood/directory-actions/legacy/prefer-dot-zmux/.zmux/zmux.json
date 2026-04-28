@@ -1,0 +1,31 @@
+{
+  "actions": {
+    "zmux.newTerminal": {
+      "type": "command",
+      "title": "Dot ZMUX Wins",
+      "subtitle": "Same-directory .zmux/zmux.json should beat zmux.json",
+      "command": "echo 'DOT ZMUX WINS'; echo 'SOURCE=legacy/prefer-dot-zmux/.zmux/zmux.json'; pwd",
+      "target": "newTabInCurrentPane",
+      "shortcut": "cmd+shift+4",
+      "icon": { "type": "image", "path": "./icons/winner-terminal.svg" }
+    },
+    "winner.echo": {
+      "type": "command",
+      "title": "Winner Echo",
+      "subtitle": "If you see this, .zmux precedence is working",
+      "command": "echo 'WINNER ECHO'; echo 'SOURCE=legacy/prefer-dot-zmux/.zmux/zmux.json'; pwd",
+      "target": "newTabInCurrentPane",
+      "shortcut": "cmd+shift+p",
+      "icon": { "type": "emoji", "value": "🏆" }
+    }
+  },
+  "ui": {
+    "surfaceTabBar": {
+      "buttons": [
+        "zmux.newTerminal",
+        "winner.echo",
+        "zmux.newBrowser"
+      ]
+    }
+  }
+}

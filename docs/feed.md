@@ -1,6 +1,6 @@
 # Feed
 
-Feed is cmux's inline surface for AI agent decisions. It shows three things that need a human response, right in the right sidebar next to Files and Sessions:
+Feed is zmux's inline surface for AI agent decisions. It shows three things that need a human response, right in the right sidebar next to Files and Sessions:
 
 - **Permission requests** — Agent wants to run a tool, edit a file, or execute a shell command. Pick Once / Always / All tools / Bypass / Deny.
 - **ExitPlanMode** — Agent finished planning and is ready to start editing. Pick Ultraplan / Manual / Auto.
@@ -12,12 +12,12 @@ Anything else the agent does — tool uses, assistant messages, session starts/s
 
 ```text
 ┌─────────────────────┐  hook/stdin  ┌──────────────────────────┐
-│ Agent CLI           ├─────────────▶│ cmux feed-hook           │
-│ (Claude / Codex /…) │              │  forwards to cmux socket │
+│ Agent CLI           ├─────────────▶│ zmux feed-hook           │
+│ (Claude / Codex /…) │              │  forwards to zmux socket │
 └─────────────────────┘              └──────────────┬───────────┘
                                                     │
 ┌─────────────────────┐  plugin in   ┌──────────────┼───────────┐
-│ OpenCode            ├─────────────▶│ cmux-feed.js ▼           │
+│ OpenCode            ├─────────────▶│ zmux-feed.js ▼           │
 │                     │  process     │ writes same socket       │
 └─────────────────────┘              └──────────────┬───────────┘
                                                     │
@@ -41,16 +41,16 @@ Anything else the agent does — tool uses, assistant messages, session starts/s
                          └───────────────┘   └──────────────────┘
 ```
 
-Agents pipe their hook events into `cmux feed-hook --source <agent>`. The bridge forwards the event to the cmux socket as a `feed.push` V2 frame. The `FeedCoordinator` records it on the `@MainActor` `WorkstreamStore`, displays it in the sidebar (and posts a native notification if the window isn't focused), then blocks the hook on a semaphore keyed by the event's `request_id`.
+Agents pipe their hook events into `zmux feed-hook --source <agent>`. The bridge forwards the event to the zmux socket as a `feed.push` V2 frame. The `FeedCoordinator` records it on the `@MainActor` `WorkstreamStore`, displays it in the sidebar (and posts a native notification if the window isn't focused), then blocks the hook on a semaphore keyed by the event's `request_id`.
 
 When you click Allow / Deny / Submit (either in Feed or in the notification's inline action buttons), `feed.permission.reply` / `feed.question.reply` / `feed.exit_plan.reply` delivers the decision back through `FeedCoordinator`, which wakes the hook. The hook emits the agent's expected decision JSON on stdout and the agent proceeds.
 
-All events (actionable and telemetry) are appended to `~/.cmuxterm/workstream.jsonl` for audit. Memory holds the most recent 2000 items in a ring; older items remain available in the JSONL audit log.
+All events (actionable and telemetry) are appended to `~/.zmuxterm/workstream.jsonl` for audit. Memory holds the most recent 2000 items in a ring; older items remain available in the JSONL audit log.
 
 ## Installing hooks
 
 ```bash
-cmux setup-hooks
+zmux setup-hooks
 ```
 
 Installs Feed-relevant hooks for every supported CLI whose binary is on `PATH`:
@@ -65,24 +65,24 @@ Installs Feed-relevant hooks for every supported CLI whose binary is on `PATH`:
 | CodeBuddy    | `~/.codebuddy/settings.json`              | PreToolUse               |
 | Factory      | `~/.factory/settings.json`                | PreToolUse               |
 | Qoder        | `~/.qoder/settings.json`                  | PreToolUse               |
-| OpenCode     | `~/.config/opencode/plugins/cmux-feed.js` | plugin event bus         |
+| OpenCode     | `~/.config/opencode/plugins/zmux-feed.js` | plugin event bus         |
 
 Individual agents:
 
 ```bash
-cmux codex install-hooks
-cmux opencode install-hooks               # global
-cmux opencode install-hooks --project     # .opencode/plugins/cmux-feed.js in cwd
-cmux <agent> uninstall-hooks
+zmux codex install-hooks
+zmux opencode install-hooks               # global
+zmux opencode install-hooks --project     # .opencode/plugins/zmux-feed.js in cwd
+zmux <agent> uninstall-hooks
 ```
 
-Agents without a binary on `PATH` are skipped at install time — `cmux setup-hooks` prints a summary line naming the ones it skipped.
+Agents without a binary on `PATH` are skipped at install time — `zmux setup-hooks` prints a summary line naming the ones it skipped.
 
 ## Decision semantics
 
 **Permission modes**
 
-| Mode   | What cmux sends back to the agent                                             |
+| Mode   | What zmux sends back to the agent                                             |
 |--------|--------------------------------------------------------------------------------|
 | Once   | Allow once through the agent's native permission hook.                         |
 | Always | Allow and apply the agent's suggested persistent permission rule when present. |
@@ -90,7 +90,7 @@ Agents without a binary on `PATH` are skipped at install time — `cmux setup-ho
 | Bypass | Allow and request session-level bypass mode when the agent supports it.        |
 | Deny   | Deny through the agent's native permission hook.                               |
 
-For Claude Code, the cmux wrapper launches Claude with `--allow-dangerously-skip-permissions`. This does not enable bypass by default, but it lets a later `PermissionRequest` response switch the current session into `bypassPermissions`. Without that launch flag, Claude ignores `setMode: bypassPermissions`.
+For Claude Code, the zmux wrapper launches Claude with `--allow-dangerously-skip-permissions`. This does not enable bypass by default, but it lets a later `PermissionRequest` response switch the current session into `bypassPermissions`. Without that launch flag, Claude ignores `setMode: bypassPermissions`.
 
 **Plan-mode decisions**
 
@@ -115,28 +115,28 @@ Per-event timeout inside the agent's hook config is bumped to 120 000 ms specifi
 
 | Path                              | Contents                                                   |
 |-----------------------------------|------------------------------------------------------------|
-| `~/.cmuxterm/workstream.jsonl`    | Append-only audit log of every Feed event.                 |
-| `~/.cmuxterm/<agent>-hook-sessions.json` | Session-to-workspace mapping used by `feed.jump`.   |
-| `~/.config/cmux/cmux.sock`        | V2 socket the hooks/plugin talk to.                        |
-| `~/.config/opencode/plugins/cmux-feed.js` | OpenCode plugin emitted by `cmux opencode install-hooks`. |
+| `~/.zmuxterm/workstream.jsonl`    | Append-only audit log of every Feed event.                 |
+| `~/.zmuxterm/<agent>-hook-sessions.json` | Session-to-workspace mapping used by `feed.jump`.   |
+| `~/.config/zmux/zmux.sock`        | V2 socket the hooks/plugin talk to.                        |
+| `~/.config/opencode/plugins/zmux-feed.js` | OpenCode plugin emitted by `zmux opencode install-hooks`. |
 
 To reset history:
 
 ```bash
-cmux feed clear           # prompts for confirmation
-cmux feed clear --yes
+zmux feed clear           # prompts for confirmation
+zmux feed clear --yes
 ```
 
 ## Jumping from Feed to the terminal
 
-Double-click a Feed row and cmux focuses the cmux workspace + surface where the agent is running, via `workspace.select` + `surface.focus` V2 verbs. If the agent isn't running in a cmux terminal (no matching entry in `<agent>-hook-sessions.json`), the jump is a no-op.
+Double-click a Feed row and zmux focuses the zmux workspace + surface where the agent is running, via `workspace.select` + `surface.focus` V2 verbs. If the agent isn't running in a zmux terminal (no matching entry in `<agent>-hook-sessions.json`), the jump is a no-op.
 
 ## Troubleshooting
 
-**Feed shows nothing even though the agent is running.** Check that the hook got installed: `cat ~/.codex/hooks.json` (or similar) should contain a `cmux feed-hook --source codex` entry. Re-run `cmux setup-hooks`.
+**Feed shows nothing even though the agent is running.** Check that the hook got installed: `cat ~/.codex/hooks.json` (or similar) should contain a `zmux feed-hook --source codex` entry. Re-run `zmux setup-hooks`.
 
-**Agent hangs on a permission request.** Feed never blocks the agent longer than 120 seconds; if you see a longer hang, the hook failed to reach the socket. Verify `$CMUX_SOCKET_PATH` matches the running app (default is `~/.config/cmux/cmux.sock`).
+**Agent hangs on a permission request.** Feed never blocks the agent longer than 120 seconds; if you see a longer hang, the hook failed to reach the socket. Verify `$ZMUX_SOCKET_PATH` matches the running app (default is `~/.config/zmux/zmux.sock`).
 
-**Notifications aren't showing inline buttons.** The three Feed categories (`CMUXFeedPermission`, `CMUXFeedExitPlan`, `CMUXFeedQuestion`) are registered at app launch. On first Feed use, macOS may prompt for notification authorization; if authorization is denied, Feed rows still appear in the sidebar but no native banner is delivered.
+**Notifications aren't showing inline buttons.** The three Feed categories (`ZMUXFeedPermission`, `ZMUXFeedExitPlan`, `ZMUXFeedQuestion`) are registered at app launch. On first Feed use, macOS may prompt for notification authorization; if authorization is denied, Feed rows still appear in the sidebar but no native banner is delivered.
 
-**OpenCode plugin doesn't fire.** Plugin is only installed if `opencode` is on `PATH` at `cmux setup-hooks` time. Check `~/.config/opencode/plugins/cmux-feed.js` contains `// cmux-feed-plugin-marker v1`. If you added project-local plugins (`.opencode/plugins/…`), re-run `cmux opencode install-hooks --project`.
+**OpenCode plugin doesn't fire.** Plugin is only installed if `opencode` is on `PATH` at `zmux setup-hooks` time. Check `~/.config/opencode/plugins/zmux-feed.js` contains `// zmux-feed-plugin-marker v1`. If you added project-local plugins (`.opencode/plugins/…`), re-run `zmux opencode install-hooks --project`.

@@ -13,7 +13,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from claude_teams_test_utils import resolve_cmux_cli
+from claude_teams_test_utils import resolve_zmux_cli
 
 
 def make_executable(path: Path, content: str) -> None:
@@ -28,12 +28,12 @@ def main() -> int:
         return 0
 
     try:
-        cli_path = resolve_cmux_cli()
+        cli_path = resolve_zmux_cli()
     except Exception as exc:
         print(f"FAIL: {exc}")
         return 1
 
-    with tempfile.TemporaryDirectory(prefix="cmux-opencode-plugin-") as td:
+    with tempfile.TemporaryDirectory(prefix="zmux-opencode-plugin-") as td:
         root = Path(td)
         config_dir = root / "opencode"
         config_dir.mkdir(parents=True, exist_ok=True)
@@ -44,8 +44,8 @@ def main() -> int:
                     "plugin": [
                         "oh-my-opencode",
                         ["existing-plugin", {"enabled": True}],
-                        "cmux-session",
-                        "./plugins/cmux-session.js",
+                        "zmux-session",
+                        "./plugins/zmux-session.js",
                     ]
                 }
             ),
@@ -69,7 +69,7 @@ def main() -> int:
             print(f"stderr={install.stderr.strip()}")
             return 1
 
-        plugin_path = config_dir / "plugins" / "cmux-session.js"
+        plugin_path = config_dir / "plugins" / "zmux-session.js"
         if not plugin_path.exists():
             print(f"FAIL: expected plugin at {plugin_path}")
             return 1
@@ -87,10 +87,10 @@ def main() -> int:
             entry
             for entry in plugins
             if (entry if isinstance(entry, str) else entry[0] if isinstance(entry, list) and entry else "")
-            in {"cmux-session", "./plugins/cmux-session.js"}
+            in {"zmux-session", "./plugins/zmux-session.js"}
         ]
         if stale:
-            print(f"FAIL: expected stale cmux plugin registrations removed, got {plugins!r}")
+            print(f"FAIL: expected stale zmux plugin registrations removed, got {plugins!r}")
             return 1
         if "oh-my-opencode" not in plugins or ["existing-plugin", {"enabled": True}] not in plugins:
             print(f"FAIL: installer did not preserve existing plugin entries: {plugins!r}")
@@ -112,51 +112,51 @@ def main() -> int:
                 print(f"exit={debug.returncode}")
                 print(debug_output[-4000:])
                 return 1
-            if "path=cmux-session loading plugin" in debug_output:
-                print("FAIL: opencode tried to resolve cmux-session as a package")
+            if "path=zmux-session loading plugin" in debug_output:
+                print("FAIL: opencode tried to resolve zmux-session as a package")
                 print(debug_output[-4000:])
                 return 1
             if f"file://{plugin_path}" not in debug_output:
-                print("FAIL: opencode did not auto-load cmux session plugin file")
+                print("FAIL: opencode did not auto-load zmux session plugin file")
                 print(debug_output[-4000:])
                 return 1
 
-        fake_cmux = root / "fake-cmux"
-        fake_args_log = root / "fake-cmux-args.log"
-        fake_stdin_log = root / "fake-cmux-stdin.log"
-        fake_env_log = root / "fake-cmux-env.log"
-        plugin_copy_path = config_dir / "plugins" / "cmux-session-copy.js"
+        fake_zmux = root / "fake-zmux"
+        fake_args_log = root / "fake-zmux-args.log"
+        fake_stdin_log = root / "fake-zmux-stdin.log"
+        fake_env_log = root / "fake-zmux-env.log"
+        plugin_copy_path = config_dir / "plugins" / "zmux-session-copy.js"
         shutil.copyfile(plugin_path, plugin_copy_path)
         make_executable(
-            fake_cmux,
+            fake_zmux,
             """#!/usr/bin/env bash
 set -euo pipefail
-printf '%s\\n' "$*" >> "$FAKE_CMUX_ARGS_LOG"
-cat >> "$FAKE_CMUX_STDIN_LOG"
-printf '\\n---\\n' >> "$FAKE_CMUX_STDIN_LOG"
+printf '%s\\n' "$*" >> "$FAKE_ZMUX_ARGS_LOG"
+cat >> "$FAKE_ZMUX_STDIN_LOG"
+printf '\\n---\\n' >> "$FAKE_ZMUX_STDIN_LOG"
 {
-  printf 'kind=%s\\n' "${CMUX_AGENT_LAUNCH_KIND-}"
-  printf 'cwd=%s\\n' "${CMUX_AGENT_LAUNCH_CWD-}"
-  printf 'argv=%s\\n' "${CMUX_AGENT_LAUNCH_ARGV_B64-}"
-} >> "$FAKE_CMUX_ENV_LOG"
+  printf 'kind=%s\\n' "${ZMUX_AGENT_LAUNCH_KIND-}"
+  printf 'cwd=%s\\n' "${ZMUX_AGENT_LAUNCH_CWD-}"
+  printf 'argv=%s\\n' "${ZMUX_AGENT_LAUNCH_ARGV_B64-}"
+} >> "$FAKE_ZMUX_ENV_LOG"
 """,
         )
 
         check_env = env.copy()
-        check_env["CMUX_TEST_OPENCODE_PLUGIN_PATH"] = str(plugin_path)
-        check_env["CMUX_TEST_OPENCODE_PLUGIN_COPY_PATH"] = str(plugin_copy_path)
-        check_env["CMUX_SURFACE_ID"] = "surface-opencode-test"
-        check_env["CMUX_OPENCODE_CMUX_BIN"] = str(fake_cmux)
-        check_env["FAKE_CMUX_ARGS_LOG"] = str(fake_args_log)
-        check_env["FAKE_CMUX_STDIN_LOG"] = str(fake_stdin_log)
-        check_env["FAKE_CMUX_ENV_LOG"] = str(fake_env_log)
+        check_env["ZMUX_TEST_OPENCODE_PLUGIN_PATH"] = str(plugin_path)
+        check_env["ZMUX_TEST_OPENCODE_PLUGIN_COPY_PATH"] = str(plugin_copy_path)
+        check_env["ZMUX_SURFACE_ID"] = "surface-opencode-test"
+        check_env["ZMUX_OPENCODE_ZMUX_BIN"] = str(fake_zmux)
+        check_env["FAKE_ZMUX_ARGS_LOG"] = str(fake_args_log)
+        check_env["FAKE_ZMUX_STDIN_LOG"] = str(fake_stdin_log)
+        check_env["FAKE_ZMUX_ENV_LOG"] = str(fake_env_log)
         check_source = """
-const pluginPath = process.env.CMUX_TEST_OPENCODE_PLUGIN_PATH;
-const pluginCopyPath = process.env.CMUX_TEST_OPENCODE_PLUGIN_COPY_PATH;
+const pluginPath = process.env.ZMUX_TEST_OPENCODE_PLUGIN_PATH;
+const pluginCopyPath = process.env.ZMUX_TEST_OPENCODE_PLUGIN_COPY_PATH;
 const mod = await import(pluginPath);
 const duplicateMod = await import(pluginCopyPath);
-if (typeof mod.CMUXSessionRestore !== "function") {
-  throw new Error("missing CMUXSessionRestore export");
+if (typeof mod.ZMUXSessionRestore !== "function") {
+  throw new Error("missing ZMUXSessionRestore export");
 }
 if (typeof mod.default !== "function") {
   throw new Error("missing default export");

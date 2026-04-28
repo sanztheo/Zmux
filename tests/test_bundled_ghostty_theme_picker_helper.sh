@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SOURCE_PACKAGES_DIR="${CMUX_SOURCE_PACKAGES_DIR:-$PWD/.ci-source-packages}"
-DERIVED_DATA_PATH="${CMUX_DERIVED_DATA_PATH:-$PWD/.ci-bundled-ghostty-helper}"
-CONFIGURATION="${CMUX_CONFIGURATION:-Debug}"
+SOURCE_PACKAGES_DIR="${ZMUX_SOURCE_PACKAGES_DIR:-$PWD/.ci-source-packages}"
+DERIVED_DATA_PATH="${ZMUX_DERIVED_DATA_PATH:-$PWD/.ci-bundled-ghostty-helper}"
+CONFIGURATION="${ZMUX_CONFIGURATION:-Debug}"
 
 case "$CONFIGURATION" in
   Debug)
-    APP_NAME="cmux DEV.app"
+    APP_NAME="zmux DEV.app"
     ;;
   Release)
-    APP_NAME="cmux.app"
+    APP_NAME="zmux.app"
     ;;
   *)
     echo "FAIL: unsupported configuration $CONFIGURATION" >&2
@@ -23,7 +23,7 @@ rm -rf "$DERIVED_DATA_PATH"
 
 xcodebuild \
   -project GhosttyTabs.xcodeproj \
-  -scheme cmux \
+  -scheme zmux \
   -configuration "$CONFIGURATION" \
   -clonedSourcePackagesDirPath "$SOURCE_PACKAGES_DIR" \
   -disableAutomaticPackageResolution \

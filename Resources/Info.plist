@@ -36,7 +36,7 @@
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>NSDockTilePlugIn</key>
-	<string>CmuxDockTilePlugin.plugin</string>
+	<string>ZmuxDockTilePlugin.plugin</string>
 	<key>LSApplicationCategoryType</key>
 	<string>public.app-category.developer-tools</string>
 	<key>NSHumanReadableCopyright</key>
@@ -44,13 +44,13 @@
 	<key>NSMainStoryboardFile</key>
 	<string></string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>A program running within cmux would like to use your microphone.</string>
+	<string>A program running within zmux would like to use your microphone.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>A program running within cmux would like to use your camera.</string>
+	<string>A program running within zmux would like to use your camera.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>A program running within cmux would like to use Bluetooth to discover passkeys and security keys.</string>
+	<string>A program running within zmux would like to use Bluetooth to discover passkeys and security keys.</string>
 	<key>NSAppleEventsUsageDescription</key>
-	<string>A program running within cmux would like to use AppleScript.</string>
+	<string>A program running within zmux would like to use AppleScript.</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -75,7 +75,7 @@
 			<string>Default</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>$(CMUX_AUTH_CALLBACK_SCHEME)</string>
+				<string>$(ZMUX_AUTH_CALLBACK_SCHEME)</string>
 			</array>
 		</dict>
 	</array>
@@ -84,7 +84,7 @@
 	<key>NSAppleScriptEnabled</key>
 	<true/>
 	<key>OSAScriptingDefinition</key>
-	<string>cmux.sdef</string>
+	<string>zmux.sdef</string>
 	<key>NSServices</key>
 	<array>
 		<dict>
@@ -140,9 +140,9 @@
 		</dict>
 		<dict>
 			<key>UTTypeIdentifier</key>
-			<string>com.cmux.sidebar-tab-reorder</string>
+			<string>com.zmux.sidebar-tab-reorder</string>
 			<key>UTTypeDescription</key>
-			<string>cmux Sidebar Tab Reorder</string>
+			<string>zmux Sidebar Tab Reorder</string>
 			<key>UTTypeConformsTo</key>
 			<array>
 				<string>public.data</string>
@@ -155,7 +155,7 @@
 		<true/>
 		<key>NSExceptionDomains</key>
 		<dict>
-			<key>cmux-loopback.localtest.me</key>
+			<key>zmux-loopback.localtest.me</key>
 			<dict>
 				<key>NSExceptionAllowsInsecureHTTPLoads</key>
 				<true/>
@@ -169,7 +169,7 @@
 	<key>SUEnableAutomaticChecks</key>
 	<true/>
 	<key>SUFeedURL</key>
-	<string>https://github.com/manaflow-ai/cmux/releases/latest/download/appcast.xml</string>
+	<string>https://github.com/manaflow-ai/zmux/releases/latest/download/appcast.xml</string>
 	<key>SUScheduledCheckInterval</key>
 	<integer>86400</integer>
 	<key>SUSendProfileInfo</key>

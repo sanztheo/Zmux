@@ -1,6 +1,6 @@
 import AppKit
 import Bonsplit
-import CMUXWorkstream
+import ZMUXWorkstream
 import SwiftUI
 
 #if DEBUG
@@ -382,7 +382,7 @@ private struct FeedListView: View {
             // assistant messages, session markers, and raw
             // notifications are intentionally excluded — they're too
             // noisy for a sidebar and already visible in the agent's
-            // terminal or the cmux notification system. Stop events
+            // terminal or the zmux notification system. Stop events
             // render a "reply to Claude" textbox so the user can
             // nudge Claude without switching focus to the terminal.
             base = items.filter { item in
@@ -2547,7 +2547,7 @@ private struct QuestionActionArea: View {
     let onReply: ([String]) -> Void
 
     private static let skipInterviewAndPlanAnswer = "Skip interview and plan immediately"
-    private static let customAnswerSelectionId = "__cmux_custom_answer__"
+    private static let customAnswerSelectionId = "__zmux_custom_answer__"
 
     // Per-question selections keyed by question id.
     @State private var selections: [String: Set<String>] = [:]

@@ -923,7 +923,7 @@ final class SessionIndexStore: ObservableObject {
 
     nonisolated private static func decodeClaudeProjectDir(_ raw: String) -> String? {
         // Claude encodes cwd by replacing "/" with "-" and prefixing "-"
-        // e.g. "-Users-lawrence-fun-cmuxterm-hq" -> "/Users/lawrence/fun/cmuxterm-hq".
+        // e.g. "-Users-lawrence-fun-zmuxterm-hq" -> "/Users/lawrence/fun/zmuxterm-hq".
         // The encoding is lossy: a real path segment containing "-"
         // (e.g. "my-cool-project") collapses to multiple segments
         // ("/my/cool/project") on decode, which is wrong. Only return the
@@ -1224,7 +1224,7 @@ final class SessionIndexStore: ObservableObject {
         let totalStart = ProcessInfo.processInfo.systemUptime
         defer {
             let totalMs = (ProcessInfo.processInfo.systemUptime - totalStart) * 1000
-            cmuxDebugLog("session.search.total ms=\(String(format: "%.0f", totalMs)) needle=\"\(trimmed.prefix(20))\" offset=\(offset) limit=\(limit) errors=\(bag.snapshot().count)")
+            zmuxDebugLog("session.search.total ms=\(String(format: "%.0f", totalMs)) needle=\"\(trimmed.prefix(20))\" offset=\(offset) limit=\(limit) errors=\(bag.snapshot().count)")
         }
         #endif
         let entries: [SessionEntry]
@@ -1266,7 +1266,7 @@ final class SessionIndexStore: ObservableObject {
         let start = ProcessInfo.processInfo.systemUptime
         let result = await searchAgent(needle: needle, agent: agent, cwdFilter: cwdFilter, offset: offset, limit: limit, errorBag: errorBag)
         let ms = (ProcessInfo.processInfo.systemUptime - start) * 1000
-        cmuxDebugLog("session.search.agent agent=\(agent.rawValue) ms=\(String(format: "%.0f", ms)) results=\(result.count) cwd=\(cwdFilter?.suffix(40) ?? "nil")")
+        zmuxDebugLog("session.search.agent agent=\(agent.rawValue) ms=\(String(format: "%.0f", ms)) results=\(result.count) cwd=\(cwdFilter?.suffix(40) ?? "nil")")
         return result
         #else
         return await searchAgent(needle: needle, agent: agent, cwdFilter: cwdFilter, offset: offset, limit: limit, errorBag: errorBag)
@@ -1518,7 +1518,7 @@ final class SessionIndexStore: ObservableObject {
         let cachedCount = sorted.filter { $0.2 }.count
         let skippedCount = sorted.filter { $0.1 == nil && !$0.2 }.count + sorted.filter { $0.1 == nil && $0.2 }.count
         let totalMs = (ProcessInfo.processInfo.systemUptime - loopStart) * 1000
-        cmuxDebugLog("session.claude.detail target=\(target) workSize=\(workSize) matched=\(matched.count) cachedHits=\(cachedCount) skipped=\(skippedCount) parallelMs=\(Int(totalMs))")
+        zmuxDebugLog("session.claude.detail target=\(target) workSize=\(workSize) matched=\(matched.count) cachedHits=\(cachedCount) skipped=\(skippedCount) parallelMs=\(Int(totalMs))")
         #endif
         return Array(matched.prefix(target).dropFirst(offset).prefix(limit))
     }
@@ -1557,7 +1557,7 @@ final class SessionIndexStore: ObservableObject {
 
         // Snapshot DB + WAL/SHM to avoid contention with a running Codex.
         let snapshotDir = fm.temporaryDirectory.appendingPathComponent(
-            "cmux-codex-search-\(UUID().uuidString)", isDirectory: true
+            "zmux-codex-search-\(UUID().uuidString)", isDirectory: true
         )
         do { try fm.createDirectory(at: snapshotDir, withIntermediateDirectories: true) } catch { return nil }
         defer { try? fm.removeItem(at: snapshotDir) }
@@ -1756,7 +1756,7 @@ final class SessionIndexStore: ObservableObject {
         let dbPath = ("~/.local/share/opencode/opencode.db" as NSString).expandingTildeInPath
         let fm = FileManager.default
         guard fm.fileExists(atPath: dbPath) else { return [] }
-        let snapshotDir = fm.temporaryDirectory.appendingPathComponent("cmux-opencode-search-\(UUID().uuidString)", isDirectory: true)
+        let snapshotDir = fm.temporaryDirectory.appendingPathComponent("zmux-opencode-search-\(UUID().uuidString)", isDirectory: true)
         do { try fm.createDirectory(at: snapshotDir, withIntermediateDirectories: true) } catch { return [] }
         defer { try? fm.removeItem(at: snapshotDir) }
         let snapshotDB = snapshotDir.appendingPathComponent("opencode.db")

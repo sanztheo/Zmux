@@ -55,8 +55,8 @@ fi
 
 # Allow CI to skip the zig build (e.g., macOS 26 where zig 0.15.2 can't link).
 # Creates a stub binary so the Xcode Run Script file-existence check passes.
-if [[ "${CMUX_SKIP_ZIG_BUILD:-}" == "1" ]]; then
-  echo "Skipping zig CLI helper build (CMUX_SKIP_ZIG_BUILD=1)"
+if [[ "${ZMUX_SKIP_ZIG_BUILD:-}" == "1" ]]; then
+  echo "Skipping zig CLI helper build (ZMUX_SKIP_ZIG_BUILD=1)"
   mkdir -p "$(dirname "$OUTPUT_PATH")"
   printf '#!/bin/sh\necho "ghostty CLI helper stub (zig build skipped)" >&2\nexit 1\n' > "$OUTPUT_PATH"
   chmod +x "$OUTPUT_PATH"
@@ -124,7 +124,7 @@ build_helper() {
   )
 }
 
-TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/cmux-ghostty-helper.XXXXXX")"
+TMP_DIR="$(mktemp -d "${TMPDIR:-/tmp}/zmux-ghostty-helper.XXXXXX")"
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 mkdir -p "$(dirname "$OUTPUT_PATH")"

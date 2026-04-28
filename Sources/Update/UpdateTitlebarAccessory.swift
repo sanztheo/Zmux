@@ -120,7 +120,7 @@ final class TitlebarControlsViewModel: ObservableObject {
 }
 
 extension Notification.Name {
-    static let cmuxNotificationsPopoverVisibilityDidChange = Notification.Name("cmux.notificationsPopoverVisibilityDidChange")
+    static let zmuxNotificationsPopoverVisibilityDidChange = Notification.Name("zmux.notificationsPopoverVisibilityDidChange")
 }
 
 private enum NotificationsPopoverVisibilityUserInfoKey {
@@ -129,7 +129,7 @@ private enum NotificationsPopoverVisibilityUserInfoKey {
 
 private func postNotificationsPopoverVisibilityDidChange(isShown: Bool) {
     NotificationCenter.default.post(
-        name: .cmuxNotificationsPopoverVisibilityDidChange,
+        name: .zmuxNotificationsPopoverVisibilityDidChange,
         object: nil,
         userInfo: [NotificationsPopoverVisibilityUserInfoKey.isShown: isShown]
     )
@@ -333,7 +333,7 @@ struct TitlebarControlsView: View {
             .onAppear {
                 isNotificationsPopoverShown = AppDelegate.shared?.isNotificationsPopoverShown() ?? false
             }
-            .onReceive(NotificationCenter.default.publisher(for: .cmuxNotificationsPopoverVisibilityDidChange)) { notification in
+            .onReceive(NotificationCenter.default.publisher(for: .zmuxNotificationsPopoverVisibilityDidChange)) { notification in
                 isNotificationsPopoverShown = (notification.userInfo?[NotificationsPopoverVisibilityUserInfoKey.isShown] as? Bool) ?? false
             }
             .onAppear {
@@ -359,7 +359,7 @@ struct TitlebarControlsView: View {
         let content = HStack(spacing: config.spacing) {
             TitlebarControlButton(config: config, action: {
                 #if DEBUG
-                cmuxDebugLog("titlebar.toggleSidebar")
+                zmuxDebugLog("titlebar.toggleSidebar")
                 #endif
                 onToggleSidebar()
             }) {
@@ -371,7 +371,7 @@ struct TitlebarControlsView: View {
 
             TitlebarControlButton(config: config, action: {
                 #if DEBUG
-                cmuxDebugLog("titlebar.notifications")
+                zmuxDebugLog("titlebar.notifications")
                 #endif
                 onToggleNotifications()
             }) {
@@ -384,7 +384,7 @@ struct TitlebarControlsView: View {
                             .foregroundColor(.white)
                             .frame(width: config.badgeSize, height: config.badgeSize)
                             .background(
-                                Circle().fill(cmuxAccentColor())
+                                Circle().fill(zmuxAccentColor())
                             )
                             .offset(x: config.badgeOffset.width, y: config.badgeOffset.height)
                     }
@@ -398,7 +398,7 @@ struct TitlebarControlsView: View {
 
             TitlebarControlButton(config: config, action: {
                 #if DEBUG
-                cmuxDebugLog("titlebar.newTab")
+                zmuxDebugLog("titlebar.newTab")
                 #endif
                 onNewTab()
             }) {
@@ -1142,11 +1142,11 @@ private struct NotificationPopoverRow: View {
             Button(action: onOpen) {
                 HStack(alignment: .top, spacing: 10) {
                     Circle()
-                        .fill(notification.isRead ? Color.clear : cmuxAccentColor())
+                        .fill(notification.isRead ? Color.clear : zmuxAccentColor())
                         .frame(width: 8, height: 8)
                         .overlay(
                             Circle()
-                                .stroke(cmuxAccentColor().opacity(notification.isRead ? 0.2 : 1), lineWidth: 1)
+                                .stroke(zmuxAccentColor().opacity(notification.isRead ? 0.2 : 1), lineWidth: 1)
                         )
                         .padding(.top, 6)
 
@@ -1209,7 +1209,7 @@ final class UpdateTitlebarAccessoryController {
     private var observers: [NSObjectProtocol] = []
     private var pendingAttachRetries: [ObjectIdentifier: Int] = [:]
     private var startupScanWorkItems: [DispatchWorkItem] = []
-    private let controlsIdentifier = NSUserInterfaceItemIdentifier("cmux.titlebarControls")
+    private let controlsIdentifier = NSUserInterfaceItemIdentifier("zmux.titlebarControls")
     private let controlsControllers = NSHashTable<TitlebarControlsAccessoryViewController>.weakObjects()
     private var lastKnownPresentationMode: WorkspacePresentationModeSettings.Mode = WorkspacePresentationModeSettings.mode()
 
@@ -1317,7 +1317,7 @@ final class UpdateTitlebarAccessoryController {
                 }
 #if DEBUG
                 let env = ProcessInfo.processInfo.environment
-                if env["CMUX_UI_TEST_MODE"] == "1" {
+                if env["ZMUX_UI_TEST_MODE"] == "1" {
                     let ids = NSApp.windows.map { $0.identifier?.rawValue ?? "<nil>" }
                     let delayText = String(format: "%.2f", delay)
                     UpdateLogStore.shared.append("startup window scan (delay=\(delayText)) count=\(NSApp.windows.count) ids=\(ids.joined(separator: ","))")
@@ -1371,7 +1371,7 @@ final class UpdateTitlebarAccessoryController {
 
 #if DEBUG
         let env = ProcessInfo.processInfo.environment
-        if env["CMUX_UI_TEST_MODE"] == "1" {
+        if env["ZMUX_UI_TEST_MODE"] == "1" {
             let ident = window.identifier?.rawValue ?? "<nil>"
             UpdateLogStore.shared.append("attached titlebar accessories to window id=\(ident)")
         }
@@ -1406,7 +1406,7 @@ final class UpdateTitlebarAccessoryController {
 
 #if DEBUG
         let env = ProcessInfo.processInfo.environment
-        if env["CMUX_UI_TEST_MODE"] == "1" {
+        if env["ZMUX_UI_TEST_MODE"] == "1" {
             let ident = window.identifier?.rawValue ?? "<nil>"
             UpdateLogStore.shared.append("removed titlebar accessories from window id=\(ident)")
         }
@@ -1414,7 +1414,7 @@ final class UpdateTitlebarAccessoryController {
     }
 
     private func isSettingsWindow(_ window: NSWindow) -> Bool {
-        if window.identifier?.rawValue == "cmux.settings" {
+        if window.identifier?.rawValue == "zmux.settings" {
             return true
         }
         return window.title == "Settings"
@@ -1422,7 +1422,7 @@ final class UpdateTitlebarAccessoryController {
 
     private func isMainTerminalWindow(_ window: NSWindow) -> Bool {
         guard let raw = window.identifier?.rawValue else { return false }
-        return raw == "cmux.main" || raw.hasPrefix("cmux.main.")
+        return raw == "zmux.main" || raw.hasPrefix("zmux.main.")
     }
 
     private func preferredNotificationsController(

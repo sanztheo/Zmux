@@ -23,7 +23,7 @@ private func debugWorkspaceDescriptionPreview(_ text: String?, limit: Int = 120)
 }
 #endif
 
-struct CmuxSurfaceConfigTemplate {
+struct ZmuxSurfaceConfigTemplate {
     var fontSize: Float32 = 0
     var workingDirectory: String?
     var command: String?
@@ -74,7 +74,7 @@ private final class WorkspacePendingTerminalInputObserver: @unchecked Sendable {
     var observer: NSObjectProtocol?
 }
 
-func cmuxSurfaceContextName(_ context: ghostty_surface_context_e) -> String {
+func zmuxSurfaceContextName(_ context: ghostty_surface_context_e) -> String {
     switch context {
     case GHOSTTY_SURFACE_CONTEXT_WINDOW:
         return "window"
@@ -87,7 +87,7 @@ func cmuxSurfaceContextName(_ context: ghostty_surface_context_e) -> String {
     }
 }
 
-private func cmuxPointerAppearsLive(_ pointer: UnsafeMutableRawPointer?) -> Bool {
+private func zmuxPointerAppearsLive(_ pointer: UnsafeMutableRawPointer?) -> Bool {
     guard let pointer,
           malloc_zone_from_ptr(pointer) != nil else {
         return false
@@ -95,15 +95,15 @@ private func cmuxPointerAppearsLive(_ pointer: UnsafeMutableRawPointer?) -> Bool
     return malloc_size(pointer) > 0
 }
 
-func cmuxSurfacePointerAppearsLive(_ surface: ghostty_surface_t) -> Bool {
+func zmuxSurfacePointerAppearsLive(_ surface: ghostty_surface_t) -> Bool {
     // Best-effort check: reject pointers that no longer belong to an active
     // malloc zone allocation. A Swift wrapper around `ghostty_surface_t` can
     // remain non-nil after the backing native surface has already been freed.
-    cmuxPointerAppearsLive(surface)
+    zmuxPointerAppearsLive(surface)
 }
 
-func cmuxCurrentSurfaceFontSizePoints(_ surface: ghostty_surface_t) -> Float? {
-    guard cmuxSurfacePointerAppearsLive(surface) else {
+func zmuxCurrentSurfaceFontSizePoints(_ surface: ghostty_surface_t) -> Float? {
+    guard zmuxSurfacePointerAppearsLive(surface) else {
         return nil
     }
 
@@ -117,16 +117,16 @@ func cmuxCurrentSurfaceFontSizePoints(_ surface: ghostty_surface_t) -> Float? {
     return points
 }
 
-func cmuxInheritedSurfaceConfig(
+func zmuxInheritedSurfaceConfig(
     sourceSurface: ghostty_surface_t,
     context: ghostty_surface_context_e
-) -> CmuxSurfaceConfigTemplate {
+) -> ZmuxSurfaceConfigTemplate {
     let inherited = ghostty_surface_inherited_config(sourceSurface, context)
-    var config = CmuxSurfaceConfigTemplate(cConfig: inherited)
+    var config = ZmuxSurfaceConfigTemplate(cConfig: inherited)
 
     // Make runtime zoom inheritance explicit, even when Ghostty's
     // inherit-font-size config is disabled.
-    let runtimePoints = cmuxCurrentSurfaceFontSizePoints(sourceSurface)
+    let runtimePoints = zmuxCurrentSurfaceFontSizePoints(sourceSurface)
     if let points = runtimePoints {
         config.fontSize = points
     }
@@ -135,8 +135,8 @@ func cmuxInheritedSurfaceConfig(
     let inheritedText = String(format: "%.2f", inherited.font_size)
     let runtimeText = runtimePoints.map { String(format: "%.2f", $0) } ?? "nil"
     let finalText = String(format: "%.2f", config.fontSize)
-    cmuxDebugLog(
-        "zoom.inherit context=\(cmuxSurfaceContextName(context)) " +
+    zmuxDebugLog(
+        "zoom.inherit context=\(zmuxSurfaceContextName(context)) " +
         "inherited=\(inheritedText) runtime=\(runtimeText) final=\(finalText)"
     )
 #endif
@@ -708,7 +708,7 @@ extension Workspace {
             if let restorableAgent {
                 let sessionPreview = String(restorableAgent.sessionId.prefix(8))
                 let launchArgc = restorableAgent.launchCommand?.arguments.count ?? 0
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "session.restore.agent panel=\(snapshot.id.uuidString.prefix(5)) " +
                     "kind=\(restorableAgent.kind.rawValue) session=\(sessionPreview) " +
                     "hasLaunch=\(restorableAgent.launchCommand == nil ? 0 : 1) " +
@@ -849,14 +849,14 @@ extension Workspace {
     }
 }
 
-// MARK: - cmux.json custom layout
+// MARK: - zmux.json custom layout
 
 extension Workspace {
 
-    func applyCustomLayout(_ layout: CmuxLayoutNode, baseCwd: String) {
+    func applyCustomLayout(_ layout: ZmuxLayoutNode, baseCwd: String) {
         guard let rootPaneId = bonsplitController.allPaneIds.first else { return }
 
-        var leaves: [(paneId: PaneID, surfaces: [CmuxSurfaceDefinition])] = []
+        var leaves: [(paneId: PaneID, surfaces: [ZmuxSurfaceDefinition])] = []
         buildCustomLayoutTree(layout, inPane: rootPaneId, leaves: &leaves)
 
         // First leaf reuses the initial terminal created by addWorkspace;
@@ -876,9 +876,9 @@ extension Workspace {
     }
 
     private func buildCustomLayoutTree(
-        _ node: CmuxLayoutNode,
+        _ node: ZmuxLayoutNode,
         inPane paneId: PaneID,
-        leaves: inout [(paneId: PaneID, surfaces: [CmuxSurfaceDefinition])]
+        leaves: inout [(paneId: PaneID, surfaces: [ZmuxSurfaceDefinition])]
     ) {
         switch node {
         case .pane(let pane):
@@ -886,7 +886,7 @@ extension Workspace {
 
         case .split(let split):
             guard split.children.count == 2 else {
-                NSLog("[CmuxConfig] split node requires exactly 2 children, got %d", split.children.count)
+                NSLog("[ZmuxConfig] split node requires exactly 2 children, got %d", split.children.count)
                 leaves.append((paneId: paneId, surfaces: []))
                 return
             }
@@ -919,7 +919,7 @@ extension Workspace {
 
     private func populateCustomPane(
         _ paneId: PaneID,
-        surfaces: [CmuxSurfaceDefinition],
+        surfaces: [ZmuxSurfaceDefinition],
         baseCwd: String,
         focusPanelId: inout UUID?
     ) {
@@ -953,14 +953,14 @@ extension Workspace {
     private func configureExistingSurface(
         panelId: UUID,
         inPane paneId: PaneID,
-        surface: CmuxSurfaceDefinition,
+        surface: ZmuxSurfaceDefinition,
         baseCwd: String,
         focusPanelId: inout UUID?
     ) {
         switch surface.type {
         case .terminal where surface.cwd != nil || surface.env != nil:
             // Placeholder can't change cwd/env — replace it
-            let resolvedCwd = CmuxConfigStore.resolveCwd(surface.cwd, relativeTo: baseCwd)
+            let resolvedCwd = ZmuxConfigStore.resolveCwd(surface.cwd, relativeTo: baseCwd)
             if let panel = newTerminalSurface(
                 inPane: paneId,
                 focus: false,
@@ -992,13 +992,13 @@ extension Workspace {
 
     private func createNewSurface(
         inPane paneId: PaneID,
-        surface: CmuxSurfaceDefinition,
+        surface: ZmuxSurfaceDefinition,
         baseCwd: String,
         focusPanelId: inout UUID?
     ) {
         switch surface.type {
         case .terminal:
-            let resolvedCwd = CmuxConfigStore.resolveCwd(surface.cwd, relativeTo: baseCwd)
+            let resolvedCwd = ZmuxConfigStore.resolveCwd(surface.cwd, relativeTo: baseCwd)
             if let panel = newTerminalSurface(
                 inPane: paneId,
                 focus: false,
@@ -1020,7 +1020,7 @@ extension Workspace {
     }
 
     private func applyCustomDividerPositions(
-        configNode: CmuxLayoutNode,
+        configNode: ZmuxLayoutNode,
         liveNode: ExternalTreeNode
     ) {
         switch (configNode, liveNode) {
@@ -1087,7 +1087,7 @@ extension Workspace {
                 }
 
                 self.removePendingTerminalInputObserver(registration, forPanelId: panelId)
-                NSLog("[CmuxConfig] surface not ready after 3s, dropping command (%d chars)", text.count)
+                NSLog("[ZmuxConfig] surface not ready after 3s, dropping command (%d chars)", text.count)
             }
         }
     }
@@ -1150,7 +1150,7 @@ final class WorkspaceRemoteDaemonPendingCallRegistry {
         case timedOut
     }
 
-    private let queue = DispatchQueue(label: "com.cmux.remote-ssh.daemon-rpc.pending.\(UUID().uuidString)")
+    private let queue = DispatchQueue(label: "com.zmux.remote-ssh.daemon-rpc.pending.\(UUID().uuidString)")
     private var nextRequestID = 1
     private var pendingCalls: [Int: PendingCall] = [:]
 
@@ -1359,7 +1359,7 @@ enum WorkspaceRemoteSSHBatchCommandBuilder {
 
 private final class WorkspaceRemoteDaemonRPCClient {
     private static let maxStdoutBufferBytes = 256 * 1024
-    private static let bakedVMDaemonSocketPath = "/run/cmuxd-remote.sock"
+    private static let bakedVMDaemonSocketPath = "/run/zmuxd-remote.sock"
     private static let socketForwardStartupGracePeriod: TimeInterval = 0.75
     static let requiredProxyStreamCapability = "proxy.stream.push"
 
@@ -1422,8 +1422,8 @@ private final class WorkspaceRemoteDaemonRPCClient {
     private let configuration: WorkspaceRemoteConfiguration
     private let remotePath: String
     private let onUnexpectedTermination: (String) -> Void
-    private let writeQueue = DispatchQueue(label: "com.cmux.remote-ssh.daemon-rpc.write.\(UUID().uuidString)")
-    private let stateQueue = DispatchQueue(label: "com.cmux.remote-ssh.daemon-rpc.state.\(UUID().uuidString)")
+    private let writeQueue = DispatchQueue(label: "com.zmux.remote-ssh.daemon-rpc.write.\(UUID().uuidString)")
+    private let stateQueue = DispatchQueue(label: "com.zmux.remote-ssh.daemon-rpc.state.\(UUID().uuidString)")
     private let pendingCalls = WorkspaceRemoteDaemonPendingCallRegistry()
 
     private var process: Process?
@@ -1470,7 +1470,7 @@ private final class WorkspaceRemoteDaemonRPCClient {
             let hello = try call(method: "hello", params: [:], timeout: 8.0)
             let capabilities = (hello["capabilities"] as? [String]) ?? []
             guard capabilities.contains(Self.requiredProxyStreamCapability) else {
-                throw NSError(domain: "cmux.remote.daemon.rpc", code: 2, userInfo: [
+                throw NSError(domain: "zmux.remote.daemon.rpc", code: 2, userInfo: [
                     NSLocalizedDescriptionKey: "remote daemon missing required capability \(Self.requiredProxyStreamCapability)",
                 ])
             }
@@ -1533,7 +1533,7 @@ private final class WorkspaceRemoteDaemonRPCClient {
         do {
             try process.run()
         } catch {
-            throw NSError(domain: "cmux.remote.daemon.rpc", code: 1, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon.rpc", code: 1, userInfo: [
                 NSLocalizedDescriptionKey: "Failed to launch SSH daemon transport: \(error.localizedDescription)",
             ])
         }
@@ -1580,7 +1580,7 @@ private final class WorkspaceRemoteDaemonRPCClient {
         do {
             try process.run()
         } catch {
-            throw NSError(domain: "cmux.remote.daemon.rpc", code: 18, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon.rpc", code: 18, userInfo: [
                 NSLocalizedDescriptionKey: "Failed to launch SSH daemon socket forward: \(error.localizedDescription)",
             ])
         }
@@ -1594,7 +1594,7 @@ private final class WorkspaceRemoteDaemonRPCClient {
             if process.isRunning {
                 process.terminate()
             }
-            throw NSError(domain: "cmux.remote.daemon.rpc", code: 19, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon.rpc", code: 19, userInfo: [
                 NSLocalizedDescriptionKey: "Failed to start SSH daemon socket forward: \(startupFailure)",
             ])
         }
@@ -1607,7 +1607,7 @@ private final class WorkspaceRemoteDaemonRPCClient {
             if process.isRunning {
                 process.terminate()
             }
-            throw NSError(domain: "cmux.remote.daemon.rpc", code: 20, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon.rpc", code: 20, userInfo: [
                 NSLocalizedDescriptionKey: "Failed to connect VM daemon socket forward: \(error.localizedDescription)",
             ])
         }
@@ -1629,14 +1629,14 @@ private final class WorkspaceRemoteDaemonRPCClient {
 
     private func startViaWebSocket() throws {
         guard let endpoint = configuration.daemonWebSocketEndpoint else {
-            throw NSError(domain: "cmux.remote.daemon.rpc", code: 23, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon.rpc", code: 23, userInfo: [
                 NSLocalizedDescriptionKey: "websocket daemon endpoint is missing",
             ])
         }
         guard let url = URL(string: endpoint.url),
               let scheme = url.scheme?.lowercased(),
               scheme == "wss" || scheme == "ws" else {
-            throw NSError(domain: "cmux.remote.daemon.rpc", code: 24, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon.rpc", code: 24, userInfo: [
                 NSLocalizedDescriptionKey: "invalid websocket daemon URL \(endpoint.url)",
             ])
         }
@@ -1653,7 +1653,7 @@ private final class WorkspaceRemoteDaemonRPCClient {
         guard delegate.waitForOpen(timeout: 15.0) else {
             task.cancel(with: .goingAway, reason: nil)
             session.invalidateAndCancel()
-            throw NSError(domain: "cmux.remote.daemon.rpc", code: 25, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon.rpc", code: 25, userInfo: [
                 NSLocalizedDescriptionKey: "timed out opening daemon websocket",
             ])
         }
@@ -1681,7 +1681,7 @@ private final class WorkspaceRemoteDaemonRPCClient {
             }
         } catch {
             stop(suppressTerminationCallback: true)
-            throw NSError(domain: "cmux.remote.daemon.rpc", code: 26, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon.rpc", code: 26, userInfo: [
                 NSLocalizedDescriptionKey: "failed authenticating daemon websocket: \(error.localizedDescription)",
             ])
         }
@@ -1703,7 +1703,7 @@ private final class WorkspaceRemoteDaemonRPCClient {
         )
         let streamID = (result["stream_id"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard !streamID.isEmpty else {
-            throw NSError(domain: "cmux.remote.daemon.rpc", code: 3, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon.rpc", code: 3, userInfo: [
                 NSLocalizedDescriptionKey: "proxy.open missing stream_id",
             ])
         }
@@ -1728,7 +1728,7 @@ private final class WorkspaceRemoteDaemonRPCClient {
     ) throws {
         let trimmedStreamID = streamID.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedStreamID.isEmpty else {
-            throw NSError(domain: "cmux.remote.daemon.rpc", code: 17, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon.rpc", code: 17, userInfo: [
                 NSLocalizedDescriptionKey: "proxy.stream.subscribe requires stream_id",
             ])
         }
@@ -1779,7 +1779,7 @@ private final class WorkspaceRemoteDaemonRPCClient {
             ])
         } catch {
             pendingCalls.remove(pendingCall)
-            throw NSError(domain: "cmux.remote.daemon.rpc", code: 10, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon.rpc", code: 10, userInfo: [
                 NSLocalizedDescriptionKey: "failed to encode daemon RPC request \(method): \(error.localizedDescription)",
             ])
         }
@@ -1797,15 +1797,15 @@ private final class WorkspaceRemoteDaemonRPCClient {
         switch pendingCalls.wait(for: pendingCall, timeout: timeout) {
         case .timedOut:
             stop(suppressTerminationCallback: false)
-            throw NSError(domain: "cmux.remote.daemon.rpc", code: 11, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon.rpc", code: 11, userInfo: [
                 NSLocalizedDescriptionKey: "daemon RPC timeout waiting for \(method) response",
             ])
         case .failure(let failure):
-            throw NSError(domain: "cmux.remote.daemon.rpc", code: 12, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon.rpc", code: 12, userInfo: [
                 NSLocalizedDescriptionKey: failure,
             ])
         case .missing:
-            throw NSError(domain: "cmux.remote.daemon.rpc", code: 13, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon.rpc", code: 13, userInfo: [
                 NSLocalizedDescriptionKey: "daemon RPC \(method) returned empty response",
             ])
         case .response(let pendingResponse):
@@ -1820,7 +1820,7 @@ private final class WorkspaceRemoteDaemonRPCClient {
         let errorObject = (response["error"] as? [String: Any]) ?? [:]
         let code = (errorObject["code"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "rpc_error"
         let message = (errorObject["message"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "daemon RPC call failed"
-        throw NSError(domain: "cmux.remote.daemon.rpc", code: 14, userInfo: [
+        throw NSError(domain: "zmux.remote.daemon.rpc", code: 14, userInfo: [
             NSLocalizedDescriptionKey: "\(method) failed (\(code)): \(message)",
         ])
     }
@@ -1831,7 +1831,7 @@ private final class WorkspaceRemoteDaemonRPCClient {
         }
         if let webSocketTask {
             guard let text = String(data: payload, encoding: .utf8) else {
-                throw NSError(domain: "cmux.remote.daemon.rpc", code: 27, userInfo: [
+                throw NSError(domain: "zmux.remote.daemon.rpc", code: 27, userInfo: [
                     NSLocalizedDescriptionKey: "failed encoding daemon websocket request as UTF-8",
                 ])
             }
@@ -1844,7 +1844,7 @@ private final class WorkspaceRemoteDaemonRPCClient {
             semaphore.wait()
             if let sendError {
                 stop(suppressTerminationCallback: false)
-                throw NSError(domain: "cmux.remote.daemon.rpc", code: 16, userInfo: [
+                throw NSError(domain: "zmux.remote.daemon.rpc", code: 16, userInfo: [
                     NSLocalizedDescriptionKey: "failed writing daemon RPC request: \(sendError.localizedDescription)",
                 ])
             }
@@ -1855,7 +1855,7 @@ private final class WorkspaceRemoteDaemonRPCClient {
             self.stdinHandle ?? FileHandle.nullDevice
         }
         if stdinHandle === FileHandle.nullDevice {
-            throw NSError(domain: "cmux.remote.daemon.rpc", code: 15, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon.rpc", code: 15, userInfo: [
                 NSLocalizedDescriptionKey: "daemon transport is not connected",
             ])
         }
@@ -1864,7 +1864,7 @@ private final class WorkspaceRemoteDaemonRPCClient {
             try stdinHandle.write(contentsOf: Data([0x0A]))
         } catch {
             stop(suppressTerminationCallback: false)
-            throw NSError(domain: "cmux.remote.daemon.rpc", code: 16, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon.rpc", code: 16, userInfo: [
                 NSLocalizedDescriptionKey: "failed writing daemon RPC request: \(error.localizedDescription)",
             ])
         }
@@ -2163,14 +2163,14 @@ private final class WorkspaceRemoteDaemonRPCClient {
             }
         }
 
-        throw NSError(domain: "cmux.remote.daemon.rpc", code: 21, userInfo: [
+        throw NSError(domain: "zmux.remote.daemon.rpc", code: 21, userInfo: [
             NSLocalizedDescriptionKey: "failed to allocate local daemon socket forward port",
         ])
     }
 
     private static func connectLoopbackSocket(port: Int) throws -> FileHandle {
         guard port > 0 && port <= 65535 else {
-            throw NSError(domain: "cmux.remote.daemon.rpc", code: 22, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon.rpc", code: 22, userInfo: [
                 NSLocalizedDescriptionKey: "invalid local daemon socket forward port \(port)",
             ])
         }
@@ -2508,7 +2508,7 @@ enum RemoteLoopbackHTTPResponseRewriter {
 private final class WorkspaceRemoteDaemonProxyTunnel {
     private final class ProxySession {
         private static let maxHandshakeBytes = 64 * 1024
-        private static let remoteLoopbackProxyAliasHost = "cmux-loopback.localtest.me"
+        private static let remoteLoopbackProxyAliasHost = "zmux-loopback.localtest.me"
 
         private enum HandshakeProtocol {
             case undecided
@@ -2690,7 +2690,7 @@ private final class WorkspaceRemoteDaemonProxyTunnel {
             let bytes = [UInt8](data)
             guard bytes.count >= 4 else { return nil }
             guard bytes[0] == 0x05 else {
-                throw NSError(domain: "cmux.remote.proxy", code: 1, userInfo: [NSLocalizedDescriptionKey: "invalid SOCKS version"])
+                throw NSError(domain: "zmux.remote.proxy", code: 1, userInfo: [NSLocalizedDescriptionKey: "invalid SOCKS version"])
             }
 
             let command = bytes[1]
@@ -2730,18 +2730,18 @@ private final class WorkspaceRemoteDaemonProxyTunnel {
                 cursor += 16
 
             default:
-                throw NSError(domain: "cmux.remote.proxy", code: 2, userInfo: [NSLocalizedDescriptionKey: "invalid SOCKS address type"])
+                throw NSError(domain: "zmux.remote.proxy", code: 2, userInfo: [NSLocalizedDescriptionKey: "invalid SOCKS address type"])
             }
 
             guard !host.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-                throw NSError(domain: "cmux.remote.proxy", code: 3, userInfo: [NSLocalizedDescriptionKey: "empty SOCKS host"])
+                throw NSError(domain: "zmux.remote.proxy", code: 3, userInfo: [NSLocalizedDescriptionKey: "empty SOCKS host"])
             }
             guard bytes.count >= cursor + 2 else { return nil }
             let port = Int(UInt16(bytes[cursor]) << 8 | UInt16(bytes[cursor + 1]))
             cursor += 2
 
             guard port > 0 && port <= 65535 else {
-                throw NSError(domain: "cmux.remote.proxy", code: 4, userInfo: [NSLocalizedDescriptionKey: "invalid SOCKS port"])
+                throw NSError(domain: "zmux.remote.proxy", code: 4, userInfo: [NSLocalizedDescriptionKey: "invalid SOCKS port"])
             }
 
             return SocksRequest(host: host, port: port, command: command, consumedBytes: cursor)
@@ -2970,7 +2970,7 @@ private final class WorkspaceRemoteDaemonProxyTunnel {
         }
 
         private static func httpResponse(status: String, closeAfterResponse: Bool = true) -> Data {
-            var text = "HTTP/1.1 \(status)\r\nProxy-Agent: cmux\r\n"
+            var text = "HTTP/1.1 \(status)\r\nProxy-Agent: zmux\r\n"
             if closeAfterResponse {
                 text += "Connection: close\r\n"
             }
@@ -2983,7 +2983,7 @@ private final class WorkspaceRemoteDaemonProxyTunnel {
     private let remotePath: String
     private let localPort: Int
     private let onFatalError: (String) -> Void
-    private let queue = DispatchQueue(label: "com.cmux.remote-ssh.daemon-tunnel.\(UUID().uuidString)", qos: .utility)
+    private let queue = DispatchQueue(label: "com.zmux.remote-ssh.daemon-tunnel.\(UUID().uuidString)", qos: .utility)
 
     private var listener: NWListener?
     private var rpcClient: WorkspaceRemoteDaemonRPCClient?
@@ -3006,7 +3006,7 @@ private final class WorkspaceRemoteDaemonProxyTunnel {
         var capturedError: Error?
         queue.sync {
             guard !isStopped else {
-                capturedError = NSError(domain: "cmux.remote.proxy", code: 20, userInfo: [
+                capturedError = NSError(domain: "zmux.remote.proxy", code: 20, userInfo: [
                     NSLocalizedDescriptionKey: "proxy tunnel already stopped",
                 ])
                 return
@@ -3113,7 +3113,7 @@ private final class WorkspaceRemoteDaemonProxyTunnel {
 
     private static func makeLoopbackListener(port: Int) throws -> NWListener {
         guard let localPort = NWEndpoint.Port(rawValue: UInt16(port)) else {
-            throw NSError(domain: "cmux.remote.proxy", code: 21, userInfo: [
+            throw NSError(domain: "zmux.remote.proxy", code: 21, userInfo: [
                 NSLocalizedDescriptionKey: "invalid local proxy port \(port)",
             ])
         }
@@ -3173,7 +3173,7 @@ private final class WorkspaceRemoteProxyBroker {
 
     static let shared = WorkspaceRemoteProxyBroker()
 
-    private let queue = DispatchQueue(label: "com.cmux.remote-ssh.proxy-broker", qos: .utility)
+    private let queue = DispatchQueue(label: "com.zmux.remote-ssh.proxy-broker", qos: .utility)
     private var entries: [String: Entry] = [:]
 
     func acquire(
@@ -3390,7 +3390,7 @@ private final class WorkspaceRemoteCLIRelayServer {
         private let relayToken: Data
         private let queue: DispatchQueue
         private let onClose: () -> Void
-        private let challengeProtocol = "cmux-relay-auth"
+        private let challengeProtocol = "zmux-relay-auth"
         private let challengeVersion = 1
         private let minimumFailureDelay: TimeInterval = 0.05
         private let maximumFrameBytes = 16 * 1024
@@ -3627,7 +3627,7 @@ private final class WorkspaceRemoteCLIRelayServer {
         private static func roundTripUnixSocket(socketPath: String, request: Data) throws -> Data {
             let fd = socket(AF_UNIX, SOCK_STREAM, 0)
             guard fd >= 0 else {
-                throw NSError(domain: "cmux.remote.relay", code: 1, userInfo: [
+                throw NSError(domain: "zmux.remote.relay", code: 1, userInfo: [
                     NSLocalizedDescriptionKey: "failed to create local relay socket",
                 ])
             }
@@ -3643,7 +3643,7 @@ private final class WorkspaceRemoteCLIRelayServer {
             address.sun_family = sa_family_t(AF_UNIX)
             let pathBytes = Array(socketPath.utf8CString)
             guard pathBytes.count <= MemoryLayout.size(ofValue: address.sun_path) else {
-                throw NSError(domain: "cmux.remote.relay", code: 2, userInfo: [
+                throw NSError(domain: "zmux.remote.relay", code: 2, userInfo: [
                     NSLocalizedDescriptionKey: "local relay socket path is too long",
                 ])
             }
@@ -3662,8 +3662,8 @@ private final class WorkspaceRemoteCLIRelayServer {
                 }
             }
             guard connectResult == 0 else {
-                throw NSError(domain: "cmux.remote.relay", code: 3, userInfo: [
-                    NSLocalizedDescriptionKey: "failed to connect to local cmux socket",
+                throw NSError(domain: "zmux.remote.relay", code: 3, userInfo: [
+                    NSLocalizedDescriptionKey: "failed to connect to local zmux socket",
                 ])
             }
 
@@ -3674,7 +3674,7 @@ private final class WorkspaceRemoteCLIRelayServer {
                 while bytesRemaining > 0 {
                     let written = Darwin.write(fd, pointer, bytesRemaining)
                     if written <= 0 {
-                        throw NSError(domain: "cmux.remote.relay", code: 4, userInfo: [
+                        throw NSError(domain: "zmux.remote.relay", code: 4, userInfo: [
                             NSLocalizedDescriptionKey: "failed to write relay request",
                         ])
                     }
@@ -3700,12 +3700,12 @@ private final class WorkspaceRemoteCLIRelayServer {
                     if !response.isEmpty {
                         break
                     }
-                    throw NSError(domain: "cmux.remote.relay", code: 5, userInfo: [
-                        NSLocalizedDescriptionKey: "timed out waiting for local cmux response",
+                    throw NSError(domain: "zmux.remote.relay", code: 5, userInfo: [
+                        NSLocalizedDescriptionKey: "timed out waiting for local zmux response",
                     ])
                 }
-                throw NSError(domain: "cmux.remote.relay", code: 6, userInfo: [
-                    NSLocalizedDescriptionKey: "failed to read local cmux response",
+                throw NSError(domain: "zmux.remote.relay", code: 6, userInfo: [
+                    NSLocalizedDescriptionKey: "failed to read local zmux response",
                 ])
             }
             return response
@@ -3715,7 +3715,7 @@ private final class WorkspaceRemoteCLIRelayServer {
     private let localSocketPath: String
     private let relayID: String
     private let relayToken: Data
-    private let queue = DispatchQueue(label: "com.cmux.remote-ssh.cli-relay.\(UUID().uuidString)", qos: .utility)
+    private let queue = DispatchQueue(label: "com.zmux.remote-ssh.cli-relay.\(UUID().uuidString)", qos: .utility)
 
     private var listener: NWListener?
     private var sessions: [UUID: Session] = [:]
@@ -3724,7 +3724,7 @@ private final class WorkspaceRemoteCLIRelayServer {
 
     init(localSocketPath: String, relayID: String, relayTokenHex: String) throws {
         guard let relayToken = Session.hexData(from: relayTokenHex), !relayToken.isEmpty else {
-            throw NSError(domain: "cmux.remote.relay", code: 7, userInfo: [
+            throw NSError(domain: "zmux.remote.relay", code: 7, userInfo: [
                 NSLocalizedDescriptionKey: "invalid relay token",
             ])
         }
@@ -3777,7 +3777,7 @@ private final class WorkspaceRemoteCLIRelayServer {
             listener.newConnectionHandler = nil
             listener.stateUpdateHandler = nil
             listener.cancel()
-            throw NSError(domain: "cmux.remote.relay", code: 8, userInfo: [
+            throw NSError(domain: "zmux.remote.relay", code: 8, userInfo: [
                 NSLocalizedDescriptionKey: "timed out waiting for local relay listener",
             ])
         }
@@ -3791,7 +3791,7 @@ private final class WorkspaceRemoteCLIRelayServer {
             listener.newConnectionHandler = nil
             listener.stateUpdateHandler = nil
             listener.cancel()
-            throw NSError(domain: "cmux.remote.relay", code: 8, userInfo: [
+            throw NSError(domain: "zmux.remote.relay", code: 8, userInfo: [
                 NSLocalizedDescriptionKey: "failed to bind local relay listener",
             ])
         }
@@ -3907,13 +3907,13 @@ final class WorkspaceRemoteSessionController {
         let remotePath: String
     }
 
-    /// The capabilities advertised by the cmuxd-remote baked into the Freestyle snapshot
+    /// The capabilities advertised by the zmuxd-remote baked into the Freestyle snapshot
     /// (scratch/vm-experiments/images/install.sh pins v0.63.2). Keep this in lockstep with
     /// the daemon's `hello` response — if the baked version advertises a new capability,
     /// bump it here too.
     private static func bakedVMDaemonHello() -> DaemonHello {
         DaemonHello(
-            name: "cmuxd-remote",
+            name: "zmuxd-remote",
             version: "v0.63.2-baked",
             capabilities: [
                 "session.basic",
@@ -3923,11 +3923,11 @@ final class WorkspaceRemoteSessionController {
                 "proxy.stream",
                 "proxy.stream.push",
             ],
-            remotePath: "/usr/local/bin/cmuxd-remote"
+            remotePath: "/usr/local/bin/zmuxd-remote"
         )
     }
 
-    private let queue = DispatchQueue(label: "com.cmux.remote-ssh.\(UUID().uuidString)", qos: .utility)
+    private let queue = DispatchQueue(label: "com.zmux.remote-ssh.\(UUID().uuidString)", qos: .utility)
     private let queueKey = DispatchSpecificKey<Void>()
     private weak var workspace: Workspace?
     private let configuration: WorkspaceRemoteConfiguration
@@ -4142,8 +4142,8 @@ final class WorkspaceRemoteSessionController {
         do {
             let hello: DaemonHello
             if configuration.skipDaemonBootstrap {
-                // Cloud-VM path: cmuxd-remote is pre-baked in the image and exposed via
-                // systemd socket activation at /run/cmuxd-remote.sock. We skip the probe,
+                // Cloud-VM path: zmuxd-remote is pre-baked in the image and exposed via
+                // systemd socket activation at /run/zmuxd-remote.sock. We skip the probe,
                 // upload, and stdio-hello steps entirely — they all depend on ssh-exec
                 // channel I/O, which the Freestyle gateway doesn't forward.
                 hello = Self.bakedVMDaemonHello()
@@ -4152,7 +4152,7 @@ final class WorkspaceRemoteSessionController {
                 hello = try bootstrapDaemonLocked()
             }
             guard hello.capabilities.contains(WorkspaceRemoteDaemonRPCClient.requiredProxyStreamCapability) else {
-                throw NSError(domain: "cmux.remote.daemon", code: 43, userInfo: [
+                throw NSError(domain: "zmux.remote.daemon", code: 43, userInfo: [
                     NSLocalizedDescriptionKey: "remote daemon missing required capability \(WorkspaceRemoteDaemonRPCClient.requiredProxyStreamCapability)",
                 ])
             }
@@ -4593,7 +4593,7 @@ final class WorkspaceRemoteSessionController {
         bootstrapRemoteTTYFetchInFlight = true
         defer { bootstrapRemoteTTYFetchInFlight = false }
 
-        let command = "sh -c \(Self.shellSingleQuoted("tty_path=\"$HOME/.cmux/relay/\(relayPort).tty\"; if [ -r \"$tty_path\" ]; then cat \"$tty_path\"; fi"))"
+        let command = "sh -c \(Self.shellSingleQuoted("tty_path=\"$HOME/.zmux/relay/\(relayPort).tty\"; if [ -r \"$tty_path\" ]; then cat \"$tty_path\"; fi"))"
         do {
             let result = try sshExec(
                 arguments: sshCommonArguments(batchMode: true) + [configuration.destination, command],
@@ -4698,9 +4698,9 @@ final class WorkspaceRemoteSessionController {
         _ = try? sshExec(arguments: arguments, timeout: 4)
     }
 
-    private static let remotePlatformProbeOSMarker = "__CMUX_REMOTE_OS__="
-    private static let remotePlatformProbeArchMarker = "__CMUX_REMOTE_ARCH__="
-    private static let remotePlatformProbeExistsMarker = "__CMUX_REMOTE_EXISTS__="
+    private static let remotePlatformProbeOSMarker = "__ZMUX_REMOTE_OS__="
+    private static let remotePlatformProbeArchMarker = "__ZMUX_REMOTE_ARCH__="
+    private static let remotePlatformProbeExistsMarker = "__ZMUX_REMOTE_EXISTS__="
     private static let bootstrapRemoteTTYRetryDelay: TimeInterval = 0.5
     private static let bootstrapRemoteTTYRetryLimit = 8
 
@@ -4835,7 +4835,7 @@ final class WorkspaceRemoteSessionController {
 
         let stdoutHandle = stdoutPipe.fileHandleForReading
         let stderrHandle = stderrPipe.fileHandleForReading
-        let captureQueue = DispatchQueue(label: "cmux.remote.process.capture")
+        let captureQueue = DispatchQueue(label: "zmux.remote.process.capture")
         let exitSemaphore = DispatchSemaphore(value: 0)
         var stdoutData = Data()
         var stderrData = Data()
@@ -4870,7 +4870,7 @@ final class WorkspaceRemoteSessionController {
                 "remote.proc.launchFailed exec=\(URL(fileURLWithPath: executable).lastPathComponent) " +
                 "error=\(error.localizedDescription)"
             )
-            throw NSError(domain: "cmux.remote.process", code: 1, userInfo: [
+            throw NSError(domain: "zmux.remote.process", code: 1, userInfo: [
                 NSLocalizedDescriptionKey: "Failed to launch \(URL(fileURLWithPath: executable).lastPathComponent): \(error.localizedDescription)",
             ])
         }
@@ -4908,7 +4908,7 @@ final class WorkspaceRemoteSessionController {
                 "remote.proc.timeout exec=\(URL(fileURLWithPath: executable).lastPathComponent) " +
                 "timeout=\(Int(timeout)) args=\(debugShellCommand(executable: executable, arguments: arguments))"
             )
-            throw NSError(domain: "cmux.remote.process", code: 2, userInfo: [
+            throw NSError(domain: "zmux.remote.process", code: 2, userInfo: [
                 NSLocalizedDescriptionKey: "\(URL(fileURLWithPath: executable).lastPathComponent) timed out after \(Int(timeout))s",
             ])
         }
@@ -5015,7 +5015,7 @@ final class WorkspaceRemoteSessionController {
         let result = try sshExec(arguments: sshCommonArguments(batchMode: true) + [configuration.destination, command], timeout: 8)
         guard result.status == 0 else {
             let detail = Self.bestErrorLine(stderr: result.stderr, stdout: result.stdout) ?? "ssh exited \(result.status)"
-            throw NSError(domain: "cmux.remote.relay", code: 70, userInfo: [
+            throw NSError(domain: "zmux.remote.relay", code: 70, userInfo: [
                 NSLocalizedDescriptionKey: "failed to install remote relay metadata: \(detail)",
             ])
         }
@@ -5041,32 +5041,32 @@ final class WorkspaceRemoteSessionController {
     static func remoteRelayMetadataCleanupScript(relayPort: Int) -> String {
         """
         relay_socket='127.0.0.1:\(relayPort)'
-        socket_addr_file="$HOME/.cmux/socket_addr"
+        socket_addr_file="$HOME/.zmux/socket_addr"
         if [ -r "$socket_addr_file" ] && [ "$(tr -d '\\r\\n' < "$socket_addr_file")" = "$relay_socket" ]; then
           rm -f "$socket_addr_file"
         fi
-        rm -f "$HOME/.cmux/relay/\(relayPort).auth" "$HOME/.cmux/relay/\(relayPort).daemon_path" "$HOME/.cmux/relay/\(relayPort).tty"
+        rm -f "$HOME/.zmux/relay/\(relayPort).auth" "$HOME/.zmux/relay/\(relayPort).daemon_path" "$HOME/.zmux/relay/\(relayPort).tty"
         """
     }
 
     private func probeRemoteBootstrapStateLocked(version: String) throws -> RemoteBootstrapState {
         let script = """
-        cmux_uname_os="$(uname -s)"
-        cmux_uname_arch="$(uname -m)"
-        printf '%s%s\\n' '\(Self.remotePlatformProbeOSMarker)' "$cmux_uname_os"
-        printf '%s%s\\n' '\(Self.remotePlatformProbeArchMarker)' "$cmux_uname_arch"
-        case "$(printf '%s' "$cmux_uname_os" | tr '[:upper:]' '[:lower:]')" in
-          linux|darwin|freebsd) cmux_go_os="$(printf '%s' "$cmux_uname_os" | tr '[:upper:]' '[:lower:]')" ;;
+        zmux_uname_os="$(uname -s)"
+        zmux_uname_arch="$(uname -m)"
+        printf '%s%s\\n' '\(Self.remotePlatformProbeOSMarker)' "$zmux_uname_os"
+        printf '%s%s\\n' '\(Self.remotePlatformProbeArchMarker)' "$zmux_uname_arch"
+        case "$(printf '%s' "$zmux_uname_os" | tr '[:upper:]' '[:lower:]')" in
+          linux|darwin|freebsd) zmux_go_os="$(printf '%s' "$zmux_uname_os" | tr '[:upper:]' '[:lower:]')" ;;
           *) exit 70 ;;
         esac
-        case "$(printf '%s' "$cmux_uname_arch" | tr '[:upper:]' '[:lower:]')" in
-          x86_64|amd64) cmux_go_arch=amd64 ;;
-          aarch64|arm64) cmux_go_arch=arm64 ;;
-          armv7l) cmux_go_arch=arm ;;
+        case "$(printf '%s' "$zmux_uname_arch" | tr '[:upper:]' '[:lower:]')" in
+          x86_64|amd64) zmux_go_arch=amd64 ;;
+          aarch64|arm64) zmux_go_arch=arm64 ;;
+          armv7l) zmux_go_arch=arm ;;
           *) exit 71 ;;
         esac
-        cmux_remote_path="$HOME/.cmux/bin/cmuxd-remote/\(version)/${cmux_go_os}-${cmux_go_arch}/cmuxd-remote"
-        if [ -x "$cmux_remote_path" ]; then
+        zmux_remote_path="$HOME/.zmux/bin/zmuxd-remote/\(version)/${zmux_go_os}-${zmux_go_arch}/zmuxd-remote"
+        if [ -x "$zmux_remote_path" ]; then
           printf '%syes\\n' '\(Self.remotePlatformProbeExistsMarker)'
         else
           printf '%sno\\n' '\(Self.remotePlatformProbeExistsMarker)'
@@ -5085,14 +5085,14 @@ final class WorkspaceRemoteSessionController {
             .map { String($0.dropFirst(Self.remotePlatformProbeArchMarker.count)) }
         guard let unameOS, let unameArch else {
             let detail = Self.bestErrorLine(stderr: result.stderr, stdout: result.stdout) ?? "ssh exited \(result.status)"
-            throw NSError(domain: "cmux.remote.daemon", code: 11, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon", code: 11, userInfo: [
                 NSLocalizedDescriptionKey: "failed to query remote platform: \(detail)",
             ])
         }
 
         guard let goOS = Self.mapUnameOS(unameOS),
               let goArch = Self.mapUnameArch(unameArch) else {
-            throw NSError(domain: "cmux.remote.daemon", code: 12, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon", code: 12, userInfo: [
                 NSLocalizedDescriptionKey: "unsupported remote platform \(unameOS)/\(unameArch)",
             ])
         }
@@ -5101,7 +5101,7 @@ final class WorkspaceRemoteSessionController {
             .map { String($0.dropFirst(Self.remotePlatformProbeExistsMarker.count)) == "yes" }
         if result.status != 0, binaryExists == nil {
             let detail = Self.bestErrorLine(stderr: result.stderr, stdout: result.stdout) ?? "ssh exited \(result.status)"
-            throw NSError(domain: "cmux.remote.daemon", code: 13, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon", code: 13, userInfo: [
                 NSLocalizedDescriptionKey: "failed to query remote daemon state: \(detail)",
             ])
         }
@@ -5112,7 +5112,7 @@ final class WorkspaceRemoteSessionController {
         )
     }
 
-    static let remoteDaemonManifestInfoKey = "CMUXRemoteDaemonManifestJSON"
+    static let remoteDaemonManifestInfoKey = "ZMUXRemoteDaemonManifestJSON"
 
     static func remoteDaemonManifest(from infoDictionary: [String: Any]?) -> WorkspaceRemoteDaemonManifest? {
         guard let rawManifest = infoDictionary?[remoteDaemonManifestInfoKey] as? String else { return nil }
@@ -5134,7 +5134,7 @@ final class WorkspaceRemoteSessionController {
             create: true
         )
         let cacheRoot = appSupportRoot
-            .appendingPathComponent("cmux", isDirectory: true)
+            .appendingPathComponent("zmux", isDirectory: true)
             .appendingPathComponent("remote-daemons", isDirectory: true)
         try fileManager.createDirectory(at: cacheRoot, withIntermediateDirectories: true)
         return cacheRoot
@@ -5149,7 +5149,7 @@ final class WorkspaceRemoteSessionController {
         try remoteDaemonCacheRoot(fileManager: fileManager)
             .appendingPathComponent(version, isDirectory: true)
             .appendingPathComponent("\(goOS)-\(goArch)", isDirectory: true)
-            .appendingPathComponent("cmuxd-remote", isDirectory: false)
+            .appendingPathComponent("zmuxd-remote", isDirectory: false)
     }
 
     private static func sha256Hex(forFile url: URL) throws -> String {
@@ -5159,12 +5159,12 @@ final class WorkspaceRemoteSessionController {
     }
 
     private static func allowLocalDaemonBuildFallback(environment: [String: String] = ProcessInfo.processInfo.environment) -> Bool {
-        environment["CMUX_REMOTE_DAEMON_ALLOW_LOCAL_BUILD"] == "1"
+        environment["ZMUX_REMOTE_DAEMON_ALLOW_LOCAL_BUILD"] == "1"
     }
 
     private static func explicitRemoteDaemonBinaryURL(environment: [String: String] = ProcessInfo.processInfo.environment) -> URL? {
         guard allowLocalDaemonBuildFallback(environment: environment) else { return nil }
-        guard let path = environment["CMUX_REMOTE_DAEMON_BINARY"]?.trimmingCharacters(in: .whitespacesAndNewlines),
+        guard let path = environment["ZMUX_REMOTE_DAEMON_BINARY"]?.trimmingCharacters(in: .whitespacesAndNewlines),
               !path.isEmpty else {
             return nil
         }
@@ -5173,18 +5173,18 @@ final class WorkspaceRemoteSessionController {
 
     private static func versionedRemoteDaemonBuildURL(goOS: String, goArch: String, version: String) -> URL {
         URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-            .appendingPathComponent("cmux-remote-daemon-build", isDirectory: true)
+            .appendingPathComponent("zmux-remote-daemon-build", isDirectory: true)
             .appendingPathComponent(version, isDirectory: true)
             .appendingPathComponent("\(goOS)-\(goArch)", isDirectory: true)
-            .appendingPathComponent("cmuxd-remote", isDirectory: false)
+            .appendingPathComponent("zmuxd-remote", isDirectory: false)
     }
 
     /// Fetch the live manifest JSON from the release, returning nil on any failure.
     private static func fetchRemoteManifestLocked(releaseURL: String, version: String) -> WorkspaceRemoteDaemonManifest? {
-        guard let manifestURL = URL(string: "\(releaseURL)/cmuxd-remote-manifest.json") else { return nil }
+        guard let manifestURL = URL(string: "\(releaseURL)/zmuxd-remote-manifest.json") else { return nil }
         let request = NSMutableURLRequest(url: manifestURL)
         request.timeoutInterval = 15
-        request.setValue("cmux/\(version)", forHTTPHeaderField: "User-Agent")
+        request.setValue("zmux/\(version)", forHTTPHeaderField: "User-Agent")
         let session = URLSession(configuration: .ephemeral)
         let semaphore = DispatchSemaphore(value: 0)
         var resultData: Data?
@@ -5203,7 +5203,7 @@ final class WorkspaceRemoteSessionController {
 
     private func downloadRemoteDaemonBinaryLocked(entry: WorkspaceRemoteDaemonManifest.Entry, version: String, releaseURL: String? = nil) throws -> URL {
         guard let url = URL(string: entry.downloadURL) else {
-            throw NSError(domain: "cmux.remote.daemon", code: 25, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon", code: 25, userInfo: [
                 NSLocalizedDescriptionKey: "remote daemon manifest has an invalid download URL",
             ])
         }
@@ -5214,7 +5214,7 @@ final class WorkspaceRemoteSessionController {
 
         let request = NSMutableURLRequest(url: url)
         request.timeoutInterval = 60
-        request.setValue("cmux/\(version)", forHTTPHeaderField: "User-Agent")
+        request.setValue("zmux/\(version)", forHTTPHeaderField: "User-Agent")
         let session = URLSession(configuration: .ephemeral)
 
         let semaphore = DispatchSemaphore(value: 0)
@@ -5228,7 +5228,7 @@ final class WorkspaceRemoteSessionController {
             }
             if let httpResponse = response as? HTTPURLResponse,
                !(200...299).contains(httpResponse.statusCode) {
-                downloadError = NSError(domain: "cmux.remote.daemon", code: 26, userInfo: [
+                downloadError = NSError(domain: "zmux.remote.daemon", code: 26, userInfo: [
                     NSLocalizedDescriptionKey: "remote daemon download failed with HTTP \(httpResponse.statusCode)",
                 ])
                 return
@@ -5242,7 +5242,7 @@ final class WorkspaceRemoteSessionController {
             throw downloadError
         }
         guard let downloadedURL else {
-            throw NSError(domain: "cmux.remote.daemon", code: 27, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon", code: 27, userInfo: [
                 NSLocalizedDescriptionKey: "remote daemon download did not produce a file",
             ])
         }
@@ -5259,7 +5259,7 @@ final class WorkspaceRemoteSessionController {
                downloadedSHA == liveEntry.sha256.lowercased() {
                 debugLog("remote.download.checksum-fallback: embedded manifest checksum stale, live manifest matched for \(entry.assetName)")
             } else {
-                throw NSError(domain: "cmux.remote.daemon", code: 28, userInfo: [
+                throw NSError(domain: "zmux.remote.daemon", code: 28, userInfo: [
                     NSLocalizedDescriptionKey: "remote daemon checksum mismatch for \(entry.assetName)",
                 ])
             }
@@ -5301,26 +5301,26 @@ final class WorkspaceRemoteSessionController {
         }
 
         guard Self.allowLocalDaemonBuildFallback() else {
-            throw NSError(domain: "cmux.remote.daemon", code: 20, userInfo: [
-                NSLocalizedDescriptionKey: "this build does not include a verified cmuxd-remote manifest for \(goOS)-\(goArch). Use a release/nightly build, or set CMUX_REMOTE_DAEMON_ALLOW_LOCAL_BUILD=1 for a dev-only fallback.",
+            throw NSError(domain: "zmux.remote.daemon", code: 20, userInfo: [
+                NSLocalizedDescriptionKey: "this build does not include a verified zmuxd-remote manifest for \(goOS)-\(goArch). Use a release/nightly build, or set ZMUX_REMOTE_DAEMON_ALLOW_LOCAL_BUILD=1 for a dev-only fallback.",
             ])
         }
 
         guard let repoRoot = Self.findRepoRoot() else {
-            throw NSError(domain: "cmux.remote.daemon", code: 20, userInfo: [
-                NSLocalizedDescriptionKey: "cannot locate cmux repo root for dev-only cmuxd-remote build fallback",
+            throw NSError(domain: "zmux.remote.daemon", code: 20, userInfo: [
+                NSLocalizedDescriptionKey: "cannot locate zmux repo root for dev-only zmuxd-remote build fallback",
             ])
         }
         let daemonRoot = repoRoot.appendingPathComponent("daemon/remote", isDirectory: true)
         let goModPath = daemonRoot.appendingPathComponent("go.mod").path
         guard FileManager.default.fileExists(atPath: goModPath) else {
-            throw NSError(domain: "cmux.remote.daemon", code: 21, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon", code: 21, userInfo: [
                 NSLocalizedDescriptionKey: "missing daemon module at \(goModPath)",
             ])
         }
         guard let goBinary = Self.which("go") else {
-            throw NSError(domain: "cmux.remote.daemon", code: 22, userInfo: [
-                NSLocalizedDescriptionKey: "go is required for the dev-only cmuxd-remote build fallback",
+            throw NSError(domain: "zmux.remote.daemon", code: 22, userInfo: [
+                NSLocalizedDescriptionKey: "go is required for the dev-only zmuxd-remote build fallback",
             ])
         }
 
@@ -5334,7 +5334,7 @@ final class WorkspaceRemoteSessionController {
         let ldflags = "-s -w -X main.version=\(version)"
         let result = try runProcess(
             executable: goBinary,
-            arguments: ["build", "-trimpath", "-buildvcs=false", "-ldflags", ldflags, "-o", output.path, "./cmd/cmuxd-remote"],
+            arguments: ["build", "-trimpath", "-buildvcs=false", "-ldflags", ldflags, "-o", output.path, "./cmd/zmuxd-remote"],
             environment: env,
             currentDirectory: daemonRoot,
             stdin: nil,
@@ -5342,13 +5342,13 @@ final class WorkspaceRemoteSessionController {
         )
         guard result.status == 0 else {
             let detail = Self.bestErrorLine(stderr: result.stderr, stdout: result.stdout) ?? "go build failed with status \(result.status)"
-            throw NSError(domain: "cmux.remote.daemon", code: 23, userInfo: [
-                NSLocalizedDescriptionKey: "failed to build cmuxd-remote: \(detail)",
+            throw NSError(domain: "zmux.remote.daemon", code: 23, userInfo: [
+                NSLocalizedDescriptionKey: "failed to build zmuxd-remote: \(detail)",
             ])
         }
         guard FileManager.default.isExecutableFile(atPath: output.path) else {
-            throw NSError(domain: "cmux.remote.daemon", code: 24, userInfo: [
-                NSLocalizedDescriptionKey: "cmuxd-remote build output is not executable",
+            throw NSError(domain: "zmux.remote.daemon", code: 24, userInfo: [
+                NSLocalizedDescriptionKey: "zmuxd-remote build output is not executable",
             ])
         }
         debugLog("remote.build.output path=\(output.path)")
@@ -5367,7 +5367,7 @@ final class WorkspaceRemoteSessionController {
         let mkdirResult = try sshExec(arguments: sshCommonArguments(batchMode: true) + [configuration.destination, mkdirCommand], timeout: 12)
         guard mkdirResult.status == 0 else {
             let detail = Self.bestErrorLine(stderr: mkdirResult.stderr, stdout: mkdirResult.stdout) ?? "ssh exited \(mkdirResult.status)"
-            throw NSError(domain: "cmux.remote.daemon", code: 30, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon", code: 30, userInfo: [
                 NSLocalizedDescriptionKey: "failed to create remote daemon directory: \(detail)",
             ])
         }
@@ -5392,8 +5392,8 @@ final class WorkspaceRemoteSessionController {
         let scpResult = try scpExec(arguments: scpArgs, timeout: 45)
         guard scpResult.status == 0 else {
             let detail = Self.bestErrorLine(stderr: scpResult.stderr, stdout: scpResult.stdout) ?? "scp exited \(scpResult.status)"
-            throw NSError(domain: "cmux.remote.daemon", code: 31, userInfo: [
-                NSLocalizedDescriptionKey: "failed to upload cmuxd-remote: \(detail)",
+            throw NSError(domain: "zmux.remote.daemon", code: 31, userInfo: [
+                NSLocalizedDescriptionKey: "failed to upload zmuxd-remote: \(detail)",
             ])
         }
 
@@ -5405,7 +5405,7 @@ final class WorkspaceRemoteSessionController {
         let finalizeResult = try sshExec(arguments: sshCommonArguments(batchMode: true) + [configuration.destination, finalizeCommand], timeout: 12)
         guard finalizeResult.status == 0 else {
             let detail = Self.bestErrorLine(stderr: finalizeResult.stderr, stdout: finalizeResult.stdout) ?? "ssh exited \(finalizeResult.status)"
-            throw NSError(domain: "cmux.remote.daemon", code: 32, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon", code: 32, userInfo: [
                 NSLocalizedDescriptionKey: "failed to install remote daemon binary: \(detail)",
             ])
         }
@@ -5462,7 +5462,7 @@ final class WorkspaceRemoteSessionController {
     static func remoteDropPath(for fileURL: URL, uuid: UUID = UUID()) -> String {
         let extensionSuffix = fileURL.pathExtension.trimmingCharacters(in: .whitespacesAndNewlines)
         let lowercasedSuffix = extensionSuffix.isEmpty ? "" : ".\(extensionSuffix.lowercased())"
-        return "/tmp/cmux-drop-\(uuid.uuidString.lowercased())\(lowercasedSuffix)"
+        return "/tmp/zmux-drop-\(uuid.uuidString.lowercased())\(lowercasedSuffix)"
     }
 
     private func cleanupUploadedRemotePaths(_ remotePaths: [String]) {
@@ -5482,7 +5482,7 @@ final class WorkspaceRemoteSessionController {
         let result = try sshExec(arguments: sshCommonArguments(batchMode: true) + [configuration.destination, command], timeout: 12)
         guard result.status == 0 else {
             let detail = Self.bestErrorLine(stderr: result.stderr, stdout: result.stdout) ?? "ssh exited \(result.status)"
-            throw NSError(domain: "cmux.remote.daemon", code: 40, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon", code: 40, userInfo: [
                 NSLocalizedDescriptionKey: "failed to start remote daemon: \(detail)",
             ])
         }
@@ -5494,7 +5494,7 @@ final class WorkspaceRemoteSessionController {
         guard !responseLine.isEmpty,
               let data = responseLine.data(using: .utf8),
               let payload = try? JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] else {
-            throw NSError(domain: "cmux.remote.daemon", code: 41, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon", code: 41, userInfo: [
                 NSLocalizedDescriptionKey: "remote daemon hello returned invalid JSON",
             ])
         }
@@ -5508,7 +5508,7 @@ final class WorkspaceRemoteSessionController {
                 }
                 return "hello call failed"
             }()
-            throw NSError(domain: "cmux.remote.daemon", code: 42, userInfo: [
+            throw NSError(domain: "zmux.remote.daemon", code: 42, userInfo: [
                 NSLocalizedDescriptionKey: "remote daemon hello failed: \(errorMessage)",
             ])
         }
@@ -5518,7 +5518,7 @@ final class WorkspaceRemoteSessionController {
         let version = (resultObject["version"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines)
         let capabilities = (resultObject["capabilities"] as? [String]) ?? []
         return DaemonHello(
-            name: (name?.isEmpty == false ? name! : "cmuxd-remote"),
+            name: (name?.isEmpty == false ? name! : "zmuxd-remote"),
             version: (version?.isEmpty == false ? version! : "dev"),
             capabilities: capabilities,
             remotePath: remotePath
@@ -5527,7 +5527,7 @@ final class WorkspaceRemoteSessionController {
 
     private func debugLog(_ message: @autoclosure () -> String) {
 #if DEBUG
-        cmuxDebugLog(message())
+        zmuxDebugLog(message())
 #endif
     }
 
@@ -5581,15 +5581,15 @@ final class WorkspaceRemoteSessionController {
         #!/bin/sh
         set -eu
 
-        daemon="$HOME/.cmux/bin/cmuxd-remote-current"
-        socket_path="${CMUX_SOCKET_PATH:-}"
-        if [ -z "$socket_path" ] && [ -r "$HOME/.cmux/socket_addr" ]; then
-          socket_path="$(tr -d '\\r\\n' < "$HOME/.cmux/socket_addr")"
+        daemon="$HOME/.zmux/bin/zmuxd-remote-current"
+        socket_path="${ZMUX_SOCKET_PATH:-}"
+        if [ -z "$socket_path" ] && [ -r "$HOME/.zmux/socket_addr" ]; then
+          socket_path="$(tr -d '\\r\\n' < "$HOME/.zmux/socket_addr")"
         fi
 
         if [ -n "$socket_path" ] && [ "${socket_path#/}" = "$socket_path" ] && [ "${socket_path#*:}" != "$socket_path" ]; then
           relay_port="${socket_path##*:}"
-          relay_map="$HOME/.cmux/relay/${relay_port}.daemon_path"
+          relay_map="$HOME/.zmux/relay/${relay_port}.daemon_path"
           if [ -r "$relay_map" ]; then
             mapped_daemon="$(tr -d '\\r\\n' < "$relay_map")"
             if [ -n "$mapped_daemon" ] && [ -x "$mapped_daemon" ]; then
@@ -5605,14 +5605,14 @@ final class WorkspaceRemoteSessionController {
     static func remoteCLIWrapperInstallScript(daemonRemotePath: String) -> String {
         let trimmedRemotePath = daemonRemotePath.trimmingCharacters(in: .whitespacesAndNewlines)
         return """
-        mkdir -p "$HOME/.cmux/bin" "$HOME/.cmux/relay"
-        ln -sf "$HOME/\(trimmedRemotePath)" "$HOME/.cmux/bin/cmuxd-remote-current"
-        wrapper_tmp="$HOME/.cmux/bin/.cmux-wrapper.tmp.$$"
-        cat > "$wrapper_tmp" <<'CMUXWRAPPER'
+        mkdir -p "$HOME/.zmux/bin" "$HOME/.zmux/relay"
+        ln -sf "$HOME/\(trimmedRemotePath)" "$HOME/.zmux/bin/zmuxd-remote-current"
+        wrapper_tmp="$HOME/.zmux/bin/.zmux-wrapper.tmp.$$"
+        cat > "$wrapper_tmp" <<'ZMUXWRAPPER'
         \(remoteCLIWrapperScript())
-        CMUXWRAPPER
+        ZMUXWRAPPER
         chmod 755 "$wrapper_tmp"
-        mv -f "$wrapper_tmp" "$HOME/.cmux/bin/cmux"
+        mv -f "$wrapper_tmp" "$HOME/.zmux/bin/zmux"
         """
     }
 
@@ -5628,15 +5628,15 @@ final class WorkspaceRemoteSessionController {
         """
         return """
         umask 077
-        mkdir -p "$HOME/.cmux" "$HOME/.cmux/relay"
-        chmod 700 "$HOME/.cmux/relay"
+        mkdir -p "$HOME/.zmux" "$HOME/.zmux/relay"
+        chmod 700 "$HOME/.zmux/relay"
         \(remoteCLIWrapperInstallScript(daemonRemotePath: trimmedRemotePath))
-        printf '%s' "$HOME/\(trimmedRemotePath)" > "$HOME/.cmux/relay/\(relayPort).daemon_path"
-        cat > "$HOME/.cmux/relay/\(relayPort).auth" <<'CMUXRELAYAUTH'
+        printf '%s' "$HOME/\(trimmedRemotePath)" > "$HOME/.zmux/relay/\(relayPort).daemon_path"
+        cat > "$HOME/.zmux/relay/\(relayPort).auth" <<'ZMUXRELAYAUTH'
         \(authPayload)
-        CMUXRELAYAUTH
-        chmod 600 "$HOME/.cmux/relay/\(relayPort).auth"
-        printf '%s' '127.0.0.1:\(relayPort)' > "$HOME/.cmux/socket_addr"
+        ZMUXRELAYAUTH
+        chmod 600 "$HOME/.zmux/relay/\(relayPort).auth"
+        printf '%s' '127.0.0.1:\(relayPort)' > "$HOME/.zmux/socket_addr"
         """
     }
 
@@ -5723,10 +5723,10 @@ final class WorkspaceRemoteSessionController {
     }
 
     private static func remoteDaemonPath(version: String, goOS: String, goArch: String) -> String {
-        ".cmux/bin/cmuxd-remote/\(version)/\(goOS)-\(goArch)/cmuxd-remote"
+        ".zmux/bin/zmuxd-remote/\(version)/\(goOS)-\(goArch)/zmuxd-remote"
     }
 
-    static func orphanedCMUXRemoteSSHPIDs(
+    static func orphanedZMUXRemoteSSHPIDs(
         psOutput: String,
         destination: String,
         relayPort: Int? = nil
@@ -5739,7 +5739,7 @@ final class WorkspaceRemoteSessionController {
             .compactMap { line -> Int? in
                 guard let parsed = parsePSLine(line) else { return nil }
                 guard parsed.ppid == 1 else { return nil }
-                guard isOrphanedCMUXRemoteSSHCommand(
+                guard isOrphanedZMUXRemoteSSHCommand(
                     parsed.command,
                     destination: trimmedDestination,
                     relayPort: relayPort
@@ -5759,7 +5759,7 @@ final class WorkspaceRemoteSessionController {
             return
         }
 
-        for pid in orphanedCMUXRemoteSSHPIDs(
+        for pid in orphanedZMUXRemoteSSHPIDs(
             psOutput: output,
             destination: destination,
             relayPort: relayPort
@@ -5812,7 +5812,7 @@ final class WorkspaceRemoteSessionController {
         return (pidValue, ppidValue, command)
     }
 
-    private static func isOrphanedCMUXRemoteSSHCommand(
+    private static func isOrphanedZMUXRemoteSSHCommand(
         _ command: String,
         destination: String,
         relayPort: Int?
@@ -5830,7 +5830,7 @@ final class WorkspaceRemoteSessionController {
         if trimmed.contains(" -N ") && trimmed.contains(" -R 127.0.0.1:") {
             return true
         }
-        if trimmed.contains("cmuxd-remote") && trimmed.contains(" serve --stdio") {
+        if trimmed.contains("zmuxd-remote") && trimmed.contains(" serve --stdio") {
             return true
         }
         return false
@@ -5952,11 +5952,11 @@ final class WorkspaceRemoteSessionController {
             .deletingLastPathComponent() // repo root
         candidates.append(compileTimeRoot)
         let environment = ProcessInfo.processInfo.environment
-        if let envRoot = environment["CMUX_REMOTE_DAEMON_SOURCE_ROOT"],
+        if let envRoot = environment["ZMUX_REMOTE_DAEMON_SOURCE_ROOT"],
            !envRoot.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             candidates.append(URL(fileURLWithPath: envRoot, isDirectory: true))
         }
-        if let envRoot = environment["CMUXTERM_REPO_ROOT"],
+        if let envRoot = environment["ZMUXTERM_REPO_ROOT"],
            !envRoot.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             candidates.append(URL(fileURLWithPath: envRoot, isDirectory: true))
         }
@@ -6197,7 +6197,7 @@ final class WorkspaceRemoteSessionController {
         )
         guard result.status == 0 else {
             let detail = Self.bestErrorLine(stderr: result.stderr, stdout: result.stdout) ?? "ssh exited \(result.status)"
-            throw NSError(domain: "cmux.remote.ports", code: 90, userInfo: [
+            throw NSError(domain: "zmux.remote.ports", code: 90, userInfo: [
                 NSLocalizedDescriptionKey: "remote port scan failed: \(detail)",
             ])
         }
@@ -6292,7 +6292,7 @@ final class WorkspaceRemoteSessionController {
             )
             guard result.status == 0 else {
                 let detail = Self.bestErrorLine(stderr: result.stderr, stdout: result.stdout) ?? "ssh exited \(result.status)"
-                throw NSError(domain: "cmux.remote.ports", code: 90, userInfo: [
+                throw NSError(domain: "zmux.remote.ports", code: 90, userInfo: [
                     NSLocalizedDescriptionKey: "remote port scan failed: \(detail)",
                 ])
             }
@@ -6331,7 +6331,7 @@ final class WorkspaceRemoteSessionController {
     }
 
     private func shouldUseFallbackRemotePortPollingLocked() -> Bool {
-        // `cmux ssh` owns the remote shell bootstrap and can report the remote
+        // `zmux ssh` owns the remote shell bootstrap and can report the remote
         // TTY precisely. Falling back to host-wide port scans in that path leaks
         // unrelated listeners from the remote machine into the workspace card.
         let startupCommand = configuration.terminalStartupCommand?
@@ -6340,7 +6340,7 @@ final class WorkspaceRemoteSessionController {
     }
 
     private func shouldUseTTYFallbackRemotePortPollingLocked() -> Bool {
-        // `cmux ssh` can still land in shells without our command hooks, such as
+        // `zmux ssh` can still land in shells without our command hooks, such as
         // `/bin/sh` in the Docker fixture. Once the workspace knows the TTY,
         // keep a low-frequency TTY-scoped poll so unsupported shells still
         // surface ports without bringing back noisy host-wide scans.
@@ -6407,35 +6407,35 @@ final class WorkspaceRemoteSessionController {
 
         return """
         set -eu
-        cmux_tracked_ttys=" \(ttySet) "
-        cmux_tty_csv='\(ttyCSV)'
-        cmux_excluded_ports=" \(excludedPorts) "
+        zmux_tracked_ttys=" \(ttySet) "
+        zmux_tty_csv='\(ttyCSV)'
+        zmux_excluded_ports=" \(excludedPorts) "
 
-        cmux_emit_port() {
-          cmux_tty="$1"
-          cmux_port="$2"
-          case "$cmux_tracked_ttys" in
-            *" $cmux_tty "*) ;;
+        zmux_emit_port() {
+          zmux_tty="$1"
+          zmux_port="$2"
+          case "$zmux_tracked_ttys" in
+            *" $zmux_tty "*) ;;
             *) return 0 ;;
           esac
-          case "$cmux_excluded_ports" in
-            *" $cmux_port "*) return 0 ;;
+          case "$zmux_excluded_ports" in
+            *" $zmux_port "*) return 0 ;;
           esac
-          [ "$cmux_port" -ge 1024 ] && [ "$cmux_port" -le 65535 ] || return 0
-          printf '%s\\t%s\\n' "$cmux_tty" "$cmux_port"
+          [ "$zmux_port" -ge 1024 ] && [ "$zmux_port" -le 65535 ] || return 0
+          printf '%s\\t%s\\n' "$zmux_tty" "$zmux_port"
         }
 
-        cmux_used_ss=0
+        zmux_used_ss=0
         if [ -d /proc ] && command -v ss >/dev/null 2>&1; then
-          cmux_ss_output="$(ss -ltnpH 2>/dev/null || true)"
-          case "$cmux_ss_output" in
+          zmux_ss_output="$(ss -ltnpH 2>/dev/null || true)"
+          case "$zmux_ss_output" in
             *pid=*)
-              cmux_used_ss=1
-              printf '%s\\n' "$cmux_ss_output" | while IFS= read -r cmux_line; do
-                [ -n "$cmux_line" ] || continue
-                cmux_port="$(printf '%s\\n' "$cmux_line" | awk '{print $4}' | sed -E 's/.*:([0-9]+)$/\\1/' | awk '/^[0-9]+$/ { print $1; exit }')"
-                [ -n "$cmux_port" ] || continue
-                printf '%s\\n' "$cmux_line" | awk '
+              zmux_used_ss=1
+              printf '%s\\n' "$zmux_ss_output" | while IFS= read -r zmux_line; do
+                [ -n "$zmux_line" ] || continue
+                zmux_port="$(printf '%s\\n' "$zmux_line" | awk '{print $4}' | sed -E 's/.*:([0-9]+)$/\\1/' | awk '/^[0-9]+$/ { print $1; exit }')"
+                [ -n "$zmux_port" ] || continue
+                printf '%s\\n' "$zmux_line" | awk '
                   {
                     line = $0
                     while (match(line, /pid=[0-9]+/)) {
@@ -6443,34 +6443,34 @@ final class WorkspaceRemoteSessionController {
                       line = substr(line, RSTART + RLENGTH)
                     }
                   }
-                ' | while IFS= read -r cmux_pid; do
-                  [ -n "$cmux_pid" ] || continue
-                  cmux_tty_path="$(readlink "/proc/$cmux_pid/fd/0" 2>/dev/null || true)"
-                  [ -n "$cmux_tty_path" ] || continue
-                  cmux_tty="${cmux_tty_path##*/}"
-                  [ -n "$cmux_tty" ] || continue
-                  cmux_emit_port "$cmux_tty" "$cmux_port"
+                ' | while IFS= read -r zmux_pid; do
+                  [ -n "$zmux_pid" ] || continue
+                  zmux_tty_path="$(readlink "/proc/$zmux_pid/fd/0" 2>/dev/null || true)"
+                  [ -n "$zmux_tty_path" ] || continue
+                  zmux_tty="${zmux_tty_path##*/}"
+                  [ -n "$zmux_tty" ] || continue
+                  zmux_emit_port "$zmux_tty" "$zmux_port"
                 done
               done
               ;;
           esac
         fi
 
-        if [ "$cmux_used_ss" -eq 0 ] && command -v lsof >/dev/null 2>&1 && [ -n "$cmux_tty_csv" ]; then
-          cmux_tmpdir="$(mktemp -d 2>/dev/null || mktemp -d -t cmux-ports)"
-          trap 'rm -rf "$cmux_tmpdir"' EXIT INT TERM
-          cmux_pid_tty_map="$cmux_tmpdir/pid_tty"
-          ps -t "$cmux_tty_csv" -o pid=,tty= 2>/dev/null | awk '
+        if [ "$zmux_used_ss" -eq 0 ] && command -v lsof >/dev/null 2>&1 && [ -n "$zmux_tty_csv" ]; then
+          zmux_tmpdir="$(mktemp -d 2>/dev/null || mktemp -d -t zmux-ports)"
+          trap 'rm -rf "$zmux_tmpdir"' EXIT INT TERM
+          zmux_pid_tty_map="$zmux_tmpdir/pid_tty"
+          ps -t "$zmux_tty_csv" -o pid=,tty= 2>/dev/null | awk '
             NF >= 2 {
               tty = $2
               sub(/^.*\\//, "", tty)
               print $1 "\\t" tty
             }
-          ' > "$cmux_pid_tty_map"
-          [ -s "$cmux_pid_tty_map" ] || exit 0
-          cmux_pid_csv="$(awk '{print $1}' "$cmux_pid_tty_map" | paste -sd, -)"
-          [ -n "$cmux_pid_csv" ] || exit 0
-          lsof -nP -a -p "$cmux_pid_csv" -iTCP -sTCP:LISTEN -Fpn 2>/dev/null | awk -v map="$cmux_pid_tty_map" '
+          ' > "$zmux_pid_tty_map"
+          [ -s "$zmux_pid_tty_map" ] || exit 0
+          zmux_pid_csv="$(awk '{print $1}' "$zmux_pid_tty_map" | paste -sd, -)"
+          [ -n "$zmux_pid_csv" ] || exit 0
+          lsof -nP -a -p "$zmux_pid_csv" -iTCP -sTCP:LISTEN -Fpn 2>/dev/null | awk -v map="$zmux_pid_tty_map" '
             BEGIN {
               while ((getline < map) > 0) {
                 pid_to_tty[$1] = $2
@@ -6491,10 +6491,10 @@ final class WorkspaceRemoteSessionController {
                 print tty "\\t" name
               }
             }
-          ' | while IFS=$'\\t' read -r cmux_tty cmux_port; do
-            [ -n "$cmux_tty" ] || continue
-            [ -n "$cmux_port" ] || continue
-            cmux_emit_port "$cmux_tty" "$cmux_port"
+          ' | while IFS=$'\\t' read -r zmux_tty zmux_port; do
+            [ -n "$zmux_tty" ] || continue
+            [ -n "$zmux_port" ] || continue
+            zmux_emit_port "$zmux_tty" "$zmux_port"
           done
         fi
         """
@@ -6505,31 +6505,31 @@ final class WorkspaceRemoteSessionController {
 
         return """
         set -eu
-        cmux_excluded_ports=" \(excludedPorts) "
+        zmux_excluded_ports=" \(excludedPorts) "
 
-        cmux_emit_port() {
-          cmux_port="$1"
-          case "$cmux_excluded_ports" in
-            *" $cmux_port "*) return 0 ;;
+        zmux_emit_port() {
+          zmux_port="$1"
+          case "$zmux_excluded_ports" in
+            *" $zmux_port "*) return 0 ;;
           esac
-          [ "$cmux_port" -ge 1024 ] && [ "$cmux_port" -le 65535 ] || return 0
-          printf '%s\\n' "$cmux_port"
+          [ "$zmux_port" -ge 1024 ] && [ "$zmux_port" -le 65535 ] || return 0
+          printf '%s\\n' "$zmux_port"
         }
 
         if command -v ss >/dev/null 2>&1; then
-          ss -ltnH 2>/dev/null | awk '{print $4}' | sed -E 's/.*:([0-9]+)$/\\1/' | awk '/^[0-9]+$/ {print $1}' | while IFS= read -r cmux_port; do
-            [ -n "$cmux_port" ] || continue
-            cmux_emit_port "$cmux_port"
+          ss -ltnH 2>/dev/null | awk '{print $4}' | sed -E 's/.*:([0-9]+)$/\\1/' | awk '/^[0-9]+$/ {print $1}' | while IFS= read -r zmux_port; do
+            [ -n "$zmux_port" ] || continue
+            zmux_emit_port "$zmux_port"
           done
         elif command -v netstat >/dev/null 2>&1; then
-          netstat -lnt 2>/dev/null | awk 'NR > 2 {print $4}' | sed -E 's/.*:([0-9]+)$/\\1/' | awk '/^[0-9]+$/ {print $1}' | while IFS= read -r cmux_port; do
-            [ -n "$cmux_port" ] || continue
-            cmux_emit_port "$cmux_port"
+          netstat -lnt 2>/dev/null | awk 'NR > 2 {print $4}' | sed -E 's/.*:([0-9]+)$/\\1/' | awk '/^[0-9]+$/ {print $1}' | while IFS= read -r zmux_port; do
+            [ -n "$zmux_port" ] || continue
+            zmux_emit_port "$zmux_port"
           done
         elif command -v lsof >/dev/null 2>&1; then
-          lsof -nP -iTCP -sTCP:LISTEN 2>/dev/null | awk 'NR > 1 {print $9}' | sed -E 's/.*:([0-9]+)$/\\1/' | awk '/^[0-9]+$/ {print $1}' | while IFS= read -r cmux_port; do
-            [ -n "$cmux_port" ] || continue
-            cmux_emit_port "$cmux_port"
+          lsof -nP -iTCP -sTCP:LISTEN 2>/dev/null | awk 'NR > 1 {print $9}' | sed -E 's/.*:([0-9]+)$/\\1/' | awk '/^[0-9]+$/ {print $1}' | while IFS= read -r zmux_port; do
+            [ -n "$zmux_port" ] || continue
+            zmux_emit_port "$zmux_port"
           done
         fi
         """
@@ -6640,10 +6640,10 @@ struct WorkspaceRemoteConfiguration: Equatable {
     let terminalStartupCommand: String?
     let foregroundAuthToken: String?
     let daemonWebSocketEndpoint: WorkspaceRemoteWebSocketDaemonEndpoint?
-    /// True for cloud-VM remotes (Freestyle snapshots) where cmuxd-remote is pre-baked in
+    /// True for cloud-VM remotes (Freestyle snapshots) where zmuxd-remote is pre-baked in
     /// the image and started via systemd. Skip the upload+exec bootstrap entirely and synthesize
     /// a `DaemonHello`. Reverse-relay still stays off, but SSH-backed VM workspaces can talk to
-    /// the baked daemon through an SSH local forward to `/run/cmuxd-remote.sock`.
+    /// the baked daemon through an SSH local forward to `/run/zmuxd-remote.sock`.
     let skipDaemonBootstrap: Bool
 
     init(
@@ -7221,7 +7221,7 @@ enum WorkspaceSurfaceIdentifierClipboardText {
 @MainActor
 final class Workspace: Identifiable, ObservableObject {
     static let terminalScrollBarHiddenDidChangeNotification = Notification.Name(
-        "cmux.workspaceTerminalScrollBarHiddenDidChange"
+        "zmux.workspaceTerminalScrollBarHiddenDidChange"
     )
 
     let id: UUID
@@ -7235,14 +7235,14 @@ final class Workspace: Identifiable, ObservableObject {
     @Published private(set) var surfaceTabBarDirectory: String?
     private(set) var preferredBrowserProfileID: UUID?
 
-    /// Ordinal for CMUX_PORT range assignment (monotonically increasing per app session)
+    /// Ordinal for ZMUX_PORT range assignment (monotonically increasing per app session)
     var portOrdinal: Int = 0
 
     /// The bonsplit controller managing the split panes for this workspace
     let bonsplitController: BonsplitController
     private struct SurfaceTabBarExecutableButton {
-        let button: CmuxSurfaceTabBarButton
-        let workspaceCommand: CmuxResolvedCommand?
+        let button: ZmuxSurfaceTabBarButton
+        let workspaceCommand: ZmuxResolvedCommand?
         let terminalCommandSourcePath: String?
     }
 
@@ -7359,7 +7359,7 @@ final class Workspace: Identifiable, ObservableObject {
     private static let remotePortConflictStatusKey = "remote.port_conflicts"
     private static let remoteNotificationCooldown: TimeInterval = 5 * 60
     private static let sshControlMasterCleanupQueue = DispatchQueue(
-        label: "com.cmux.remote-ssh.control-master-cleanup",
+        label: "com.zmux.remote-ssh.control-master-cleanup",
         qos: .utility
     )
     private static let remoteHeartbeatDateFormatter: ISO8601DateFormatter = {
@@ -7793,7 +7793,7 @@ final class Workspace: Identifiable, ObservableObject {
         title: String = "Terminal",
         workingDirectory: String? = nil,
         portOrdinal: Int = 0,
-        configTemplate: CmuxSurfaceConfigTemplate? = nil,
+        configTemplate: ZmuxSurfaceConfigTemplate? = nil,
         initialTerminalCommand: String? = nil,
         initialTerminalInput: String? = nil,
         initialTerminalEnvironment: [String: String] = [:]
@@ -7842,15 +7842,15 @@ final class Workspace: Identifiable, ObservableObject {
         // Remove the default "Welcome" tab that bonsplit creates
         let welcomeTabIds = bonsplitController.allTabIds
 
-        // When the workspace boots with an explicit initial command (`cmux ssh` /
-        // `cmux vm new` both funnel their ssh startup script through this path),
+        // When the workspace boots with an explicit initial command (`zmux ssh` /
+        // `zmux vm new` both funnel their ssh startup script through this path),
         // hold the PTY open after that command exits. Without this Ghostty
         // silently respawns a local login shell and the user can't tell a dead
         // VM apart from a healthy local prompt.
         var resolvedConfigTemplate = configTemplate
         if let trimmedCommand = initialTerminalCommand?.trimmingCharacters(in: .whitespacesAndNewlines),
            !trimmedCommand.isEmpty {
-            var template = resolvedConfigTemplate ?? CmuxSurfaceConfigTemplate()
+            var template = resolvedConfigTemplate ?? ZmuxSurfaceConfigTemplate()
             template.waitAfterCommand = true
             resolvedConfigTemplate = template
         }
@@ -7941,11 +7941,11 @@ final class Workspace: Identifiable, ObservableObject {
     }
 
     func applySurfaceTabBarButtons(
-        _ buttons: [CmuxSurfaceTabBarButton],
+        _ buttons: [ZmuxSurfaceTabBarButton],
         sourcePath: String?,
         globalConfigPath: String,
         terminalCommandSourcePaths: [String: String],
-        workspaceCommands: [String: CmuxResolvedCommand]
+        workspaceCommands: [String: ZmuxResolvedCommand]
     ) {
         let executableButtons = Dictionary(
             uniqueKeysWithValues: buttons.compactMap { button in
@@ -7979,7 +7979,7 @@ final class Workspace: Identifiable, ObservableObject {
         let bonsplitButtons = buttons.map { button in
             let executable = executableButtons[button.id]
             let allowProjectLocalIcon = executable.map {
-                CmuxConfigExecutor.isTrustedSurfaceButton(
+                ZmuxConfigExecutor.isTrustedSurfaceButton(
                     $0.button,
                     workspaceCommand: $0.workspaceCommand,
                     terminalCommandSourcePath: $0.terminalCommandSourcePath,
@@ -8586,7 +8586,7 @@ final class Workspace: Identifiable, ObservableObject {
         let normalizedNewlines = normalizedDescription?.reduce(into: 0) { count, character in
             if character == "\n" { count += 1 }
         } ?? 0
-        cmuxDebugLog(
+        zmuxDebugLog(
             "workspace.customDescription.update workspace=\(id.uuidString.prefix(8)) " +
             "inputLen=\((description as NSString?)?.length ?? 0) " +
             "inputNewlines=\(inputNewlines) " +
@@ -8646,7 +8646,7 @@ final class Workspace: Identifiable, ObservableObject {
                 invalidatedRestoredAgentFingerprintsByPanelId[panelId] = fingerprint
                 restoredAgentSnapshotsByPanelId.removeValue(forKey: panelId)
 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "session.restore.agent.invalidate panel=\(panelId.uuidString.prefix(5)) " +
                     "kind=\(restoredAgent.kind.rawValue) session=\(restoredAgent.sessionId.prefix(8))"
                 )
@@ -8654,7 +8654,7 @@ final class Workspace: Identifiable, ObservableObject {
             }
         }
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "surface.shellState workspace=\(id.uuidString.prefix(5)) " +
             "panel=\(panelId.uuidString.prefix(5)) from=\(previousState.rawValue) to=\(state.rawValue)"
         )
@@ -8779,7 +8779,7 @@ final class Workspace: Identifiable, ObservableObject {
         guard !browserPanels.isEmpty else { return }
 
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "workspace.contextReset.browserPanels workspace=\(id.uuidString.prefix(5)) " +
             "reason=\(reason) count=\(browserPanels.count)"
         )
@@ -9717,7 +9717,7 @@ final class Workspace: Identifiable, ObservableObject {
 
     private func seedTerminalInheritanceFontPoints(
         panelId: UUID,
-        configTemplate: CmuxSurfaceConfigTemplate?
+        configTemplate: ZmuxSurfaceConfigTemplate?
     ) {
         guard let fontPoints = configTemplate?.fontSize, fontPoints > 0 else { return }
         terminalInheritanceFontPointsByPanelId[panelId] = fontPoints
@@ -9727,9 +9727,9 @@ final class Workspace: Identifiable, ObservableObject {
     private func resolvedTerminalInheritanceFontPoints(
         for terminalPanel: TerminalPanel,
         sourceSurface: ghostty_surface_t,
-        inheritedConfig: CmuxSurfaceConfigTemplate
+        inheritedConfig: ZmuxSurfaceConfigTemplate
     ) -> Float? {
-        let runtimePoints = cmuxCurrentSurfaceFontSizePoints(sourceSurface)
+        let runtimePoints = zmuxCurrentSurfaceFontSizePoints(sourceSurface)
         if let rooted = terminalInheritanceFontPointsByPanelId[terminalPanel.id], rooted > 0 {
             if let runtimePoints, abs(runtimePoints - rooted) > 0.05 {
                 // Runtime zoom changed after lineage was seeded (manual zoom on descendant);
@@ -9747,7 +9747,7 @@ final class Workspace: Identifiable, ObservableObject {
     private func rememberTerminalConfigInheritanceSource(_ terminalPanel: TerminalPanel) {
         lastTerminalConfigInheritancePanelId = terminalPanel.id
         if let sourceSurface = terminalPanel.surface.surface,
-           let runtimePoints = cmuxCurrentSurfaceFontSizePoints(sourceSurface) {
+           let runtimePoints = zmuxCurrentSurfaceFontSizePoints(sourceSurface) {
             let existing = terminalInheritanceFontPointsByPanelId[terminalPanel.id]
             if existing == nil || abs((existing ?? runtimePoints) - runtimePoints) > 0.05 {
                 terminalInheritanceFontPointsByPanelId[terminalPanel.id] = runtimePoints
@@ -9837,7 +9837,7 @@ final class Workspace: Identifiable, ObservableObject {
     private func inheritedTerminalConfig(
         preferredPanelId: UUID? = nil,
         inPane preferredPaneId: PaneID? = nil
-    ) -> CmuxSurfaceConfigTemplate? {
+    ) -> ZmuxSurfaceConfigTemplate? {
         // Walk candidates in priority order and use the first panel that still exposes
         // a runtime surface pointer.
         for terminalPanel in terminalPanelConfigInheritanceCandidates(
@@ -9847,11 +9847,11 @@ final class Workspace: Identifiable, ObservableObject {
             // Pin the panel and its TerminalSurface wrapper for the duration of
             // this iteration. The raw ghostty_surface_t extracted below is owned
             // by `surface` (the TerminalSurface) — ARC must not release it while
-            // ghostty_surface_inherited_config or cmuxCurrentSurfaceFontSizePoints
+            // ghostty_surface_inherited_config or zmuxCurrentSurfaceFontSizePoints
             // is still reading through the pointer.
             let surface = terminalPanel.surface
             guard let sourceSurface = surface.surface else { continue }
-            var config = cmuxInheritedSurfaceConfig(
+            var config = zmuxInheritedSurfaceConfig(
                 sourceSurface: sourceSurface,
                 context: GHOSTTY_SURFACE_CONTEXT_SPLIT
             )
@@ -9873,10 +9873,10 @@ final class Workspace: Identifiable, ObservableObject {
         }
 
         if let fallbackFontPoints = lastTerminalConfigInheritanceFontPoints {
-            var config = CmuxSurfaceConfigTemplate()
+            var config = ZmuxSurfaceConfigTemplate()
             config.fontSize = fallbackFontPoints
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "zoom.inherit fallback=lastKnownFont context=split font=\(String(format: "%.2f", fallbackFontPoints))"
             )
 #endif
@@ -9922,7 +9922,7 @@ final class Workspace: Identifiable, ObservableObject {
         // to $SHELL), and a dead VM looks identical to a healthy workspace with a
         // local prompt — which is what we saw during dogfood.
         if remoteTerminalStartupCommand != nil {
-            var template = inheritedConfig ?? CmuxSurfaceConfigTemplate()
+            var template = inheritedConfig ?? ZmuxSurfaceConfigTemplate()
             template.waitAfterCommand = true
             inheritedConfig = template
         }
@@ -9952,7 +9952,7 @@ final class Workspace: Identifiable, ObservableObject {
             return workspaceDirectory.isEmpty ? nil : workspaceDirectory
         }()
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "split.cwd panelId=\(panelId.uuidString.prefix(5)) panelDir=\(panelDirectories[panelId] ?? "nil") requestedDir=\(terminalPanel(for: panelId)?.requestedWorkingDirectory ?? "nil") currentDir=\(currentDirectory) resolved=\(splitWorkingDirectory ?? "nil")"
         )
 #endif
@@ -10012,8 +10012,8 @@ final class Workspace: Identifiable, ObservableObject {
         }
 
 #if DEBUG
-        cmuxDebugLog("split.created pane=\(paneId.id.uuidString.prefix(5)) orientation=\(orientation)")
-        cmuxDebugLog(
+        zmuxDebugLog("split.created pane=\(paneId.id.uuidString.prefix(5)) orientation=\(orientation)")
+        zmuxDebugLog(
             "split.timing workspace=\(id.uuidString.prefix(5)) panel=\(panelId.uuidString.prefix(5)) " +
             "transport=\(splitTransport) stage=layout_committed elapsedMs=\(debugElapsedMs(since: splitTimingStart)) " +
             "newPanel=\(newPanel.id.uuidString.prefix(5))"
@@ -10075,7 +10075,7 @@ final class Workspace: Identifiable, ObservableObject {
         // command exits so the user sees the error rather than a silently-respawned
         // local login shell.
         if remoteTerminalStartupCommand != nil {
-            var template = inheritedConfig ?? CmuxSurfaceConfigTemplate()
+            var template = inheritedConfig ?? ZmuxSurfaceConfigTemplate()
             template.waitAfterCommand = true
             inheritedConfig = template
         }
@@ -10493,7 +10493,7 @@ final class Workspace: Identifiable, ObservableObject {
         // Mapping can transiently drift during split-tree mutations. If the target panel is
         // currently focused (or is the active terminal first responder), close whichever tab
         // bonsplit marks selected in that focused pane.
-        let firstResponderPanelId = cmuxOwningGhosttyView(
+        let firstResponderPanelId = zmuxOwningGhosttyView(
             for: NSApp.keyWindow?.firstResponder ?? NSApp.mainWindow?.firstResponder
         )?.terminalSurface?.id
         let targetIsActive = focusedPanelId == panelId || firstResponderPanelId == panelId
@@ -10501,7 +10501,7 @@ final class Workspace: Identifiable, ObservableObject {
               let focusedPane = bonsplitController.focusedPaneId,
               let selected = bonsplitController.selectedTab(inPane: focusedPane) else {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "surface.close.fallback.skip panel=\(panelId.uuidString.prefix(5)) " +
                 "focusedPanel=\(focusedPanelId?.uuidString.prefix(5) ?? "nil") " +
                 "firstResponderPanel=\(firstResponderPanelId?.uuidString.prefix(5) ?? "nil") " +
@@ -10516,7 +10516,7 @@ final class Workspace: Identifiable, ObservableObject {
         }
         let closed = bonsplitController.closeTab(selected.id)
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "surface.close.fallback panel=\(panelId.uuidString.prefix(5)) " +
             "selectedTab=\(String(describing: selected.id).prefix(5)) " +
             "closed=\(closed ? 1 : 0)"
@@ -10861,7 +10861,7 @@ final class Workspace: Identifiable, ObservableObject {
             && activeRemoteTerminalSurfaceIds.count == 1
 #if DEBUG
         let detachStart = ProcessInfo.processInfo.systemUptime
-        cmuxDebugLog(
+        zmuxDebugLog(
             "split.detach.begin ws=\(id.uuidString.prefix(5)) panel=\(panelId.uuidString.prefix(5)) " +
             "tab=\(tabId.uuid.uuidString.prefix(5)) activeDetachTxn=\(activeDetachCloseTransactions) " +
             "pendingDetached=\(pendingDetachedSurfaces.count)"
@@ -10877,7 +10877,7 @@ final class Workspace: Identifiable, ObservableObject {
             pendingDetachedSurfaces.removeValue(forKey: tabId)
             forceCloseTabIds.remove(tabId)
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "split.detach.fail ws=\(id.uuidString.prefix(5)) panel=\(panelId.uuidString.prefix(5)) " +
                 "tab=\(tabId.uuid.uuidString.prefix(5)) reason=closeTabRejected elapsedMs=\(debugElapsedMs(since: detachStart))"
             )
@@ -10893,7 +10893,7 @@ final class Workspace: Identifiable, ObservableObject {
             }
         }
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "split.detach.end ws=\(id.uuidString.prefix(5)) panel=\(panelId.uuidString.prefix(5)) " +
             "tab=\(tabId.uuid.uuidString.prefix(5)) transfer=\(detached != nil ? 1 : 0) " +
             "elapsedMs=\(debugElapsedMs(since: detachStart))"
@@ -10911,14 +10911,14 @@ final class Workspace: Identifiable, ObservableObject {
     ) -> UUID? {
 #if DEBUG
         let attachStart = ProcessInfo.processInfo.systemUptime
-        cmuxDebugLog(
+        zmuxDebugLog(
             "split.attach.begin ws=\(id.uuidString.prefix(5)) panel=\(detached.panelId.uuidString.prefix(5)) " +
             "pane=\(paneId.id.uuidString.prefix(5)) index=\(index.map(String.init) ?? "nil") focus=\(focus ? 1 : 0)"
         )
 #endif
         guard bonsplitController.allPaneIds.contains(paneId) else {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "split.attach.fail ws=\(id.uuidString.prefix(5)) panel=\(detached.panelId.uuidString.prefix(5)) " +
                 "reason=invalidPane elapsedMs=\(debugElapsedMs(since: attachStart))"
             )
@@ -10927,7 +10927,7 @@ final class Workspace: Identifiable, ObservableObject {
         }
         guard panels[detached.panelId] == nil else {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "split.attach.fail ws=\(id.uuidString.prefix(5)) panel=\(detached.panelId.uuidString.prefix(5)) " +
                 "reason=panelExists elapsedMs=\(debugElapsedMs(since: attachStart))"
             )
@@ -10999,7 +10999,7 @@ final class Workspace: Identifiable, ObservableObject {
             manualUnreadMarkedAt.removeValue(forKey: detached.panelId)
             panelSubscriptions.removeValue(forKey: detached.panelId)
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "split.attach.fail ws=\(id.uuidString.prefix(5)) panel=\(detached.panelId.uuidString.prefix(5)) " +
                 "reason=createTabFailed elapsedMs=\(debugElapsedMs(since: attachStart))"
             )
@@ -11041,7 +11041,7 @@ final class Workspace: Identifiable, ObservableObject {
         scheduleTerminalGeometryReconcile()
 
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "split.attach.end ws=\(id.uuidString.prefix(5)) panel=\(detached.panelId.uuidString.prefix(5)) " +
             "tab=\(newTabId.uuid.uuidString.prefix(5)) pane=\(paneId.id.uuidString.prefix(5)) " +
             "index=\(index.map(String.init) ?? "nil") focus=\(focus ? 1 : 0) " +
@@ -11148,7 +11148,7 @@ final class Workspace: Identifiable, ObservableObject {
 #if DEBUG
         let pane = bonsplitController.focusedPaneId?.id.uuidString.prefix(5) ?? "nil"
         let triggerLabel = trigger == .terminalFirstResponder ? "firstResponder" : "standard"
-        cmuxDebugLog("focus.panel panel=\(panelId.uuidString.prefix(5)) pane=\(pane) trigger=\(triggerLabel)")
+        zmuxDebugLog("focus.panel panel=\(panelId.uuidString.prefix(5)) pane=\(pane) trigger=\(triggerLabel)")
         FocusLogStore.shared.append(
             "Workspace.focusPanel panelId=\(panelId.uuidString) focusedPane=\(pane) trigger=\(triggerLabel)"
         )
@@ -11182,7 +11182,7 @@ final class Workspace: Identifiable, ObservableObject {
             .flatMap { bonsplitController.selectedTab(inPane: $0)?.id }
             .map { String($0.uuid.uuidString.prefix(5)) } ?? "nil"
         let currentPanelShort = currentlyFocusedPanelId.map { String($0.uuidString.prefix(5)) } ?? "nil"
-        cmuxDebugLog(
+        zmuxDebugLog(
             "focus.panel.begin workspace=\(id.uuidString.prefix(5)) " +
             "panel=\(panelId.uuidString.prefix(5)) trigger=\(String(describing: trigger)) " +
             "targetPane=\(targetPaneShort) focusedPane=\(focusedPaneShort) selectedTab=\(selectedTabShort) " +
@@ -11190,7 +11190,7 @@ final class Workspace: Identifiable, ObservableObject {
             "currentPanel=\(currentPanelShort)"
         )
         if shouldSuppressReentrantRefocus {
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "focus.panel.skipReentrant panel=\(panelId.uuidString.prefix(5)) " +
                 "reason=firstResponderAlreadyConverged"
             )
@@ -11199,7 +11199,7 @@ final class Workspace: Identifiable, ObservableObject {
 
         if let targetPaneId, !selectionAlreadyConverged {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "focus.panel.focusPane workspace=\(id.uuidString.prefix(5)) " +
                 "panel=\(panelId.uuidString.prefix(5)) pane=\(targetPaneId.id.uuidString.prefix(5))"
             )
@@ -11209,7 +11209,7 @@ final class Workspace: Identifiable, ObservableObject {
 
         if !selectionAlreadyConverged {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "focus.panel.selectTab workspace=\(id.uuidString.prefix(5)) " +
                 "panel=\(panelId.uuidString.prefix(5)) tab=\(tabId.uuid.uuidString.prefix(5))"
             )
@@ -11477,7 +11477,7 @@ final class Workspace: Identifiable, ObservableObject {
     private static func replacementShellScriptWithBanner(target: String) -> String {
         let tempDir = FileManager.default.temporaryDirectory
         let scriptURL = tempDir.appendingPathComponent(
-            "cmux-remote-disconnect-banner-\(UUID().uuidString.lowercased()).sh"
+            "zmux-remote-disconnect-banner-\(UUID().uuidString.lowercased()).sh"
         )
         // Encode the target as base64 and decode it inside the shell. This sidesteps every
         // layer of shell quoting: no matter what the target contains (`$(id)`, backticks,
@@ -11489,11 +11489,11 @@ final class Workspace: Identifiable, ObservableObject {
         // POSIX printf inside the shell wrapper, not by Swift's String(format:).
         let endedLineFormat = String(
             localized: "remote.disconnectBanner.sessionEnded",
-            defaultValue: "[cmux] remote ssh session ended: %s"
+            defaultValue: "[zmux] remote ssh session ended: %s"
         )
         let reconnectLine = String(
             localized: "remote.disconnectBanner.reconnectHint",
-            defaultValue: "[cmux] falling back to a local shell. Reconnect with the original cmux ssh or cmux vm attach command."
+            defaultValue: "[zmux] falling back to a local shell. Reconnect with the original zmux ssh or zmux vm attach command."
         )
         // Encode the localized lines the same way as the target, so a translator using
         // backticks or $(…) in a translation string can't unexpectedly execute in the
@@ -11502,21 +11502,21 @@ final class Workspace: Identifiable, ObservableObject {
         let encodedReconnectLine = Data(reconnectLine.utf8).base64EncodedString()
         let body = """
         #!/bin/sh
-        cmux_disconnect_decode() {
+        zmux_disconnect_decode() {
           printf '%s' "$1" | base64 --decode 2>/dev/null || printf '%s' "$1" | base64 -D 2>/dev/null
         }
-        cmux_disconnect_target="$(cmux_disconnect_decode '\(encodedTarget)')"
-        cmux_disconnect_ended_format="$(cmux_disconnect_decode '\(encodedEndedFormat)')"
-        cmux_disconnect_reconnect_line="$(cmux_disconnect_decode '\(encodedReconnectLine)')"
+        zmux_disconnect_target="$(zmux_disconnect_decode '\(encodedTarget)')"
+        zmux_disconnect_ended_format="$(zmux_disconnect_decode '\(encodedEndedFormat)')"
+        zmux_disconnect_reconnect_line="$(zmux_disconnect_decode '\(encodedReconnectLine)')"
         # Append newline + color codes ourselves rather than trusting the translator to
         # preserve them in every locale.
         printf '\\033[1;33m'
-        printf "$cmux_disconnect_ended_format" "$cmux_disconnect_target"
+        printf "$zmux_disconnect_ended_format" "$zmux_disconnect_target"
         printf '\\033[0m\\n' >&2
-        printf '\\033[2m%s\\033[0m\\n' "$cmux_disconnect_reconnect_line" >&2
+        printf '\\033[2m%s\\033[0m\\n' "$zmux_disconnect_reconnect_line" >&2
         printf '\\n'
-        unset cmux_disconnect_target cmux_disconnect_ended_format cmux_disconnect_reconnect_line
-        unset -f cmux_disconnect_decode 2>/dev/null || true
+        unset zmux_disconnect_target zmux_disconnect_ended_format zmux_disconnect_reconnect_line
+        unset -f zmux_disconnect_decode 2>/dev/null || true
         # Remove ourselves so /tmp doesn't accumulate these wrappers across sessions.
         rm -f -- "$0" 2>/dev/null || true
         exec "${SHELL:-/bin/sh}" -l
@@ -11542,7 +11542,7 @@ final class Workspace: Identifiable, ObservableObject {
         // local shell that first prints a clearly-coloured banner explaining what happened.
         // Without this banner a dead VM surfaces as an ordinary local `lawrence@mac ~ %`
         // prompt, which looks identical to "I never connected" and was mis-read during
-        // dogfood as "cmux disconnected silently".
+        // dogfood as "zmux disconnected silently".
         let bannerTarget = pendingReplacementBannerRemoteTarget
         pendingReplacementBannerRemoteTarget = nil
         let replacementInitialCommand: String? = bannerTarget.map { Self.replacementShellScriptWithBanner(target: $0) }
@@ -12355,7 +12355,7 @@ final class Workspace: Identifiable, ObservableObject {
             let failure = NSAlert()
             failure.alertStyle = .warning
             failure.messageText = String(localized: "alert.moveTab.failed.title", defaultValue: "Move Failed")
-            failure.informativeText = String(localized: "alert.moveTab.failed.message", defaultValue: "cmux could not move this tab to the selected destination.")
+            failure.informativeText = String(localized: "alert.moveTab.failed.message", defaultValue: "zmux could not move this tab to the selected destination.")
             failure.addButton(withTitle: String(localized: "alert.ok", defaultValue: "OK"))
             _ = failure.runModal()
         }
@@ -12479,7 +12479,7 @@ final class Workspace: Identifiable, ObservableObject {
         }
 
         #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "split.externalDrop.begin ws=\(id.uuidString.prefix(5)) tab=\(request.tabId.uuid.uuidString.prefix(5)) " +
             "sourcePane=\(request.sourcePaneId.id.uuidString.prefix(5)) destination=\(destinationLabel)"
         )
@@ -12494,7 +12494,7 @@ final class Workspace: Identifiable, ObservableObject {
             focusWindow: true
         )
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "split.externalDrop.end ws=\(id.uuidString.prefix(5)) tab=\(request.tabId.uuid.uuidString.prefix(5)) " +
             "moved=\(moved ? 1 : 0) elapsedMs=\(debugElapsedMs(since: dropStart))"
         )
@@ -12641,7 +12641,7 @@ extension Workspace: BonsplitDelegate {
         let selectedTabBefore = bonsplitController.focusedPaneId
             .flatMap { bonsplitController.selectedTab(inPane: $0)?.id }
             .map { String($0.uuid.uuidString.prefix(5)) } ?? "nil"
-        cmuxDebugLog(
+        zmuxDebugLog(
             "focus.split.apply.begin workspace=\(id.uuidString.prefix(5)) " +
             "pane=\(pane.id.uuidString.prefix(5)) tab=\(tabId.uuid.uuidString.prefix(5)) " +
             "focusedPane=\(focusedPaneBefore) selectedTab=\(selectedTabBefore) " +
@@ -12764,7 +12764,7 @@ extension Workspace: BonsplitDelegate {
                !terminalPanel.hostedView.isSurfaceViewFirstResponder() {
 #if DEBUG
                 let previousExists = previousTerminalHostedView != nil ? 1 : 0
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "focus.split.moveFocus workspace=\(id.uuidString.prefix(5)) " +
                     "panel=\(panelId.uuidString.prefix(5)) previousExists=\(previousExists) " +
                     "to=\(panelId.uuidString.prefix(5))"
@@ -12773,7 +12773,7 @@ extension Workspace: BonsplitDelegate {
                 terminalPanel.hostedView.moveFocus(from: previousTerminalHostedView)
             }
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "focus.split.ensureFocus workspace=\(id.uuidString.prefix(5)) " +
                 "panel=\(panelId.uuidString.prefix(5)) pane=\(focusedPane.id.uuidString.prefix(5)) " +
                 "tab=\(selectedTabId.uuid.uuidString.prefix(5)) intent=\(String(describing: activationIntent))"
@@ -12806,7 +12806,7 @@ extension Workspace: BonsplitDelegate {
         )
 #if DEBUG
         let prevPanelShort = previousFocusedPanelId.map { String($0.uuidString.prefix(5)) } ?? "nil"
-        cmuxDebugLog(
+        zmuxDebugLog(
             "focus.split.apply.end workspace=\(id.uuidString.prefix(5)) " +
             "panel=\(panelId.uuidString.prefix(5)) type=\(String(describing: type(of: panel))) " +
             "focusedPane=\(focusedPane.id.uuidString.prefix(5)) selectedTab=\(selectedTabId.uuid.uuidString.prefix(5)) " +
@@ -12861,7 +12861,7 @@ extension Workspace: BonsplitDelegate {
         for (panelId, panel) in panels where panelId != targetPanelId {
             guard let ownedIntent = panel.ownedFocusIntent(for: firstResponder, in: window) else { continue }
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "focus.handoff.begin workspace=\(id.uuidString.prefix(5)) " +
                 "fromPanel=\(panelId.uuidString.prefix(5)) toPanel=\(targetPanelId.uuidString.prefix(5)) " +
                 "fromIntent=\(String(describing: ownedIntent)) toIntent=\(String(describing: targetIntent))"
@@ -13229,12 +13229,12 @@ extension Workspace: BonsplitDelegate {
             .map { String(String(describing: $0.id).prefix(5)) } ?? "nil"
         let focusedPaneBefore = controller.focusedPaneId?.id.uuidString.prefix(5) ?? "nil"
         let focusedPanelBefore = focusedPanelId?.uuidString.prefix(5) ?? "nil"
-        cmuxDebugLog(
+        zmuxDebugLog(
             "split.moveTab idx=\(debugDidMoveTabEventCount) dtSincePrevMs=\(sincePrev) panel=\(movedPanel) " +
             "from=\(source.id.uuidString.prefix(5)) to=\(destination.id.uuidString.prefix(5)) " +
             "sourceTabs=\(controller.tabs(inPane: source).count) destTabs=\(controller.tabs(inPane: destination).count)"
         )
-        cmuxDebugLog(
+        zmuxDebugLog(
             "split.moveTab.state.before idx=\(debugDidMoveTabEventCount) panel=\(movedPanel) " +
             "destSelected=\(selectedBefore) focusedPane=\(focusedPaneBefore) focusedPanel=\(focusedPanelBefore)"
         )
@@ -13252,7 +13252,7 @@ extension Workspace: BonsplitDelegate {
         let focusedPaneAfter = controller.focusedPaneId?.id.uuidString.prefix(5) ?? "nil"
         let focusedPanelAfter = focusedPanelId?.uuidString.prefix(5) ?? "nil"
         let movedPanelFocused = (movedPanelIdAfter != nil && movedPanelIdAfter == focusedPanelId) ? 1 : 0
-        cmuxDebugLog(
+        zmuxDebugLog(
             "split.moveTab.state.after idx=\(debugDidMoveTabEventCount) panel=\(movedPanel) " +
             "destSelected=\(selectedAfter) focusedPane=\(focusedPaneAfter) focusedPanel=\(focusedPanelAfter) " +
             "movedFocused=\(movedPanelFocused)"
@@ -13366,7 +13366,7 @@ extension Workspace: BonsplitDelegate {
         }
         let originalSelectedKind = controller.selectedTab(inPane: originalPane).map { panelKindForTab($0.id) } ?? "none"
         let newSelectedKind = controller.selectedTab(inPane: newPane).map { panelKindForTab($0.id) } ?? "none"
-        cmuxDebugLog(
+        zmuxDebugLog(
             "split.didSplit original=\(originalPane.id.uuidString.prefix(5)) new=\(newPane.id.uuidString.prefix(5)) " +
             "orientation=\(orientation) programmatic=\(isProgrammaticSplit ? 1 : 0) " +
             "originalTabs=\(controller.tabs(inPane: originalPane).count) newTabs=\(controller.tabs(inPane: newPane).count) " +
@@ -13401,7 +13401,7 @@ extension Workspace: BonsplitDelegate {
         // If the new pane already has a tab, this split moved an existing tab (drag-to-split).
         //
         // In the "drag the only tab to split edge" case, bonsplit inserts a placeholder "Empty"
-        // tab in the source pane to avoid leaving it tabless. In cmux, this is undesirable:
+        // tab in the source pane to avoid leaving it tabless. In zmux, this is undesirable:
         // it creates a pane with no real surfaces and leaves an "Empty" tab in the tab bar.
         //
         // Replace placeholder-only source panes with a real terminal surface, then drop the
@@ -13410,7 +13410,7 @@ extension Workspace: BonsplitDelegate {
             let originalTabs = controller.tabs(inPane: originalPane)
             let hasRealSurface = originalTabs.contains { panelIdFromSurfaceId($0.id) != nil }
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "split.didSplit.drag original=\(originalPane.id.uuidString.prefix(5)) " +
                 "new=\(newPane.id.uuidString.prefix(5)) originalTabs=\(originalTabs.count) " +
                 "newTabs=\(controller.tabs(inPane: newPane).count) hasRealSurface=\(hasRealSurface ? 1 : 0) " +
@@ -13420,7 +13420,7 @@ extension Workspace: BonsplitDelegate {
             if !hasRealSurface {
                 let placeholderTabs = originalTabs.filter { panelIdFromSurfaceId($0.id) == nil }
 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "split.placeholderRepair pane=\(originalPane.id.uuidString.prefix(5)) " +
                     "action=reusePlaceholder placeholderCount=\(placeholderTabs.count)"
                 )
@@ -13461,7 +13461,7 @@ extension Workspace: BonsplitDelegate {
                     }
                 } else {
 #if DEBUG
-                    cmuxDebugLog(
+                    zmuxDebugLog(
                         "split.placeholderRepair pane=\(originalPane.id.uuidString.prefix(5)) " +
                         "fallback=createTerminalAndDropPlaceholders"
                     )
@@ -13487,7 +13487,7 @@ extension Workspace: BonsplitDelegate {
         let sourcePanelId = sourceTabId.flatMap { panelIdFromSurfaceId($0) }
 
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "split.didSplit.autoCreate pane=\(newPane.id.uuidString.prefix(5)) " +
             "fromPane=\(originalPane.id.uuidString.prefix(5)) sourcePanel=\(sourcePanelId.map { String($0.uuidString.prefix(5)) } ?? "none")"
         )
@@ -13526,7 +13526,7 @@ extension Workspace: BonsplitDelegate {
         surfaceIdToPanelId[newTabId] = newPanel.id
         normalizePinnedTabs(in: newPane)
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "split.didSplit.autoCreate.done pane=\(newPane.id.uuidString.prefix(5)) " +
             "panel=\(newPanel.id.uuidString.prefix(5))"
         )
@@ -13580,7 +13580,7 @@ extension Workspace: BonsplitDelegate {
             let trimmedCwd = rawCwd.trimmingCharacters(in: .whitespacesAndNewlines)
             let baseCwd = trimmedCwd.isEmpty ? FileManager.default.homeDirectoryForCurrentUser.path : trimmedCwd
             guard let tabManager = owningTabManager else { return }
-            _ = CmuxConfigExecutor.execute(
+            _ = ZmuxConfigExecutor.execute(
                 command: workspaceCommand.command,
                 tabManager: tabManager,
                 baseCwd: baseCwd,
@@ -13597,7 +13597,7 @@ extension Workspace: BonsplitDelegate {
 
         guard let command = executable.button.terminalCommand else { return }
         let target = executable.button.resolvedTerminalCommandTarget
-        let didExecute = CmuxConfigExecutor.prepareShellInputIfAuthorized(
+        let didExecute = ZmuxConfigExecutor.prepareShellInputIfAuthorized(
             command,
             confirm: executable.button.confirm ?? false,
             actionID: executable.button.id,
@@ -13636,7 +13636,7 @@ extension Workspace: BonsplitDelegate {
 
     func splitTabBar(_ controller: BonsplitController, didRequestCustomAction identifier: String, inPane pane: PaneID) {
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "split.customAction.request workspace=\(id.uuidString.prefix(5)) " +
             "pane=\(pane.id.uuidString.prefix(5)) identifier=\(identifier)"
         )

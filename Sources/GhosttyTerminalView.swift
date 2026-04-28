@@ -62,12 +62,12 @@ enum GhosttyStartupAppearancePreviewProfile: String, CaseIterable, Identifiable 
         case .realUserConfig:
             return String(
                 localized: "debug.startupAppearance.profile.realUserConfig.detail",
-                defaultValue: "Loads your actual Ghostty and cmux config files."
+                defaultValue: "Loads your actual Ghostty and zmux config files."
             )
         case .freshInstall:
             return String(
                 localized: "debug.startupAppearance.profile.freshInstall.detail",
-                defaultValue: "No user theme or terminal colors, so cmux applies its managed default colors."
+                defaultValue: "No user theme or terminal colors, so zmux applies its managed default colors."
             )
         case .userThemePair:
             return String(
@@ -98,7 +98,7 @@ enum GhosttyStartupAppearancePreviewProfile: String, CaseIterable, Identifiable 
         case .realUserConfig:
             return nil
         case .freshInstall:
-            return GhosttyConfig.cmuxDefaultThemeConfigContents(
+            return GhosttyConfig.zmuxDefaultThemeConfigContents(
                 preferredColorScheme: preferredColorScheme
             )
         case .userThemePair:
@@ -139,7 +139,7 @@ enum GhosttyStartupAppearancePreviewState {
 }
 
 #if os(macOS)
-func cmuxShouldApplyWindowGlass(
+func zmuxShouldApplyWindowGlass(
     sidebarBlendMode: String,
     bgGlassEnabled: Bool,
     glassEffectAvailable _: Bool
@@ -149,22 +149,22 @@ func cmuxShouldApplyWindowGlass(
     sidebarBlendMode == "behindWindow" && bgGlassEnabled
 }
 
-func cmuxShouldUseTransparentBackgroundWindow() -> Bool {
+func zmuxShouldUseTransparentBackgroundWindow() -> Bool {
     let defaults = UserDefaults.standard
     let sidebarBlendMode = defaults.string(forKey: "sidebarBlendMode") ?? "withinWindow"
     let bgGlassEnabled = defaults.object(forKey: "bgGlassEnabled") as? Bool ?? false
-    return cmuxShouldApplyWindowGlass(
+    return zmuxShouldApplyWindowGlass(
         sidebarBlendMode: sidebarBlendMode,
         bgGlassEnabled: bgGlassEnabled,
         glassEffectAvailable: WindowGlassEffect.isAvailable
     )
 }
 
-func cmuxShouldUseClearWindowBackground(for opacity: Double) -> Bool {
-    cmuxShouldUseTransparentBackgroundWindow() || opacity < 0.999
+func zmuxShouldUseClearWindowBackground(for opacity: Double) -> Bool {
+    zmuxShouldUseTransparentBackgroundWindow() || opacity < 0.999
 }
 
-private func cmuxTransparentWindowBaseColor() -> NSColor {
+private func zmuxTransparentWindowBaseColor() -> NSColor {
     // A tiny non-zero alpha matches Ghostty's window compositing behavior on macOS and
     // avoids visual artifacts that can happen with a fully clear window background.
     NSColor.white.withAlphaComponent(0.001)
@@ -173,7 +173,7 @@ private func cmuxTransparentWindowBaseColor() -> NSColor {
 // `flagsChanged` is used for both modifier presses and releases on macOS.
 // Returning the wrong edge leaves Ghostty with a phantom held modifier until
 // a later focus loss flushes release events into the PTY.
-func cmuxGhosttyModifierActionForFlagsChanged(
+func zmuxGhosttyModifierActionForFlagsChanged(
     keyCode: UInt16,
     modifierFlagsRawValue: UInt
 ) -> ghostty_input_action_e? {
@@ -222,7 +222,7 @@ func cmuxGhosttyModifierActionForFlagsChanged(
 }
 #endif
 
-private func cmuxRuntimeReadClipboardCallback(
+private func zmuxRuntimeReadClipboardCallback(
     _ userdata: UnsafeMutableRawPointer?,
     _ location: ghostty_clipboard_e,
     _ state: UnsafeMutableRawPointer?
@@ -231,17 +231,17 @@ private func cmuxRuntimeReadClipboardCallback(
 }
 
 #if DEBUG
-private func cmuxChildExitProbePath() -> String? {
+private func zmuxChildExitProbePath() -> String? {
     let env = ProcessInfo.processInfo.environment
-    guard env["CMUX_UI_TEST_CHILD_EXIT_KEYBOARD_SETUP"] == "1",
-          let path = env["CMUX_UI_TEST_CHILD_EXIT_KEYBOARD_PATH"],
+    guard env["ZMUX_UI_TEST_CHILD_EXIT_KEYBOARD_SETUP"] == "1",
+          let path = env["ZMUX_UI_TEST_CHILD_EXIT_KEYBOARD_PATH"],
           !path.isEmpty else {
         return nil
     }
     return path
 }
 
-private func cmuxLoadChildExitProbe(at path: String) -> [String: String] {
+private func zmuxLoadChildExitProbe(at path: String) -> [String: String] {
     guard let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
           let object = try? JSONSerialization.jsonObject(with: data) as? [String: String] else {
         return [:]
@@ -249,9 +249,9 @@ private func cmuxLoadChildExitProbe(at path: String) -> [String: String] {
     return object
 }
 
-private func cmuxWriteChildExitProbe(_ updates: [String: String], increments: [String: Int] = [:]) {
-    guard let path = cmuxChildExitProbePath() else { return }
-    var payload = cmuxLoadChildExitProbe(at: path)
+private func zmuxWriteChildExitProbe(_ updates: [String: String], increments: [String: Int] = [:]) {
+    guard let path = zmuxChildExitProbePath() else { return }
+    var payload = zmuxLoadChildExitProbe(at: path)
     for (key, by) in increments {
         let current = Int(payload[key] ?? "") ?? 0
         payload[key] = String(current + by)
@@ -263,7 +263,7 @@ private func cmuxWriteChildExitProbe(_ updates: [String: String], increments: [S
     try? out.write(to: URL(fileURLWithPath: path), options: .atomic)
 }
 
-private func cmuxScalarHex(_ value: String?) -> String {
+private func zmuxScalarHex(_ value: String?) -> String {
     guard let value else { return "" }
     return value.unicodeScalars
         .map { String(format: "%04X", $0.value) }
@@ -597,7 +597,7 @@ enum GhosttyPasteboardHelper {
         let maxClipboardImageSize = 10 * 1024 * 1024  // 10 MB
         guard imageData.count <= maxClipboardImageSize else {
 #if DEBUG
-            cmuxDebugLog("terminal.paste.image.rejected reason=tooLarge bytes=\(imageData.count)")
+            zmuxDebugLog("terminal.paste.image.rejected reason=tooLarge bytes=\(imageData.count)")
 #endif
             return .rejectedImagePayload
         }
@@ -613,7 +613,7 @@ enum GhosttyPasteboardHelper {
             try imageData.write(to: fileURL)
         } catch {
 #if DEBUG
-            cmuxDebugLog("terminal.paste.image.writeFailed error=\(error.localizedDescription)")
+            zmuxDebugLog("terminal.paste.image.writeFailed error=\(error.localizedDescription)")
 #endif
             return .rejectedImagePayload
         }
@@ -676,24 +676,24 @@ enum GhosttyPasteboardHelper {
 }
 
 #if DEBUG
-func cmuxPasteboardStringContentsForTesting(_ pasteboard: NSPasteboard) -> String? {
+func zmuxPasteboardStringContentsForTesting(_ pasteboard: NSPasteboard) -> String? {
     GhosttyPasteboardHelper.stringContents(from: pasteboard)
 }
 
-func cmuxPasteboardImageFileURLForTesting(_ pasteboard: NSPasteboard) -> URL? {
+func zmuxPasteboardImageFileURLForTesting(_ pasteboard: NSPasteboard) -> URL? {
     GhosttyPasteboardHelper.saveImageFileURLIfNeeded(from: pasteboard)
 }
 
-func cmuxPasteboardImagePathForTesting(_ pasteboard: NSPasteboard) -> String? {
+func zmuxPasteboardImagePathForTesting(_ pasteboard: NSPasteboard) -> String? {
     GhosttyPasteboardHelper.saveClipboardImageIfNeeded(from: pasteboard)
 }
 
-func cmuxResolveQuicklookPathForTesting(
+func zmuxResolveQuicklookPathForTesting(
     _ rawText: String,
     cwd: String,
     existingPaths: Set<String>
 ) -> String? {
-    cmuxResolveQuicklookPath(
+    zmuxResolveQuicklookPath(
         rawText,
         cwd: cwd,
         fileExists: { path in
@@ -702,12 +702,12 @@ func cmuxResolveQuicklookPathForTesting(
     )
 }
 
-func cmuxTrimTerminalPathTrailingPunctuationForTesting(_ token: String) -> String {
-    cmuxTrimTerminalPathTrailingPunctuation(token)
+func zmuxTrimTerminalPathTrailingPunctuationForTesting(_ token: String) -> String {
+    zmuxTrimTerminalPathTrailingPunctuation(token)
 }
 #endif
 
-private func cmuxResolveQuicklookPath(
+private func zmuxResolveQuicklookPath(
     _ rawText: String,
     cwd: String?,
     fileExists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }
@@ -716,7 +716,7 @@ private func cmuxResolveQuicklookPath(
     guard !trimmed.isEmpty else { return nil }
 
     var seenPaths: Set<String> = []
-    for token in cmuxQuicklookPathCandidates(from: trimmed) {
+    for token in zmuxQuicklookPathCandidates(from: trimmed) {
         let normalizedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !normalizedToken.isEmpty else { continue }
 
@@ -739,7 +739,7 @@ private func cmuxResolveQuicklookPath(
     return nil
 }
 
-private func cmuxQuicklookPathCandidates(from rawText: String) -> [String] {
+private func zmuxQuicklookPathCandidates(from rawText: String) -> [String] {
     var candidates: [String] = []
 
     func append(_ candidate: String?) {
@@ -753,7 +753,7 @@ private func cmuxQuicklookPathCandidates(from rawText: String) -> [String] {
         }
 
         appendUnique(trimmed)
-        let punctuationTrimmed = cmuxTrimTerminalPathTrailingPunctuation(trimmed)
+        let punctuationTrimmed = zmuxTrimTerminalPathTrailingPunctuation(trimmed)
         if punctuationTrimmed != trimmed {
             appendUnique(punctuationTrimmed)
         }
@@ -761,14 +761,14 @@ private func cmuxQuicklookPathCandidates(from rawText: String) -> [String] {
 
     append(rawText)
 
-    let unescaped = cmuxUnescapeShellToken(rawText)
+    let unescaped = zmuxUnescapeShellToken(rawText)
     if unescaped != rawText {
         append(unescaped)
     }
 
-    if let unquoted = cmuxUnquoteShellToken(rawText) {
+    if let unquoted = zmuxUnquoteShellToken(rawText) {
         append(unquoted)
-        let unescapedUnquoted = cmuxUnescapeShellToken(unquoted)
+        let unescapedUnquoted = zmuxUnescapeShellToken(unquoted)
         if unescapedUnquoted != unquoted {
             append(unescapedUnquoted)
         }
@@ -777,15 +777,15 @@ private func cmuxQuicklookPathCandidates(from rawText: String) -> [String] {
     return candidates
 }
 
-private let cmuxTerminalPathSentencePunctuation: Set<Character> = [
+private let zmuxTerminalPathSentencePunctuation: Set<Character> = [
     ".", ",", ";", ":", "!", "?"
 ]
 
-private let cmuxTerminalPathTrailingQuotes: Set<Character> = [
+private let zmuxTerminalPathTrailingQuotes: Set<Character> = [
     "\"", "'", "”", "’", "»"
 ]
 
-private let cmuxTerminalPathClosingPairs: [Character: Character] = [
+private let zmuxTerminalPathClosingPairs: [Character: Character] = [
     ")": "(",
     "]": "[",
     "}": "{",
@@ -794,21 +794,21 @@ private let cmuxTerminalPathClosingPairs: [Character: Character] = [
 
 /// Mirror smart-link terminals by trimming only the trailing punctuation run
 /// that is clearly outside the path itself.
-private func cmuxTrimTerminalPathTrailingPunctuation(_ token: String) -> String {
+private func zmuxTrimTerminalPathTrailingPunctuation(_ token: String) -> String {
     let characters = Array(token)
     guard !characters.isEmpty else { return token }
 
     var end = characters.count
     while end > 0 {
         let trailing = characters[end - 1]
-        if cmuxTerminalPathSentencePunctuation.contains(trailing) ||
-            cmuxTerminalPathTrailingQuotes.contains(trailing) {
+        if zmuxTerminalPathSentencePunctuation.contains(trailing) ||
+            zmuxTerminalPathTrailingQuotes.contains(trailing) {
             end -= 1
             continue
         }
 
-        if let opener = cmuxTerminalPathClosingPairs[trailing],
-           !cmuxHasUnmatchedOpeningPathDelimiter(
+        if let opener = zmuxTerminalPathClosingPairs[trailing],
+           !zmuxHasUnmatchedOpeningPathDelimiter(
                in: characters[..<(end - 1)],
                opener: opener,
                closer: trailing
@@ -824,7 +824,7 @@ private func cmuxTrimTerminalPathTrailingPunctuation(_ token: String) -> String 
     return String(characters[..<end])
 }
 
-private func cmuxHasUnmatchedOpeningPathDelimiter(
+private func zmuxHasUnmatchedOpeningPathDelimiter(
     in characters: ArraySlice<Character>,
     opener: Character,
     closer: Character
@@ -840,7 +840,7 @@ private func cmuxHasUnmatchedOpeningPathDelimiter(
     return balance > 0
 }
 
-private func cmuxUnquoteShellToken(_ token: String) -> String? {
+private func zmuxUnquoteShellToken(_ token: String) -> String? {
     guard token.count >= 2,
           let first = token.first,
           let last = token.last,
@@ -851,7 +851,7 @@ private func cmuxUnquoteShellToken(_ token: String) -> String? {
     return String(token.dropFirst().dropLast())
 }
 
-private func cmuxUnescapeShellToken(_ token: String) -> String {
+private func zmuxUnescapeShellToken(_ token: String) -> String {
     var output = String.UnicodeScalarView()
     output.reserveCapacity(token.unicodeScalars.count)
     var escaping = false
@@ -878,7 +878,7 @@ private func cmuxUnescapeShellToken(_ token: String) -> String {
     return String(output)
 }
 
-private func cmuxVisibleTerminalLines(from text: String, rows: Int) -> [String] {
+private func zmuxVisibleTerminalLines(from text: String, rows: Int) -> [String] {
     let lines = text.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
     if lines.count > rows {
         return Array(lines.suffix(rows))
@@ -886,7 +886,7 @@ private func cmuxVisibleTerminalLines(from text: String, rows: Int) -> [String] 
     return lines
 }
 
-private func cmuxShellEscapedTokenContainingColumn(
+private func zmuxShellEscapedTokenContainingColumn(
     in line: String,
     column: Int
 ) -> String? {
@@ -930,7 +930,7 @@ private func cmuxShellEscapedTokenContainingColumn(
     return nil
 }
 
-private func cmuxIsHardPathDelimiter(
+private func zmuxIsHardPathDelimiter(
     in characters: [Character],
     at index: Int
 ) -> Bool {
@@ -945,21 +945,21 @@ private func cmuxIsHardPathDelimiter(
     return previousIsWhitespace || nextIsWhitespace
 }
 
-private func cmuxRawPathSegmentContainingColumn(
+private func zmuxRawPathSegmentContainingColumn(
     in line: String,
     column: Int
 ) -> String? {
     let characters = Array(line)
     guard !characters.isEmpty, column >= 0, column < characters.count else { return nil }
-    guard !cmuxIsHardPathDelimiter(in: characters, at: column) else { return nil }
+    guard !zmuxIsHardPathDelimiter(in: characters, at: column) else { return nil }
 
     var start = column
-    while start > 0, !cmuxIsHardPathDelimiter(in: characters, at: start - 1) {
+    while start > 0, !zmuxIsHardPathDelimiter(in: characters, at: start - 1) {
         start -= 1
     }
 
     var end = column
-    while (end + 1) < characters.count, !cmuxIsHardPathDelimiter(in: characters, at: end + 1) {
+    while (end + 1) < characters.count, !zmuxIsHardPathDelimiter(in: characters, at: end + 1) {
         end += 1
     }
 
@@ -967,7 +967,7 @@ private func cmuxRawPathSegmentContainingColumn(
     return candidate.isEmpty ? nil : candidate
 }
 
-private func cmuxPathCandidatesContainingColumn(
+private func zmuxPathCandidatesContainingColumn(
     in line: String,
     column: Int
 ) -> [String] {
@@ -980,20 +980,20 @@ private func cmuxPathCandidatesContainingColumn(
         candidates.append(trimmed)
     }
 
-    append(cmuxRawPathSegmentContainingColumn(in: line, column: column))
-    append(cmuxShellEscapedTokenContainingColumn(in: line, column: column))
+    append(zmuxRawPathSegmentContainingColumn(in: line, column: column))
+    append(zmuxShellEscapedTokenContainingColumn(in: line, column: column))
 
     return candidates
 }
 
-private func cmuxResolveVisibleLinePath(
+private func zmuxResolveVisibleLinePath(
     _ line: String,
     column: Int,
     cwd: String,
     fileExists: (String) -> Bool = { FileManager.default.fileExists(atPath: $0) }
 ) -> (rawToken: String, path: String)? {
-    for rawToken in cmuxPathCandidatesContainingColumn(in: line, column: column) {
-        if let resolvedPath = cmuxResolveQuicklookPath(rawToken, cwd: cwd, fileExists: fileExists) {
+    for rawToken in zmuxPathCandidatesContainingColumn(in: line, column: column) {
+        if let resolvedPath = zmuxResolveQuicklookPath(rawToken, cwd: cwd, fileExists: fileExists) {
             return (rawToken, resolvedPath)
         }
     }
@@ -1088,18 +1088,18 @@ final class GhosttyDefaultBackgroundNotificationDispatcher {
 func resolveTerminalOpenURLTarget(_ rawValue: String) -> TerminalOpenURLTarget? {
     let trimmed = rawValue.trimmingCharacters(in: .whitespacesAndNewlines)
     #if DEBUG
-    cmuxDebugLog("link.resolve input=\(trimmed)")
+    zmuxDebugLog("link.resolve input=\(trimmed)")
     #endif
     guard !trimmed.isEmpty else {
         #if DEBUG
-        cmuxDebugLog("link.resolve result=nil (empty)")
+        zmuxDebugLog("link.resolve result=nil (empty)")
         #endif
         return nil
     }
 
     if NSString(string: trimmed).isAbsolutePath {
         #if DEBUG
-        cmuxDebugLog("link.resolve result=external(absolutePath) url=\(trimmed)")
+        zmuxDebugLog("link.resolve result=external(absolutePath) url=\(trimmed)")
         #endif
         return .external(URL(fileURLWithPath: trimmed))
     }
@@ -1109,17 +1109,17 @@ func resolveTerminalOpenURLTarget(_ rawValue: String) -> TerminalOpenURLTarget? 
         if scheme == "http" || scheme == "https" {
             guard BrowserInsecureHTTPSettings.normalizeHost(parsed.host ?? "") != nil else {
                 #if DEBUG
-                cmuxDebugLog("link.resolve result=external(invalidHost) url=\(parsed)")
+                zmuxDebugLog("link.resolve result=external(invalidHost) url=\(parsed)")
                 #endif
                 return .external(parsed)
             }
             #if DEBUG
-            cmuxDebugLog("link.resolve result=embeddedBrowser url=\(parsed)")
+            zmuxDebugLog("link.resolve result=embeddedBrowser url=\(parsed)")
             #endif
             return .embeddedBrowser(parsed)
         }
         #if DEBUG
-        cmuxDebugLog("link.resolve result=external(scheme=\(scheme)) url=\(parsed)")
+        zmuxDebugLog("link.resolve result=external(scheme=\(scheme)) url=\(parsed)")
         #endif
         return .external(parsed)
     }
@@ -1127,24 +1127,24 @@ func resolveTerminalOpenURLTarget(_ rawValue: String) -> TerminalOpenURLTarget? 
     if let webURL = resolveBrowserNavigableURL(trimmed) {
         guard BrowserInsecureHTTPSettings.normalizeHost(webURL.host ?? "") != nil else {
             #if DEBUG
-            cmuxDebugLog("link.resolve result=external(bareHost-invalidHost) url=\(webURL)")
+            zmuxDebugLog("link.resolve result=external(bareHost-invalidHost) url=\(webURL)")
             #endif
             return .external(webURL)
         }
         #if DEBUG
-        cmuxDebugLog("link.resolve result=embeddedBrowser(bareHost) url=\(webURL)")
+        zmuxDebugLog("link.resolve result=embeddedBrowser(bareHost) url=\(webURL)")
         #endif
         return .embeddedBrowser(webURL)
     }
 
     guard let fallback = URL(string: trimmed) else {
         #if DEBUG
-        cmuxDebugLog("link.resolve result=nil (unparseable)")
+        zmuxDebugLog("link.resolve result=nil (unparseable)")
         #endif
         return nil
     }
     #if DEBUG
-    cmuxDebugLog("link.resolve result=external(fallback) url=\(fallback)")
+    zmuxDebugLog("link.resolve result=external(fallback) url=\(fallback)")
     #endif
     return .external(fallback)
 }
@@ -1482,7 +1482,7 @@ class GhosttyApp {
     }
 
     static let shared = GhosttyApp()
-    private static let releaseBundleIdentifier = "com.cmuxterm.app"
+    private static let releaseBundleIdentifier = "com.zmuxterm.app"
     private static let backgroundLogTimestampFormatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -1503,12 +1503,12 @@ class GhosttyApp {
     private static func resolveBackgroundLogURL(
         environment: [String: String] = ProcessInfo.processInfo.environment
     ) -> URL {
-        if let explicitPath = environment["CMUX_DEBUG_BG_LOG"],
+        if let explicitPath = environment["ZMUX_DEBUG_BG_LOG"],
            !explicitPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             return URL(fileURLWithPath: explicitPath)
         }
 
-        if let debugLogPath = environment["CMUX_DEBUG_LOG"],
+        if let debugLogPath = environment["ZMUX_DEBUG_LOG"],
            !debugLogPath.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             let baseURL = URL(fileURLWithPath: debugLogPath)
             let extensionSeparatorIndex = baseURL.lastPathComponent.lastIndex(of: ".")
@@ -1517,7 +1517,7 @@ class GhosttyApp {
             return baseURL.deletingLastPathComponent().appendingPathComponent(bgName)
         }
 
-        return URL(fileURLWithPath: "/tmp/cmux-bg.log")
+        return URL(fileURLWithPath: "/tmp/zmux-bg.log")
     }
 
     fileprivate static func runtimeReadClipboardCallback(
@@ -1584,7 +1584,7 @@ class GhosttyApp {
                         guard let workspace = MainActor.assumeIsolated({
                             callbackContext.terminalSurface?.owningWorkspace()
                         }) else {
-                            finish(.failure(NSError(domain: "cmux.remote.paste", code: 3)))
+                            finish(.failure(NSError(domain: "zmux.remote.paste", code: 3)))
                             GhosttyPasteboardHelper.cleanupTransferredTemporaryImageFiles(fileURLs)
                             return
                         }
@@ -1623,7 +1623,7 @@ class GhosttyApp {
                         }
                         NSSound.beep()
 #if DEBUG
-                        cmuxDebugLog("terminal.remotePasteUpload.failed surface=\(callbackContext.surfaceId.uuidString.prefix(5))")
+                        zmuxDebugLog("terminal.remotePasteUpload.failed surface=\(callbackContext.surfaceId.uuidString.prefix(5))")
 #endif
                         completeClipboardRequest(with: "")
                     }
@@ -1635,16 +1635,16 @@ class GhosttyApp {
     }
 
     let backgroundLogEnabled = {
-        if ProcessInfo.processInfo.environment["CMUX_DEBUG_BG"] == "1" {
+        if ProcessInfo.processInfo.environment["ZMUX_DEBUG_BG"] == "1" {
             return true
         }
-        if ProcessInfo.processInfo.environment["CMUX_DEBUG_LOG"] != nil {
+        if ProcessInfo.processInfo.environment["ZMUX_DEBUG_LOG"] != nil {
             return true
         }
         if ProcessInfo.processInfo.environment["GHOSTTYTABS_DEBUG_BG"] == "1" {
             return true
         }
-        if UserDefaults.standard.bool(forKey: "cmuxDebugBG") {
+        if UserDefaults.standard.bool(forKey: "zmuxDebugBG") {
             return true
         }
         return UserDefaults.standard.bool(forKey: "GhosttyTabsDebugBG")
@@ -1748,7 +1748,7 @@ class GhosttyApp {
     }
 
     #if DEBUG
-    private static let initLogPath = "/tmp/cmux-ghostty-init.log"
+    private static let initLogPath = "/tmp/zmux-ghostty-init.log"
 
     private static func initLog(_ message: String) {
         let timestamp = ISO8601DateFormatter().string(from: Date())
@@ -1819,7 +1819,7 @@ class GhosttyApp {
         // though the C ABI returns `bool`. Store the C-compatible shim explicitly so the
         // project compiles against both importer variants.
         runtimeConfig.read_clipboard_cb = unsafeBitCast(
-            cmuxRuntimeReadClipboardCallback as @convention(c) (
+            zmuxRuntimeReadClipboardCallback as @convention(c) (
                 UnsafeMutableRawPointer?,
                 ghostty_clipboard_e,
                 UnsafeMutableRawPointer?
@@ -1866,7 +1866,7 @@ class GhosttyApp {
             let callbackTabId = callbackContext.tabId
 
 #if DEBUG
-            cmuxWriteChildExitProbe(
+            zmuxWriteChildExitProbe(
                 [
                     "probeCloseSurfaceNeedsConfirm": needsConfirmClose ? "1" : "0",
                     "probeCloseSurfaceTabId": callbackTabId?.uuidString ?? "",
@@ -1910,7 +1910,7 @@ class GhosttyApp {
             #endif
 
             // If the user config is invalid, prefer a minimal fallback configuration so
-            // cmux still launches with working terminals.
+            // zmux still launches with working terminals.
             ghostty_config_free(primaryConfig)
 
             guard let fallbackConfig = ghostty_config_new() else {
@@ -1921,13 +1921,13 @@ class GhosttyApp {
             loadInlineGhosttyConfig(
                 "macos-background-from-layer = true",
                 into: fallbackConfig,
-                prefix: "cmux-renderer-bg",
+                prefix: "zmux-renderer-bg",
                 logLabel: "renderer background (fallback)"
             )
             loadInlineGhosttyConfig(
                 "shell-integration = none",
                 into: fallbackConfig,
-                prefix: "cmux-shell-integration-override",
+                prefix: "zmux-shell-integration-override",
                 logLabel: "shell integration override (fallback)"
             )
             let fallbackRenderingModeChanged = setUsesHostLayerBackground(
@@ -1994,7 +1994,7 @@ class GhosttyApp {
         let trimmed = contents.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
-        let syntheticPath = "/__cmux_inline__/\(prefix).conf"
+        let syntheticPath = "/__zmux_inline__/\(prefix).conf"
         trimmed.withCString { contents in
             syntheticPath.withCString { path in
                 ghostty_config_load_string(
@@ -2007,9 +2007,9 @@ class GhosttyApp {
         }
     }
 
-    private func loadCmuxDefaultAppearanceConfig(_ config: ghostty_config_t) {
+    private func loadZmuxDefaultAppearanceConfig(_ config: ghostty_config_t) {
         let preferredColorScheme = GhosttyConfig.currentColorSchemePreference()
-        if let url = GhosttyConfig.cmuxDefaultThemeConfigURL(preferredColorScheme: preferredColorScheme) {
+        if let url = GhosttyConfig.zmuxDefaultThemeConfigURL(preferredColorScheme: preferredColorScheme) {
             url.path.withCString { path in
                 ghostty_config_load_file(config, path)
             }
@@ -2017,9 +2017,9 @@ class GhosttyApp {
         }
 
         loadInlineGhosttyConfig(
-            GhosttyConfig.cmuxDefaultThemeConfigContents(preferredColorScheme: preferredColorScheme),
+            GhosttyConfig.zmuxDefaultThemeConfigContents(preferredColorScheme: preferredColorScheme),
             into: config,
-            prefix: "cmux-default-appearance",
+            prefix: "zmux-default-appearance",
             logLabel: "default appearance fallback"
         )
     }
@@ -2029,7 +2029,7 @@ class GhosttyApp {
         into config: ghostty_config_t
     ) {
         if profile == .freshInstall {
-            loadCmuxDefaultAppearanceConfig(config)
+            loadZmuxDefaultAppearanceConfig(config)
             return
         }
 
@@ -2037,7 +2037,7 @@ class GhosttyApp {
         loadInlineGhosttyConfig(
             contents,
             into: config,
-            prefix: "cmux-startup-preview",
+            prefix: "zmux-startup-preview",
             logLabel: "startup appearance preview"
         )
     }
@@ -2048,10 +2048,10 @@ class GhosttyApp {
         if startupPreviewProfile.loadsRealUserConfig {
             ghostty_config_load_default_files(config)
             loadLegacyGhosttyConfigIfNeeded(config)
-            loadCmuxAppSupportGhosttyConfigIfNeeded(config)
+            loadZmuxAppSupportGhosttyConfigIfNeeded(config)
             ghostty_config_load_recursive_files(config)
             if Self.shouldApplyManagedDefaultAppearance() {
-                loadCmuxDefaultAppearanceConfig(config)
+                loadZmuxDefaultAppearanceConfig(config)
             }
         } else {
             loadStartupPreviewProfile(startupPreviewProfile, into: config)
@@ -2059,10 +2059,10 @@ class GhosttyApp {
         #else
         ghostty_config_load_default_files(config)
         loadLegacyGhosttyConfigIfNeeded(config)
-        loadCmuxAppSupportGhosttyConfigIfNeeded(config)
+        loadZmuxAppSupportGhosttyConfigIfNeeded(config)
         ghostty_config_load_recursive_files(config)
         if Self.shouldApplyManagedDefaultAppearance() {
-            loadCmuxDefaultAppearanceConfig(config)
+            loadZmuxDefaultAppearanceConfig(config)
         }
         #endif
         loadCJKFontFallbackIfNeeded(config)
@@ -2070,13 +2070,13 @@ class GhosttyApp {
             true,
             source: "loadDefaultConfigFilesWithLegacyFallback"
         )
-        // Let cmux own the window-level backdrop once, while Ghostty keeps
+        // Let zmux own the window-level backdrop once, while Ghostty keeps
         // rendering text, cell backgrounds, and background images. This avoids
         // separate translucent fills for terminal and chrome surfaces.
         loadInlineGhosttyConfig(
             "macos-background-from-layer = true",
             into: config,
-            prefix: "cmux-renderer-bg",
+            prefix: "zmux-renderer-bg",
             logLabel: "renderer background"
         )
         // Save the user's preference before we force it to none.
@@ -2090,12 +2090,12 @@ class GhosttyApp {
             }
         }
 
-        // Prevent Ghostty from overriding ZDOTDIR — cmux handles shell
+        // Prevent Ghostty from overriding ZDOTDIR — zmux handles shell
         // integration itself via the .zshenv bootstrap (#2594).
         loadInlineGhosttyConfig(
             "shell-integration = none",
             into: config,
-            prefix: "cmux-shell-integration-override",
+            prefix: "zmux-shell-integration-override",
             logLabel: "shell integration override"
         )
 
@@ -2114,7 +2114,7 @@ class GhosttyApp {
     /// user-managed fallback chains or configured fonts that already cover
     /// the affected CJK ranges.
     ///
-    /// See: https://github.com/manaflow-ai/cmux/pull/1017
+    /// See: https://github.com/manaflow-ai/zmux/pull/1017
     private func loadCJKFontFallbackIfNeeded(_ config: ghostty_config_t) {
         guard let mappings = Self.autoInjectedCJKFontMappings() else { return }
 
@@ -2130,7 +2130,7 @@ class GhosttyApp {
         loadInlineGhosttyConfig(
             lines,
             into: config,
-            prefix: "cmux-cjk-font-fallback",
+            prefix: "zmux-cjk-font-fallback",
             logLabel: "CJK font fallback"
         )
     }
@@ -2151,7 +2151,7 @@ class GhosttyApp {
     ]
 
     /// Representative scalars used to detect whether the configured primary
-    /// font already covers the ranges cmux would otherwise auto-map.
+    /// font already covers the ranges zmux would otherwise auto-map.
     private static let cjkCoverageSampleCharactersByRange: [String: [UniChar]] = [
         "U+3000-U+303F": [0x3001, 0x300C],
         "U+4E00-U+9FFF": [0x4E00, 0x65E5, 0x6C34],
@@ -2267,7 +2267,7 @@ class GhosttyApp {
         return mappings.isEmpty ? nil : mappings
     }
 
-    /// Returns only the CJK mappings cmux should auto-inject after respecting
+    /// Returns only the CJK mappings zmux should auto-inject after respecting
     /// explicit user overrides and the glyph coverage of the configured
     /// primary font family.
     static func autoInjectedCJKFontMappings(
@@ -2301,7 +2301,7 @@ class GhosttyApp {
 
     /// Checks whether the user's Ghostty config files already contain
     /// a `font-codepoint-map` entry covering CJK ranges. Also checks
-    /// application-support config paths that cmux may load at runtime.
+    /// application-support config paths that zmux may load at runtime.
     static func userConfigContainsCJKCodepointMap(
         configPaths: [String] = loadedGhosttyConfigScanPaths()
     ) -> Bool {
@@ -2505,7 +2505,7 @@ class GhosttyApp {
         return summary
     }
 
-    /// Returns the top-level Ghostty config paths cmux may load before
+    /// Returns the top-level Ghostty config paths zmux may load before
     /// recursive `config-file` processing.
     static func loadedGhosttyConfigScanPaths(
         currentBundleIdentifier: String? = Bundle.main.bundleIdentifier,
@@ -2528,7 +2528,7 @@ class GhosttyApp {
         guard let bundleId = currentBundleIdentifier,
               !bundleId.isEmpty else { return paths }
 
-        let appSupportConfigURLs = cmuxAppSupportConfigURLs(
+        let appSupportConfigURLs = zmuxAppSupportConfigURLs(
             currentBundleIdentifier: bundleId,
             appSupportDirectory: appSupportDirectory
         )
@@ -2570,7 +2570,7 @@ class GhosttyApp {
         return size.intValue
     }
 
-    /// Scans a single config file for font settings relevant to cmux's
+    /// Scans a single config file for font settings relevant to zmux's
     /// injected CJK fallback and updates the pending recursive config-file
     /// queue using Ghostty's repeatable path semantics.
     private static func scanFontConfigFile(
@@ -2705,7 +2705,7 @@ class GhosttyApp {
         return true
     }
 
-    static func cmuxAppSupportConfigURLs(
+    static func zmuxAppSupportConfigURLs(
         currentBundleIdentifier: String?,
         appSupportDirectory: URL,
         fileManager: FileManager = .default
@@ -2778,13 +2778,13 @@ class GhosttyApp {
         return true
     }
 
-    private func loadCmuxAppSupportGhosttyConfigIfNeeded(_ config: ghostty_config_t) {
+    private func loadZmuxAppSupportGhosttyConfigIfNeeded(_ config: ghostty_config_t) {
         #if os(macOS)
         let fm = FileManager.default
         guard let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return }
         guard let currentBundleIdentifier = Bundle.main.bundleIdentifier,
               !currentBundleIdentifier.isEmpty else { return }
-        let urls = Self.cmuxAppSupportConfigURLs(
+        let urls = Self.zmuxAppSupportConfigURLs(
             currentBundleIdentifier: currentBundleIdentifier,
             appSupportDirectory: appSupport,
             fileManager: fm
@@ -2798,8 +2798,8 @@ class GhosttyApp {
         }
 
 #if DEBUG
-        cmuxDebugLog(
-            "loaded cmux app support ghostty config from: \(urls.map(\.path).joined(separator: ", "))"
+        zmuxDebugLog(
+            "loaded zmux app support ghostty config from: \(urls.map(\.path).joined(separator: ", "))"
         )
 #endif
         #endif
@@ -3341,16 +3341,16 @@ class GhosttyApp {
         if action.tag == GHOSTTY_ACTION_SHOW_CHILD_EXITED {
             // The child (shell) exited. Ghostty will fall back to printing
             // "Process exited. Press any key..." into the terminal unless the host
-            // handles this action. For cmux, the correct behavior is to close
+            // handles this action. For zmux, the correct behavior is to close
             // the panel immediately (no prompt).
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "surface.action.showChildExited tab=\(callbackTabId?.uuidString.prefix(5) ?? "nil") " +
                 "surface=\(callbackSurfaceId?.uuidString.prefix(5) ?? "nil")"
             )
 #endif
 #if DEBUG
-            cmuxWriteChildExitProbe(
+            zmuxWriteChildExitProbe(
                 [
                     "probeShowChildExitedTabId": callbackTabId?.uuidString ?? "",
                     "probeShowChildExitedSurfaceId": callbackSurfaceId?.uuidString ?? "",
@@ -3637,15 +3637,15 @@ class GhosttyApp {
                 encoding: .utf8
             ) ?? ""
             #if DEBUG
-            cmuxDebugLog("link.openURL raw=\(urlString)")
+            zmuxDebugLog("link.openURL raw=\(urlString)")
             #endif
             guard let target = resolveTerminalOpenURLTarget(urlString) else {
                 #if DEBUG
-                cmuxDebugLog("link.openURL resolve failed, returning false")
+                zmuxDebugLog("link.openURL resolve failed, returning false")
                 #endif
                 return false
             }
-            // Route markdown file URLs into the cmux viewer when the toggle is
+            // Route markdown file URLs into the zmux viewer when the toggle is
             // on AND the link is local + has no anchor/query. Anything else
             // (toggle off, hosted file URL, #fragment, ?query, non-markdown,
             // remote workspace, unreadable file, split creation failure) falls
@@ -3679,9 +3679,9 @@ class GhosttyApp {
                 // Fall through to the existing NSWorkspace path below.
             }
 
-            if !BrowserLinkOpenSettings.openTerminalLinksInCmuxBrowser() {
+            if !BrowserLinkOpenSettings.openTerminalLinksInZmuxBrowser() {
                 #if DEBUG
-                cmuxDebugLog("link.openURL cmuxBrowser=disabled, opening externally url=\(target.url)")
+                zmuxDebugLog("link.openURL zmuxBrowser=disabled, opening externally url=\(target.url)")
                 #endif
                 return performOnMain {
                     NSWorkspace.shared.open(target.url)
@@ -3690,7 +3690,7 @@ class GhosttyApp {
             switch target {
             case let .external(url):
                 #if DEBUG
-                cmuxDebugLog("link.openURL target=external, opening externally url=\(url)")
+                zmuxDebugLog("link.openURL target=external, opening externally url=\(url)")
                 #endif
                 return performOnMain {
                     NSWorkspace.shared.open(url)
@@ -3698,7 +3698,7 @@ class GhosttyApp {
             case let .embeddedBrowser(url):
                 if BrowserLinkOpenSettings.shouldOpenExternally(url) {
                     #if DEBUG
-                    cmuxDebugLog("link.openURL target=embedded but shouldOpenExternally=true url=\(url)")
+                    zmuxDebugLog("link.openURL target=embedded but shouldOpenExternally=true url=\(url)")
                     #endif
                     return performOnMain {
                         NSWorkspace.shared.open(url)
@@ -3706,7 +3706,7 @@ class GhosttyApp {
                 }
                 guard let host = BrowserInsecureHTTPSettings.normalizeHost(url.host ?? "") else {
                     #if DEBUG
-                    cmuxDebugLog("link.openURL target=embedded but normalizeHost=nil host=\(url.host ?? "nil") url=\(url)")
+                    zmuxDebugLog("link.openURL target=embedded but normalizeHost=nil host=\(url.host ?? "nil") url=\(url)")
                     #endif
                     return performOnMain {
                         NSWorkspace.shared.open(url)
@@ -3716,7 +3716,7 @@ class GhosttyApp {
                 // If a host whitelist is configured and this host isn't in it, open externally.
                 if !BrowserLinkOpenSettings.hostMatchesWhitelist(host) {
                     #if DEBUG
-                    cmuxDebugLog("link.openURL target=embedded but hostWhitelist miss host=\(host) url=\(url)")
+                    zmuxDebugLog("link.openURL target=embedded but hostWhitelist miss host=\(host) url=\(url)")
                     #endif
                     return performOnMain {
                         NSWorkspace.shared.open(url)
@@ -3727,12 +3727,12 @@ class GhosttyApp {
                 guard let sourceWorkspaceId,
                       let sourcePanelId else {
                     #if DEBUG
-                    cmuxDebugLog("link.openURL target=embedded but tabId/surfaceId=nil")
+                    zmuxDebugLog("link.openURL target=embedded but tabId/surfaceId=nil")
                     #endif
                     return false
                 }
                 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "link.openURL target=embedded, opening in browser pane " +
                     "host=\(host) url=\(url) tabId=\(sourceWorkspaceId) surfaceId=\(sourcePanelId)"
                 )
@@ -3744,7 +3744,7 @@ class GhosttyApp {
                             preferredWorkspaceId: sourceWorkspaceId
                           ) else {
                         #if DEBUG
-                        cmuxDebugLog(
+                        zmuxDebugLog(
                             "link.openURL embedded but workspace lookup failed " +
                             "tabId=\(sourceWorkspaceId) surfaceId=\(sourcePanelId)"
                         )
@@ -3754,7 +3754,7 @@ class GhosttyApp {
                     let workspace = resolved.workspace
                     #if DEBUG
                     if workspace.id != sourceWorkspaceId {
-                        cmuxDebugLog(
+                        zmuxDebugLog(
                             "link.openURL workspace.remap sourceTab=\(sourceWorkspaceId) " +
                             "resolvedTab=\(workspace.id) surfaceId=\(sourcePanelId)"
                         )
@@ -3762,12 +3762,12 @@ class GhosttyApp {
                     #endif
                     if let targetPane = workspace.preferredBrowserTargetPane(fromPanelId: sourcePanelId) {
                         #if DEBUG
-                        cmuxDebugLog("link.openURL opening in existing browser pane=\(targetPane)")
+                        zmuxDebugLog("link.openURL opening in existing browser pane=\(targetPane)")
                         #endif
                         return workspace.newBrowserSurface(inPane: targetPane, url: url, focus: true) != nil
                     } else {
                         #if DEBUG
-                        cmuxDebugLog("link.openURL opening as new browser split from surface=\(sourcePanelId)")
+                        zmuxDebugLog("link.openURL opening as new browser split from surface=\(sourcePanelId)")
                         #endif
                         return workspace.newBrowserSplit(from: sourcePanelId, orientation: .horizontal, url: url) != nil
                     }
@@ -3780,8 +3780,8 @@ class GhosttyApp {
 
     private func applyBackgroundToKeyWindow() {
         guard let window = activeMainWindow() else { return }
-        if cmuxShouldUseClearWindowBackground(for: defaultBackgroundOpacity) {
-            window.backgroundColor = cmuxTransparentWindowBaseColor()
+        if zmuxShouldUseClearWindowBackground(for: defaultBackgroundOpacity) {
+            window.backgroundColor = zmuxTransparentWindowBaseColor()
             window.isOpaque = false
             applyWindowBlurIfNeeded(window)
             if backgroundLogEnabled {
@@ -3810,12 +3810,12 @@ class GhosttyApp {
     private func activeMainWindow() -> NSWindow? {
         let keyWindow = NSApp.keyWindow
         if let raw = keyWindow?.identifier?.rawValue,
-           raw == "cmux.main" || raw.hasPrefix("cmux.main.") {
+           raw == "zmux.main" || raw.hasPrefix("zmux.main.") {
             return keyWindow
         }
         return NSApp.windows.first(where: { window in
             guard let raw = window.identifier?.rawValue else { return false }
-            return raw == "cmux.main" || raw.hasPrefix("cmux.main.")
+            return raw == "zmux.main" || raw.hasPrefix("zmux.main.")
         })
     }
 
@@ -3830,7 +3830,7 @@ class GhosttyApp {
         backgroundLogSequence &+= 1
         let sequence = backgroundLogSequence
         let line =
-            "\(timestamp) seq=\(sequence) t+\(String(format: "%.3f", uptimeMs))ms thread=\(threadLabel) frame60=\(frame60) frame120=\(frame120) cmux bg: \(message)\n"
+            "\(timestamp) seq=\(sequence) t+\(String(format: "%.3f", uptimeMs))ms thread=\(threadLabel) frame60=\(frame60) frame120=\(frame120) zmux bg: \(message)\n"
         if let data = line.data(using: .utf8) {
             if FileManager.default.fileExists(atPath: backgroundLogURL.path) == false {
                 FileManager.default.createFile(atPath: backgroundLogURL.path, contents: nil)
@@ -3969,19 +3969,19 @@ final class TerminalSurface: Identifiable, ObservableObject {
     var isViewInWindow: Bool { hostedView.window != nil }
     let id: UUID
     private(set) var tabId: UUID
-    /// Port ordinal for CMUX_PORT range assignment
+    /// Port ordinal for ZMUX_PORT range assignment
     var portOrdinal: Int = 0
     /// Snapshotted once per app session so all workspaces use consistent values
     private static let sessionPortBase: Int = {
-        let val = UserDefaults.standard.integer(forKey: "cmuxPortBase")
+        let val = UserDefaults.standard.integer(forKey: "zmuxPortBase")
         return val > 0 ? val : 9100
     }()
     private static let sessionPortRangeSize: Int = {
-        let val = UserDefaults.standard.integer(forKey: "cmuxPortRange")
+        let val = UserDefaults.standard.integer(forKey: "zmuxPortRange")
         return val > 0 ? val : 10
     }()
     private let surfaceContext: ghostty_surface_context_e
-    private let configTemplate: CmuxSurfaceConfigTemplate?
+    private let configTemplate: ZmuxSurfaceConfigTemplate?
     private let workingDirectory: String?
     private let initialCommand: String?
     private let initialInput: String?
@@ -4040,7 +4040,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
 	            if let searchState {
 	                hostedView.cancelFocusRequest()
 #if DEBUG
-                cmuxDebugLog("find.searchState created tab=\(tabId.uuidString.prefix(5)) surface=\(id.uuidString.prefix(5))")
+                zmuxDebugLog("find.searchState created tab=\(tabId.uuidString.prefix(5)) surface=\(id.uuidString.prefix(5))")
 #endif
                 searchNeedleCancellable = searchState.$needle
                     .removeDuplicates()
@@ -4056,14 +4056,14 @@ final class TerminalSurface: Identifiable, ObservableObject {
                     .switchToLatest()
                     .sink { [weak self] needle in
 #if DEBUG
-                        cmuxDebugLog("find.needle updated tab=\(self?.tabId.uuidString.prefix(5) ?? "?") surface=\(self?.id.uuidString.prefix(5) ?? "?") chars=\(needle.count)")
+                        zmuxDebugLog("find.needle updated tab=\(self?.tabId.uuidString.prefix(5) ?? "?") surface=\(self?.id.uuidString.prefix(5) ?? "?") chars=\(needle.count)")
 #endif
                         _ = self?.performBindingAction("search:\(needle)")
                     }
             } else if oldValue != nil {
                 searchNeedleCancellable = nil
 #if DEBUG
-                cmuxDebugLog("find.searchState cleared tab=\(tabId.uuidString.prefix(5)) surface=\(id.uuidString.prefix(5))")
+                zmuxDebugLog("find.searchState cleared tab=\(tabId.uuidString.prefix(5)) surface=\(id.uuidString.prefix(5))")
 #endif
                 _ = performBindingAction("end_search")
             }
@@ -4076,7 +4076,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
     init(
         tabId: UUID,
         context: ghostty_surface_context_e,
-        configTemplate: CmuxSurfaceConfigTemplate?,
+        configTemplate: ZmuxSurfaceConfigTemplate?,
         workingDirectory: String? = nil,
         initialCommand: String? = nil,
         initialInput: String? = nil,
@@ -4198,7 +4198,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
     }
 
     func debugSurfaceContextLabel() -> String {
-        cmuxSurfaceContextName(surfaceContext)
+        zmuxSurfaceContextName(surfaceContext)
     }
 
     func debugInitialCommand() -> String? {
@@ -4234,7 +4234,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
         let registry = TerminalSurfaceRegistry.shared
         let registeredOwnerId = registry.runtimeSurfaceOwnerId(surface)
         guard registeredOwnerId == id,
-              cmuxSurfacePointerAppearsLive(surface) else {
+              zmuxSurfacePointerAppearsLive(surface) else {
             let callbackContext = surfaceCallbackContext
             surfaceCallbackContext = nil
             registry.unregisterRuntimeSurface(surface, ownerId: id)
@@ -4244,7 +4244,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
             markPortalLifecycleClosed(reason: reason)
 #if DEBUG
             let registeredOwnerToken = registeredOwnerId.map { String($0.uuidString.prefix(5)) } ?? "nil"
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "surface.lifecycle.stale surface=\(id.uuidString.prefix(5)) " +
                 "workspace=\(tabId.uuidString.prefix(5)) reason=\(reason) " +
                 "registryOwner=\(registeredOwnerToken)"
@@ -4281,7 +4281,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
             area: current.area
         )
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "terminal.portal.host.rearm surface=\(id.uuidString.prefix(5)) " +
             "reason=\(reason) host=\(hostId) pane=\(current.paneId.uuidString.prefix(5)) " +
             "area=\(String(format: "%.1f", current.area))"
@@ -4331,7 +4331,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
 
             if shouldReplace {
 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "terminal.portal.host.claim surface=\(id.uuidString.prefix(5)) " +
                     "reason=\(reason) host=\(hostId) pane=\(paneId.id.uuidString.prefix(5)) " +
                     "inWin=\(inWindow ? 1 : 0) " +
@@ -4346,7 +4346,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
             }
 
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "terminal.portal.host.skip surface=\(id.uuidString.prefix(5)) " +
                 "reason=\(reason) host=\(hostId) pane=\(paneId.id.uuidString.prefix(5)) " +
                 "inWin=\(inWindow ? 1 : 0) " +
@@ -4361,7 +4361,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
 
         activePortalHostLease = next
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "terminal.portal.host.claim surface=\(id.uuidString.prefix(5)) " +
             "reason=\(reason) host=\(hostId) pane=\(paneId.id.uuidString.prefix(5)) " +
             "inWin=\(inWindow ? 1 : 0) " +
@@ -4375,7 +4375,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
         guard let current = activePortalHostLease, current.hostId == hostId else { return }
         activePortalHostLease = nil
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "terminal.portal.host.release surface=\(id.uuidString.prefix(5)) " +
             "reason=\(reason) host=\(hostId) pane=\(current.paneId.uuidString.prefix(5)) " +
             "inWin=\(current.inWindow ? 1 : 0) " +
@@ -4413,7 +4413,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
         portalLifecycleState = .closing
         portalLifecycleGeneration &+= 1
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "surface.lifecycle.close.begin surface=\(id.uuidString.prefix(5)) " +
             "workspace=\(tabId.uuidString.prefix(5)) reason=\(reason) " +
             "generation=\(portalLifecycleGeneration)"
@@ -4426,7 +4426,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
         portalLifecycleState = .closed
         portalLifecycleGeneration &+= 1
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "surface.lifecycle.close.sealed surface=\(id.uuidString.prefix(5)) " +
             "workspace=\(tabId.uuidString.prefix(5)) reason=\(reason) " +
             "generation=\(portalLifecycleGeneration)"
@@ -4472,8 +4472,8 @@ final class TerminalSurface: Identifiable, ObservableObject {
     }
 
 #if DEBUG
-    private static let surfaceLogPath = "/tmp/cmux-ghostty-surface.log"
-    private static let sizeLogPath = "/tmp/cmux-ghostty-size.log"
+    private static let surfaceLogPath = "/tmp/zmux-ghostty-surface.log"
+    private static let sizeLogPath = "/tmp/zmux-ghostty-size.log"
 
     func debugCurrentPixelSize() -> (width: UInt32, height: UInt32) {
         (lastPixelWidth, lastPixelHeight)
@@ -4516,7 +4516,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
 
     private static func sizeLog(_ message: String) {
         let env = ProcessInfo.processInfo.environment
-        guard env["CMUX_UI_TEST_SPLIT_CLOSE_RIGHT_VISUAL"] == "1" else { return }
+        guard env["ZMUX_UI_TEST_SPLIT_CLOSE_RIGHT_VISUAL"] == "1" else { return }
         let timestamp = ISO8601DateFormatter().string(from: Date())
         let line = "[\(timestamp)] \(message)\n"
         if let handle = FileHandle(forWritingAtPath: sizeLogPath) {
@@ -4557,7 +4557,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
 
     func attachToView(_ view: GhosttyNSView) {
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "surface.attach surface=\(id.uuidString.prefix(5)) view=\(Unmanaged.passUnretained(view).toOpaque()) " +
             "attached=\(attachedView != nil ? 1 : 0) hasSurface=\(surface != nil ? 1 : 0) inWindow=\(view.window != nil ? 1 : 0)"
         )
@@ -4573,7 +4573,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
         // itself is unchanged.
         if attachedView === view && surface != nil {
 #if DEBUG
-            cmuxDebugLog("surface.attach.reuse surface=\(id.uuidString.prefix(5)) view=\(Unmanaged.passUnretained(view).toOpaque())")
+            zmuxDebugLog("surface.attach.reuse surface=\(id.uuidString.prefix(5)) view=\(Unmanaged.passUnretained(view).toOpaque())")
 #endif
             if let screen = view.window?.screen ?? NSScreen.main,
                let displayID = screen.displayID,
@@ -4586,7 +4586,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
 
         if let attachedView, attachedView !== view {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "surface.attach.skip surface=\(id.uuidString.prefix(5)) reason=alreadyAttachedToDifferentView " +
                 "current=\(Unmanaged.passUnretained(attachedView).toOpaque()) new=\(Unmanaged.passUnretained(view).toOpaque())"
             )
@@ -4601,7 +4601,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
         if surface == nil {
             guard allowsRuntimeSurfaceCreation() else {
 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "surface.attach.skip surface=\(id.uuidString.prefix(5)) " +
                     "reason=lifecycle.\(portalLifecycleState.rawValue)"
                 )
@@ -4610,7 +4610,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
             }
             guard view.window != nil else {
 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "surface.attach.defer surface=\(id.uuidString.prefix(5)) reason=noWindow " +
                     "bounds=\(String(format: "%.1fx%.1f", view.bounds.width, view.bounds.height))"
                 )
@@ -4618,11 +4618,11 @@ final class TerminalSurface: Identifiable, ObservableObject {
                 return
             }
 #if DEBUG
-            cmuxDebugLog("surface.attach.create surface=\(id.uuidString.prefix(5))")
+            zmuxDebugLog("surface.attach.create surface=\(id.uuidString.prefix(5))")
 #endif
             createSurface(for: view)
 #if DEBUG
-            cmuxDebugLog("surface.attach.create.done surface=\(id.uuidString.prefix(5)) hasSurface=\(surface != nil ? 1 : 0)")
+            zmuxDebugLog("surface.attach.create.done surface=\(id.uuidString.prefix(5)) hasSurface=\(surface != nil ? 1 : 0)")
 #endif
         } else if let screen = view.window?.screen ?? NSScreen.main,
                   let displayID = screen.displayID,
@@ -4631,7 +4631,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
             // Surface exists but we're (re)attaching after a view hierarchy move; ensure display id.
             ghostty_surface_set_display_id(s, displayID)
 #if DEBUG
-            cmuxDebugLog("surface.attach.displayId surface=\(id.uuidString.prefix(5)) display=\(displayID)")
+            zmuxDebugLog("surface.attach.displayId surface=\(id.uuidString.prefix(5)) display=\(displayID)")
 #endif
         }
     }
@@ -4639,7 +4639,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
     private func createSurface(for view: GhosttyNSView) {
         guard allowsRuntimeSurfaceCreation() else {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "surface.create.skip surface=\(id.uuidString.prefix(5)) " +
                 "reason=lifecycle.\(portalLifecycleState.rawValue)"
             )
@@ -4667,7 +4667,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
 
         let scaleFactors = scaleFactors(for: view)
 
-        let baseConfig = configTemplate ?? CmuxSurfaceConfigTemplate()
+        let baseConfig = configTemplate ?? ZmuxSurfaceConfigTemplate()
         var surfaceConfig = ghostty_surface_config_new()
         surfaceConfig.font_size = baseConfig.fontSize
         surfaceConfig.wait_after_command = baseConfig.waitAfterCommand
@@ -4683,8 +4683,8 @@ final class TerminalSurface: Identifiable, ObservableObject {
         surfaceConfig.context = surfaceContext
 #if DEBUG
         let templateFontText = String(format: "%.2f", surfaceConfig.font_size)
-        cmuxDebugLog(
-            "zoom.create surface=\(id.uuidString.prefix(5)) context=\(cmuxSurfaceContextName(surfaceContext)) " +
+        zmuxDebugLog(
+            "zoom.create surface=\(id.uuidString.prefix(5)) context=\(zmuxSurfaceContextName(surfaceContext)) " +
             "templateFont=\(templateFontText)"
         )
 #endif
@@ -4709,43 +4709,43 @@ final class TerminalSurface: Identifiable, ObservableObject {
             protectedStartupEnvironmentKeys.insert(key)
         }
 
-        setManagedEnvironmentValue("CMUX_SURFACE_ID", id.uuidString)
-        setManagedEnvironmentValue("CMUX_WORKSPACE_ID", tabId.uuidString)
+        setManagedEnvironmentValue("ZMUX_SURFACE_ID", id.uuidString)
+        setManagedEnvironmentValue("ZMUX_WORKSPACE_ID", tabId.uuidString)
         // Backward-compatible shell integration keys used by existing scripts/tests.
-        setManagedEnvironmentValue("CMUX_PANEL_ID", id.uuidString)
-        setManagedEnvironmentValue("CMUX_TAB_ID", tabId.uuidString)
+        setManagedEnvironmentValue("ZMUX_PANEL_ID", id.uuidString)
+        setManagedEnvironmentValue("ZMUX_TAB_ID", tabId.uuidString)
         let socketPath = SocketControlSettings.socketPath()
-        setManagedEnvironmentValue("CMUX_SOCKET_PATH", socketPath)
+        setManagedEnvironmentValue("ZMUX_SOCKET_PATH", socketPath)
         // Backward-compatible alias expected by older scripts and third-party integrations.
-        setManagedEnvironmentValue("CMUX_SOCKET", socketPath)
-        if let bundledCLIURL = Bundle.main.resourceURL?.appendingPathComponent("bin/cmux"),
+        setManagedEnvironmentValue("ZMUX_SOCKET", socketPath)
+        if let bundledCLIURL = Bundle.main.resourceURL?.appendingPathComponent("bin/zmux"),
            FileManager.default.isExecutableFile(atPath: bundledCLIURL.path) {
-            setManagedEnvironmentValue("CMUX_BUNDLED_CLI_PATH", bundledCLIURL.path)
+            setManagedEnvironmentValue("ZMUX_BUNDLED_CLI_PATH", bundledCLIURL.path)
         }
         if let bundleId = Bundle.main.bundleIdentifier, !bundleId.isEmpty {
-            setManagedEnvironmentValue("CMUX_BUNDLE_ID", bundleId)
+            setManagedEnvironmentValue("ZMUX_BUNDLE_ID", bundleId)
         }
 
         // Port range for this workspace (base/range snapshotted once per app session)
         do {
             let startPort = Self.sessionPortBase + portOrdinal * Self.sessionPortRangeSize
-            setManagedEnvironmentValue("CMUX_PORT", String(startPort))
-            setManagedEnvironmentValue("CMUX_PORT_END", String(startPort + Self.sessionPortRangeSize - 1))
-            setManagedEnvironmentValue("CMUX_PORT_RANGE", String(Self.sessionPortRangeSize))
+            setManagedEnvironmentValue("ZMUX_PORT", String(startPort))
+            setManagedEnvironmentValue("ZMUX_PORT_END", String(startPort + Self.sessionPortRangeSize - 1))
+            setManagedEnvironmentValue("ZMUX_PORT_RANGE", String(Self.sessionPortRangeSize))
         }
 
         let claudeHooksEnabled = ClaudeCodeIntegrationSettings.hooksEnabled()
         if !claudeHooksEnabled {
-            setManagedEnvironmentValue("CMUX_CLAUDE_HOOKS_DISABLED", "1")
+            setManagedEnvironmentValue("ZMUX_CLAUDE_HOOKS_DISABLED", "1")
         }
         if let customClaudePath = ClaudeCodeIntegrationSettings.customClaudePath() {
-            setManagedEnvironmentValue("CMUX_CUSTOM_CLAUDE_PATH", customClaudePath)
+            setManagedEnvironmentValue("ZMUX_CUSTOM_CLAUDE_PATH", customClaudePath)
         }
         if !CursorIntegrationSettings.hooksEnabled() {
-            setManagedEnvironmentValue("CMUX_CURSOR_HOOKS_DISABLED", "1")
+            setManagedEnvironmentValue("ZMUX_CURSOR_HOOKS_DISABLED", "1")
         }
         if !GeminiIntegrationSettings.hooksEnabled() {
-            setManagedEnvironmentValue("CMUX_GEMINI_HOOKS_DISABLED", "1")
+            setManagedEnvironmentValue("ZMUX_GEMINI_HOOKS_DISABLED", "1")
         }
 
         if let cliBinPath = Bundle.main.resourceURL?.appendingPathComponent("bin").path {
@@ -4763,8 +4763,8 @@ final class TerminalSurface: Identifiable, ObservableObject {
         let shellIntegrationEnabled = UserDefaults.standard.object(forKey: "sidebarShellIntegration") as? Bool ?? true
         if shellIntegrationEnabled,
            let integrationDir = Bundle.main.resourceURL?.appendingPathComponent("shell-integration").path {
-            setManagedEnvironmentValue("CMUX_SHELL_INTEGRATION", "1")
-            setManagedEnvironmentValue("CMUX_SHELL_INTEGRATION_DIR", integrationDir)
+            setManagedEnvironmentValue("ZMUX_SHELL_INTEGRATION", "1")
+            setManagedEnvironmentValue("ZMUX_SHELL_INTEGRATION_DIR", integrationDir)
 
             let shell = (env["SHELL"]?.isEmpty == false ? env["SHELL"] : nil)
                 ?? getenv("SHELL").map { String(cString: $0) }
@@ -4773,7 +4773,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
             let shellName = URL(fileURLWithPath: shell).lastPathComponent
             if shellName == "zsh" {
                 if GhosttyApp.shared.userGhosttyShellIntegrationMode != "none" {
-                    setManagedEnvironmentValue("CMUX_LOAD_GHOSTTY_ZSH_INTEGRATION", "1")
+                    setManagedEnvironmentValue("ZMUX_LOAD_GHOSTTY_ZSH_INTEGRATION", "1")
                 }
                 let candidateZdotdir = (env["ZDOTDIR"]?.isEmpty == false ? env["ZDOTDIR"] : nil)
                     ?? getenv("ZDOTDIR").map { String(cString: $0) }
@@ -4790,31 +4790,31 @@ final class TerminalSurface: Identifiable, ObservableObject {
                         isGhosttyInjected = (candidateZdotdir == ghosttyZdotdir)
                     }
                     if !isGhosttyInjected {
-                        setManagedEnvironmentValue("CMUX_ZSH_ZDOTDIR", candidateZdotdir)
+                        setManagedEnvironmentValue("ZMUX_ZSH_ZDOTDIR", candidateZdotdir)
                     }
                 }
 
                 setManagedEnvironmentValue("ZDOTDIR", integrationDir)
             } else if shellName == "bash" {
                 if GhosttyApp.shared.userGhosttyShellIntegrationMode != "none" {
-                    setManagedEnvironmentValue("CMUX_LOAD_GHOSTTY_BASH_INTEGRATION", "1")
+                    setManagedEnvironmentValue("ZMUX_LOAD_GHOSTTY_BASH_INTEGRATION", "1")
                 }
                 // macOS ships /bin/bash 3.2, where Ghostty's automatic bash
                 // integration is unsupported and HOME-based wrapper startup is
-                // not reliable. Bootstrap cmux bash integration on the first
+                // not reliable. Bootstrap zmux bash integration on the first
                 // interactive prompt instead.
                 setManagedEnvironmentValue("PROMPT_COMMAND", """
                 unset PROMPT_COMMAND; \
-                if [[ "${CMUX_LOAD_GHOSTTY_BASH_INTEGRATION:-0}" == "1" && -n "${GHOSTTY_RESOURCES_DIR:-}" ]]; then \
-                _cmux_ghostty_bash="$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash"; \
-                [[ -r "$_cmux_ghostty_bash" ]] && source "$_cmux_ghostty_bash"; \
+                if [[ "${ZMUX_LOAD_GHOSTTY_BASH_INTEGRATION:-0}" == "1" && -n "${GHOSTTY_RESOURCES_DIR:-}" ]]; then \
+                _zmux_ghostty_bash="$GHOSTTY_RESOURCES_DIR/shell-integration/bash/ghostty.bash"; \
+                [[ -r "$_zmux_ghostty_bash" ]] && source "$_zmux_ghostty_bash"; \
                 fi; \
-                if [[ "${CMUX_SHELL_INTEGRATION:-1}" != "0" && -n "${CMUX_SHELL_INTEGRATION_DIR:-}" ]]; then \
-                _cmux_bash_integration="$CMUX_SHELL_INTEGRATION_DIR/cmux-bash-integration.bash"; \
-                [[ -r "$_cmux_bash_integration" ]] && source "$_cmux_bash_integration"; \
+                if [[ "${ZMUX_SHELL_INTEGRATION:-1}" != "0" && -n "${ZMUX_SHELL_INTEGRATION_DIR:-}" ]]; then \
+                _zmux_bash_integration="$ZMUX_SHELL_INTEGRATION_DIR/zmux-bash-integration.bash"; \
+                [[ -r "$_zmux_bash_integration" ]] && source "$_zmux_bash_integration"; \
                 fi; \
-                unset _cmux_ghostty_bash _cmux_bash_integration; \
-                if declare -F _cmux_prompt_command >/dev/null 2>&1; then _cmux_prompt_command; fi
+                unset _zmux_ghostty_bash _zmux_bash_integration; \
+                if declare -F _zmux_prompt_command >/dev/null 2>&1; then _zmux_prompt_command; fi
                 """)
             }
         }
@@ -4947,7 +4947,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
         // (new surface, split, new workspace) preserve zoom from the source terminal.
         if let inheritedFontPoints = configTemplate?.fontSize,
            inheritedFontPoints > 0 {
-            let currentFontPoints = cmuxCurrentSurfaceFontSizePoints(createdSurface)
+            let currentFontPoints = zmuxCurrentSurfaceFontSizePoints(createdSurface)
             let shouldReapply = {
                 guard let currentFontPoints else { return true }
                 return abs(currentFontPoints - inheritedFontPoints) > 0.05
@@ -4981,11 +4981,11 @@ final class TerminalSurface: Identifiable, ObservableObject {
         )
 
 #if DEBUG
-        let runtimeFontText = cmuxCurrentSurfaceFontSizePoints(createdSurface).map {
+        let runtimeFontText = zmuxCurrentSurfaceFontSizePoints(createdSurface).map {
             String(format: "%.2f", $0)
         } ?? "nil"
-        cmuxDebugLog(
-            "zoom.create.done surface=\(id.uuidString.prefix(5)) context=\(cmuxSurfaceContextName(surfaceContext)) " +
+        zmuxDebugLog(
+            "zoom.create.done surface=\(id.uuidString.prefix(5)) context=\(zmuxSurfaceContextName(surfaceContext)) " +
             "runtimeFont=\(runtimeFontText)"
         )
 #endif
@@ -5054,7 +5054,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
             viewState = "NO_ATTACHED_VIEW hasSurface=\(hasSurface)"
         }
         #if DEBUG
-        cmuxDebugLog("forceRefresh: \(id) reason=\(reason) \(viewState)")
+        zmuxDebugLog("forceRefresh: \(id) reason=\(reason) \(viewState)")
         #endif
         guard let view = attachedView,
               let surface,
@@ -5244,7 +5244,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
             guard self.surface == nil, let view = self.attachedView else { return }
             guard view.window != nil else {
                 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "surface.background_start.defer surface=\(self.id.uuidString.prefix(8)) reason=noWindow"
                 )
                 #endif
@@ -5256,7 +5256,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
             self.createSurface(for: view)
             #if DEBUG
             let elapsedMs = (ProcessInfo.processInfo.systemUptime - startedAt) * 1000.0
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "surface.background_start surface=\(self.id.uuidString.prefix(8)) inWindow=\(view.window != nil ? 1 : 0) ready=\(self.surface != nil ? 1 : 0) ms=\(String(format: "%.2f", elapsedMs))"
             )
             #endif
@@ -5422,7 +5422,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
                 count += 1
             }
         }
-        cmuxDebugLog(
+        zmuxDebugLog(
             "surface.socket_input.queue surface=\(id.uuidString.prefix(8)) items=\(pendingSocketInputQueue.count) " +
             "keys=\(pendingKeys) bytes=\(pendingSocketInputBytes)"
         )
@@ -5447,7 +5447,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
             }
         }
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "surface.socket_input.flush surface=\(id.uuidString.prefix(8)) items=\(queued.count) " +
             "keys=\(queuedKeys) bytes=\(queuedBytes)"
         )
@@ -5551,7 +5551,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
 
         guard let surfaceToFree else {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "surface.lifecycle.deinit.skip surface=\(id.uuidString.prefix(5)) " +
                 "workspace=\(tabId.uuidString.prefix(5)) reason=noRuntimeSurface"
             )
@@ -5571,7 +5571,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
 #if DEBUG
         let surfaceToken = String(id.uuidString.prefix(5))
         let workspaceToken = String(tabId.uuidString.prefix(5))
-        cmuxDebugLog(
+        zmuxDebugLog(
             "surface.lifecycle.deinit.begin surface=\(surfaceToken) " +
             "workspace=\(workspaceToken) hasAttachedView=\(attachedView != nil ? 1 : 0) " +
             "hostedInWindow=\(hostedView.window != nil ? 1 : 0)"
@@ -5585,7 +5585,7 @@ final class TerminalSurface: Identifiable, ObservableObject {
             ghostty_surface_free(surfaceToFree)
             callbackContext?.release()
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "surface.lifecycle.deinit.end surface=\(surfaceToken) " +
                 "workspace=\(workspaceToken) freed=1"
             )
@@ -5605,10 +5605,10 @@ extension TerminalSurface {
 
 class GhosttyNSView: NSView, NSUserInterfaceValidations {
     private static let focusDebugEnabled: Bool = {
-        if ProcessInfo.processInfo.environment["CMUX_FOCUS_DEBUG"] == "1" {
+        if ProcessInfo.processInfo.environment["ZMUX_FOCUS_DEBUG"] == "1" {
             return true
         }
-        return UserDefaults.standard.bool(forKey: "cmuxFocusDebug")
+        return UserDefaults.standard.bool(forKey: "zmuxFocusDebug")
     }()
     internal enum DropPlan: Equatable {
         case insertText(String)
@@ -5628,7 +5628,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
         NSPasteboard.PasteboardType(UTType.heif.identifier)
     ]
     private static let tabTransferPasteboardType = NSPasteboard.PasteboardType("com.splittabbar.tabtransfer")
-    private static let sidebarTabReorderPasteboardType = NSPasteboard.PasteboardType("com.cmux.sidebar-tab-reorder")
+    private static let sidebarTabReorderPasteboardType = NSPasteboard.PasteboardType("com.zmux.sidebar-tab-reorder")
 
     private enum WordPathResolutionSource: String {
         case quicklook
@@ -5742,10 +5742,10 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
     }
 #if DEBUG
     private static let keyLatencyProbeEnabled: Bool = {
-        if ProcessInfo.processInfo.environment["CMUX_KEY_LATENCY_PROBE"] == "1" {
+        if ProcessInfo.processInfo.environment["ZMUX_KEY_LATENCY_PROBE"] == "1" {
             return true
         }
-        return UserDefaults.standard.bool(forKey: "cmuxKeyLatencyProbe")
+        return UserDefaults.standard.bool(forKey: "zmuxKeyLatencyProbe")
     }()
     static var debugGhosttySurfaceKeyEventObserver: ((ghostty_input_key_s) -> Void)?
 #endif
@@ -5915,8 +5915,8 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
         }
         applySurfaceBackground()
         let color = effectiveBackgroundColor()
-        if cmuxShouldUseClearWindowBackground(for: color.alphaComponent) {
-            window.backgroundColor = cmuxTransparentWindowBaseColor()
+        if zmuxShouldUseClearWindowBackground(for: color.alphaComponent) {
+            window.backgroundColor = zmuxTransparentWindowBaseColor()
             window.isOpaque = false
             GhosttyApp.shared.applyWindowBlurIfNeeded(window)
         } else {
@@ -5924,7 +5924,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
             window.isOpaque = color.alphaComponent >= 1.0
         }
         if GhosttyApp.shared.backgroundLogEnabled {
-            let signature = "\(cmuxShouldUseClearWindowBackground(for: color.alphaComponent) ? "transparent" : color.hexString()):\(String(format: "%.3f", color.alphaComponent))"
+            let signature = "\(zmuxShouldUseClearWindowBackground(for: color.alphaComponent) ? "transparent" : color.hexString()):\(String(format: "%.3f", color.alphaComponent))"
             if signature != lastLoggedWindowBackgroundSignature {
                 lastLoggedWindowBackgroundSignature = signature
                 let hasOverride = backgroundColor != nil
@@ -5932,7 +5932,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
                 let defaultHex = GhosttyApp.shared.defaultBackgroundColor.hexString()
                 let source = hasOverride ? "surfaceOverride" : "defaultBackground"
                 GhosttyApp.shared.logBackground(
-                    "window background applied tab=\(tabId?.uuidString ?? "unknown") surface=\(terminalSurface?.id.uuidString ?? "unknown") source=\(source) override=\(overrideHex) default=\(defaultHex) transparent=\(cmuxShouldUseClearWindowBackground(for: color.alphaComponent)) color=\(color.hexString()) opacity=\(String(format: "%.3f", color.alphaComponent))"
+                    "window background applied tab=\(tabId?.uuidString ?? "unknown") surface=\(terminalSurface?.id.uuidString ?? "unknown") source=\(source) override=\(overrideHex) default=\(defaultHex) transparent=\(zmuxShouldUseClearWindowBackground(for: color.alphaComponent)) color=\(color.hexString()) opacity=\(String(format: "%.3f", color.alphaComponent))"
                 )
             }
         }
@@ -5997,7 +5997,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
             NSCursor.pop()
         }
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "surface.view.windowMove surface=\(terminalSurface?.id.uuidString.prefix(5) ?? "nil") " +
             "inWindow=\(window != nil ? 1 : 0) bounds=\(String(format: "%.1fx%.1f", bounds.width, bounds.height)) " +
             "pending=\(String(format: "%.1fx%.1f", pendingSurfaceSize?.width ?? 0, pendingSurfaceSize?.height ?? 0))"
@@ -6161,7 +6161,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
 #if DEBUG
             let signature = "nonPositive-\(Int(size.width))x\(Int(size.height))"
             if lastSizeSkipSignature != signature {
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "surface.size.defer surface=\(terminalSurface.id.uuidString.prefix(5)) " +
                     "reason=nonPositive size=\(String(format: "%.1fx%.1f", size.width, size.height)) " +
                     "inWindow=\(window != nil ? 1 : 0)"
@@ -6177,7 +6177,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
 #if DEBUG
             let signature = "\(deferralReason)-\(Int(size.width.rounded()))x\(Int(size.height.rounded()))"
             if lastSizeSkipSignature != signature {
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "surface.size.defer surface=\(terminalSurface.id.uuidString.prefix(5)) reason=\(deferralReason) " +
                     "size=\(String(format: "%.1fx%.1f", size.width, size.height)) " +
                     "inWindow=\(window != nil ? 1 : 0)"
@@ -6192,7 +6192,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
 #if DEBUG
             let signature = "noWindow-\(Int(size.width))x\(Int(size.height))"
             if lastSizeSkipSignature != signature {
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "surface.size.defer surface=\(terminalSurface.id.uuidString.prefix(5)) reason=noWindow " +
                     "size=\(String(format: "%.1fx%.1f", size.width, size.height))"
                 )
@@ -6209,7 +6209,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
 #if DEBUG
             let signature = "zeroBacking-\(Int(backingSize.width))x\(Int(backingSize.height))"
             if lastSizeSkipSignature != signature {
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "surface.size.defer surface=\(terminalSurface.id.uuidString.prefix(5)) reason=zeroBacking " +
                     "size=\(String(format: "%.1fx%.1f", size.width, size.height)) " +
                     "backing=\(String(format: "%.1fx%.1f", backingSize.width, backingSize.height))"
@@ -6221,7 +6221,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
         }
 #if DEBUG
         if lastSizeSkipSignature != nil {
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "surface.size.resume surface=\(terminalSurface.id.uuidString.prefix(5)) " +
                 "size=\(String(format: "%.1fx%.1f", size.width, size.height)) " +
                 "backing=\(String(format: "%.1fx%.1f", backingSize.width, backingSize.height))"
@@ -6346,7 +6346,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
     private func requestInputRecoveryAfterSurfaceMiss(reason: String) {
         terminalSurface?.requestBackgroundSurfaceStartIfNeeded()
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "focus.input_recovery surface=\(terminalSurface?.id.uuidString.prefix(5) ?? "nil") " +
             "reason=\(reason) inWindow=\(window != nil ? 1 : 0)"
         )
@@ -6673,7 +6673,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
         guard !content.isEmpty else { return }
 
 #if DEBUG
-        cmuxDebugLog("ime.ax.setValue len=\(content.count)")
+        zmuxDebugLog("ime.ax.setValue len=\(content.count)")
 #endif
 
         let inject = {
@@ -6777,7 +6777,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
             // the old view from stealing focus and creating model/surface divergence.
             if suppressingReparentFocus {
 #if DEBUG
-                cmuxDebugLog("focus.firstResponder SUPPRESSED (reparent) surface=\(terminalSurface?.id.uuidString.prefix(5) ?? "nil")")
+                zmuxDebugLog("focus.firstResponder SUPPRESSED (reparent) surface=\(terminalSurface?.id.uuidString.prefix(5) ?? "nil")")
 #endif
                 return result
             }
@@ -6792,7 +6792,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
                 onFocus?()
             } else if isVisibleInUI && (!hasUsableFocusGeometry || hiddenInHierarchy) {
 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "focus.firstResponder SUPPRESSED (hidden_or_tiny) surface=\(terminalSurface?.id.uuidString.prefix(5) ?? "nil") " +
                     "frame=\(String(format: "%.1fx%.1f", bounds.width, bounds.height)) hidden=\(hiddenInHierarchy ? 1 : 0)"
                 )
@@ -6804,7 +6804,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
             let deltaMs = (now - lastScrollEventTime) * 1000
             Self.focusLog("becomeFirstResponder: surface=\(terminalSurface?.id.uuidString ?? "nil") deltaSinceScrollMs=\(String(format: "%.2f", deltaMs))")
 #if DEBUG
-            cmuxDebugLog("focus.firstResponder surface=\(terminalSurface?.id.uuidString.prefix(5) ?? "nil")")
+            zmuxDebugLog("focus.firstResponder surface=\(terminalSurface?.id.uuidString.prefix(5) ?? "nil")")
             if let terminalSurface {
                 AppDelegate.shared?.recordJumpUnreadFocusIfExpected(
                     tabId: terminalSurface.tabId,
@@ -6890,7 +6890,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
 #if DEBUG
     private func recordKeyLatency(path: String, event: NSEvent) {
         guard Self.keyLatencyProbeEnabled else { return }
-        CmuxTypingTiming.logEventDelay(path: path, event: event)
+        ZmuxTypingTiming.logEventDelay(path: path, event: event)
     }
 #endif
 
@@ -6918,9 +6918,9 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
 
     private func performKeyEquivalent(with event: NSEvent, shouldRetryMainMenu: Bool) -> Bool {
 #if DEBUG
-        let typingTimingStart = CmuxTypingTiming.start()
+        let typingTimingStart = ZmuxTypingTiming.start()
         defer {
-            CmuxTypingTiming.logDuration(
+            ZmuxTypingTiming.logDuration(
                 path: "terminal.performKeyEquivalent",
                 startedAt: typingTimingStart,
                 event: event
@@ -6961,10 +6961,10 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
 #endif
 
 #if DEBUG
-        cmuxWriteChildExitProbe(
+        zmuxWriteChildExitProbe(
             [
-                "probePerformCharsHex": cmuxScalarHex(event.characters),
-                "probePerformCharsIgnoringHex": cmuxScalarHex(event.charactersIgnoringModifiers),
+                "probePerformCharsHex": zmuxScalarHex(event.characters),
+                "probePerformCharsIgnoringHex": zmuxScalarHex(event.charactersIgnoringModifiers),
                 "probePerformKeyCode": String(event.keyCode),
                 "probePerformModsRaw": String(event.modifierFlags.rawValue),
                 "probePerformSurfaceId": terminalSurface?.id.uuidString ?? "",
@@ -7071,7 +7071,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
 
     override func keyDown(with event: NSEvent) {
 #if DEBUG
-        let typingTimingStart = CmuxTypingTiming.start()
+        let typingTimingStart = ZmuxTypingTiming.start()
         let phaseTotalStart = ProcessInfo.processInfo.systemUptime
         var ensureSurfaceMs: Double = 0
         var dismissNotificationMs: Double = 0
@@ -7082,7 +7082,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
         var refreshMs: Double = 0
         defer {
             let totalMs = (ProcessInfo.processInfo.systemUptime - phaseTotalStart) * 1000.0
-            CmuxTypingTiming.logBreakdown(
+            ZmuxTypingTiming.logBreakdown(
                 path: "terminal.keyDown.phase",
                 totalMs: totalMs,
                 event: event,
@@ -7098,7 +7098,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
                 ],
                 extra: "marked=\(hasMarkedText() ? 1 : 0)"
             )
-            CmuxTypingTiming.logDuration(path: "terminal.keyDown", startedAt: typingTimingStart, event: event)
+            ZmuxTypingTiming.logDuration(path: "terminal.keyDown", startedAt: typingTimingStart, event: event)
         }
         let ensureSurfaceStart = ProcessInfo.processInfo.systemUptime
 #endif
@@ -7149,10 +7149,10 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
 #endif
 
 #if DEBUG
-        cmuxWriteChildExitProbe(
+        zmuxWriteChildExitProbe(
             [
-                "probeKeyDownCharsHex": cmuxScalarHex(event.characters),
-                "probeKeyDownCharsIgnoringHex": cmuxScalarHex(event.charactersIgnoringModifiers),
+                "probeKeyDownCharsHex": zmuxScalarHex(event.characters),
+                "probeKeyDownCharsIgnoringHex": zmuxScalarHex(event.charactersIgnoringModifiers),
                 "probeKeyDownKeyCode": String(event.keyCode),
                 "probeKeyDownModsRaw": String(event.modifierFlags.rawValue),
                 "probeKeyDownSurfaceId": terminalSurface?.id.uuidString ?? "",
@@ -7196,7 +7196,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
                 #endif
             } else {
                 #if DEBUG
-                let sendTimingStart = CmuxTypingTiming.start()
+                let sendTimingStart = ZmuxTypingTiming.start()
                 let ghosttySendStart = ProcessInfo.processInfo.systemUptime
                 #endif
                 handled = text.withCString { ptr in
@@ -7205,7 +7205,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
                 }
                 #if DEBUG
                 ghosttySendMs = (ProcessInfo.processInfo.systemUptime - ghosttySendStart) * 1000.0
-                CmuxTypingTiming.logDuration(
+                ZmuxTypingTiming.logDuration(
                     path: "terminal.keyDown.ctrlGhosttySend",
                     startedAt: sendTimingStart,
                     event: event,
@@ -7214,10 +7214,10 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
                 #endif
             }
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "key.ctrl path=ghostty surface=\(terminalSurface?.id.uuidString.prefix(5) ?? "nil") " +
-                "handled=\(handled ? 1 : 0) keyCode=\(event.keyCode) chars=\(cmuxScalarHex(event.characters)) " +
-                "ign=\(cmuxScalarHex(event.charactersIgnoringModifiers)) mods=\(event.modifierFlags.rawValue)"
+                "handled=\(handled ? 1 : 0) keyCode=\(event.keyCode) chars=\(zmuxScalarHex(event.characters)) " +
+                "ign=\(zmuxScalarHex(event.charactersIgnoringModifiers)) mods=\(event.modifierFlags.rawValue)"
             )
 #endif
             // If Ghostty handled the key (action/encoding), we're done.
@@ -7289,13 +7289,13 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
 
         // Let the input system handle the event (for IME, dead keys, etc.)
 #if DEBUG
-        let interpretTimingStart = CmuxTypingTiming.start()
+        let interpretTimingStart = ZmuxTypingTiming.start()
         let interpretPhaseStart = ProcessInfo.processInfo.systemUptime
 #endif
         interpretKeyEvents([translationEvent])
 #if DEBUG
         interpretMs = (ProcessInfo.processInfo.systemUptime - interpretPhaseStart) * 1000.0
-        CmuxTypingTiming.logDuration(
+        ZmuxTypingTiming.logDuration(
             path: "terminal.keyDown.interpretKeyEvents",
             startedAt: interpretTimingStart,
             event: event
@@ -7354,7 +7354,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
                 if shouldSendText(text) {
                     shouldRefreshAfterTextInput = true
 #if DEBUG
-                    let sendTimingStart = CmuxTypingTiming.start()
+                    let sendTimingStart = ZmuxTypingTiming.start()
                     let ghosttySendStart = ProcessInfo.processInfo.systemUptime
 #endif
                     text.withCString { ptr in
@@ -7373,7 +7373,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
                     }
 #if DEBUG
                     ghosttySendMs += (ProcessInfo.processInfo.systemUptime - ghosttySendStart) * 1000.0
-                    CmuxTypingTiming.logDuration(
+                    ZmuxTypingTiming.logDuration(
                         path: "terminal.keyDown.accumulatedGhosttySend.total",
                         startedAt: sendTimingStart,
                         event: event,
@@ -7433,7 +7433,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
                    !suppressComposingFallbackText {
                     shouldRefreshAfterTextInput = true
 #if DEBUG
-                    let sendTimingStart = CmuxTypingTiming.start()
+                    let sendTimingStart = ZmuxTypingTiming.start()
                     let ghosttySendStart = ProcessInfo.processInfo.systemUptime
 #endif
                     text.withCString { ptr in
@@ -7452,7 +7452,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
                     }
 #if DEBUG
                     ghosttySendMs += (ProcessInfo.processInfo.systemUptime - ghosttySendStart) * 1000.0
-                    CmuxTypingTiming.logDuration(
+                    ZmuxTypingTiming.logDuration(
                         path: "terminal.keyDown.ghosttySend.total",
                         startedAt: sendTimingStart,
                         event: event,
@@ -7523,7 +7523,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
         event: NSEvent? = nil,
         extra: String? = nil
     ) -> Bool {
-        let timingStart = CmuxTypingTiming.start()
+        let timingStart = ZmuxTypingTiming.start()
         let handled = sendGhosttyKey(surface, keyEvent)
         let baseExtra = "handled=\(handled ? 1 : 0)"
         let mergedExtra: String
@@ -7532,7 +7532,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
         } else {
             mergedExtra = baseExtra
         }
-        CmuxTypingTiming.logDuration(path: path, startedAt: timingStart, event: event, extra: mergedExtra)
+        ZmuxTypingTiming.logDuration(path: path, startedAt: timingStart, event: event, extra: mergedExtra)
         return handled
     }
 #endif
@@ -7574,7 +7574,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
         }
 
         if !hasMarkedText(),
-           let action = cmuxGhosttyModifierActionForFlagsChanged(
+           let action = zmuxGhosttyModifierActionForFlagsChanged(
             keyCode: event.keyCode,
             modifierFlagsRawValue: event.modifierFlags.rawValue
            ) {
@@ -7646,8 +7646,8 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
         let effectiveFlags = suppressCommandPathHover ? flags.subtracting(.command) : flags
 #if DEBUG
         if suppressCommandPathHover, flags.contains(.command) {
-            _ = CmuxUITestCapture.mutateJSONObjectIfConfigured(
-                envKey: "CMUX_UI_TEST_CMD_HOVER_DIAGNOSTICS_PATH"
+            _ = ZmuxUITestCapture.mutateJSONObjectIfConfigured(
+                envKey: "ZMUX_UI_TEST_CMD_HOVER_DIAGNOSTICS_PATH"
             ) { payload in
                 payload["suppressed_command_hover_count"] = (payload["suppressed_command_hover_count"] as? Int ?? 0) + 1
             }
@@ -7868,7 +7868,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
         var payload = data
         payload["surface_id"] = terminalSurface?.id.uuidString ?? "nil"
         payload["word_path_hover_active"] = wordPathHoverActive
-        CmuxRuntimeDebugCapture.logIfConfigured(
+        ZmuxRuntimeDebugCapture.logIfConfigured(
             hypothesisID: hypothesisID,
             source: "GhosttyNSView.\(name)",
             name: name,
@@ -7897,7 +7897,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
 
     private func requestPointerFocusRecovery() {
 #if DEBUG
-        cmuxDebugLog("focus.pointerDown surface=\(terminalSurface?.id.uuidString.prefix(5) ?? "nil")")
+        zmuxDebugLog("focus.pointerDown surface=\(terminalSurface?.id.uuidString.prefix(5) ?? "nil")")
 #endif
         onFocus?()
     }
@@ -7905,7 +7905,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
     override func mouseDown(with event: NSEvent) {
         #if DEBUG
         let debugPoint = convert(event.locationInWindow, from: nil)
-        cmuxDebugLog("terminal.mouseDown surface=\(terminalSurface?.id.uuidString.prefix(5) ?? "nil") mods=[\(debugModifierString(event.modifierFlags))] clickCount=\(event.clickCount) point=(\(String(format: "%.0f", debugPoint.x)),\(String(format: "%.0f", debugPoint.y)))")
+        zmuxDebugLog("terminal.mouseDown surface=\(terminalSurface?.id.uuidString.prefix(5) ?? "nil") mods=[\(debugModifierString(event.modifierFlags))] clickCount=\(event.clickCount) point=(\(String(format: "%.0f", debugPoint.x)),\(String(format: "%.0f", debugPoint.y)))")
         #endif
         // Split reparent/layout churn can suppress the later `becomeFirstResponder -> onFocus`
         // callback. Treat pointer-down as explicit focus intent so clicking a ghost pane still
@@ -7938,7 +7938,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
 
     override func mouseUp(with event: NSEvent) {
         #if DEBUG
-        cmuxDebugLog("terminal.mouseUp surface=\(terminalSurface?.id.uuidString.prefix(5) ?? "nil") mods=[\(debugModifierString(event.modifierFlags))]")
+        zmuxDebugLog("terminal.mouseUp surface=\(terminalSurface?.id.uuidString.prefix(5) ?? "nil") mods=[\(debugModifierString(event.modifierFlags))]")
         #endif
         guard let surface = surface else { return }
         let point = convert(event.locationInWindow, from: nil)
@@ -7952,7 +7952,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
         guard let resolution = resolveWordUnderCursorPath(at: point) else { return }
 
         #if DEBUG
-        cmuxDebugLog("link.wordFallback resolved=\(resolution.path) source=\(resolution.source.rawValue)")
+        zmuxDebugLog("link.wordFallback resolved=\(resolution.path) source=\(resolution.source.rawValue)")
         #endif
 
         PreferredEditorSettings.open(URL(fileURLWithPath: resolution.path))
@@ -7993,11 +7993,11 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
                 let wordData = Data(bytes: ptr, count: Int(text.text_len))
                 if let decodedWord = String(bytes: wordData, encoding: .utf8) {
 #if DEBUG
-                    let resolvedQuicklookWord = cmuxTerminalCmdClickQuicklookOverride(decodedWord)
+                    let resolvedQuicklookWord = zmuxTerminalCmdClickQuicklookOverride(decodedWord)
 #else
                     let resolvedQuicklookWord = decodedWord
 #endif
-                    if let resolvedPath = cmuxResolveQuicklookPath(resolvedQuicklookWord, cwd: cwd) {
+                    if let resolvedPath = zmuxResolveQuicklookPath(resolvedQuicklookWord, cwd: cwd) {
                         quicklookResolution = makeWordPathResolution(
                             path: resolvedPath,
                             source: .quicklook,
@@ -8010,7 +8010,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
             var viewportResolution: WordPathResolution?
             if text.offset_len > 0 {
 #if DEBUG
-                let viewportOffsetStart = cmuxTerminalCmdClickViewportOffsetDelta(Int(text.offset_start))
+                let viewportOffsetStart = zmuxTerminalCmdClickViewportOffsetDelta(Int(text.offset_start))
 #else
                 let viewportOffsetStart = Int(text.offset_start)
 #endif
@@ -8045,9 +8045,9 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
     }
 
     #if DEBUG
-    private func cmuxTerminalCmdClickQuicklookOverride(_ decodedWord: String) -> String {
+    private func zmuxTerminalCmdClickQuicklookOverride(_ decodedWord: String) -> String {
         let env = ProcessInfo.processInfo.environment
-        guard let override = env["CMUX_UI_TEST_TERMINAL_CMD_CLICK_QUICKLOOK_OVERRIDE"]?
+        guard let override = env["ZMUX_UI_TEST_TERMINAL_CMD_CLICK_QUICKLOOK_OVERRIDE"]?
             .trimmingCharacters(in: .whitespacesAndNewlines),
               !override.isEmpty else {
             return decodedWord
@@ -8055,9 +8055,9 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
         return override
     }
 
-    private func cmuxTerminalCmdClickViewportOffsetDelta(_ viewportOffsetStart: Int) -> Int {
+    private func zmuxTerminalCmdClickViewportOffsetDelta(_ viewportOffsetStart: Int) -> Int {
         let env = ProcessInfo.processInfo.environment
-        guard let delta = env["CMUX_UI_TEST_TERMINAL_CMD_CLICK_VIEWPORT_OFFSET_DELTA"]?
+        guard let delta = env["ZMUX_UI_TEST_TERMINAL_CMD_CLICK_VIEWPORT_OFFSET_DELTA"]?
             .trimmingCharacters(in: .whitespacesAndNewlines),
               let parsedDelta = Int(delta) else {
             return viewportOffsetStart
@@ -8196,14 +8196,14 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
             terminalPanel: panel,
             lineLimit: max(200, rows * 4)
         ) ?? ""
-        let visibleLines = cmuxVisibleTerminalLines(from: visibleText, rows: rows)
+        let visibleLines = zmuxVisibleTerminalLines(from: visibleText, rows: rows)
         let rowOffset = max(0, rows - visibleLines.count)
         let rowFromTop = max(0, min(rows - 1, viewportOffsetStart / cols))
         let visibleRow = rowFromTop - rowOffset
         guard visibleRow >= 0, visibleRow < visibleLines.count else { return nil }
 
         let column = max(0, min(cols - 1, viewportOffsetStart % cols))
-        guard let resolution = cmuxResolveVisibleLinePath(
+        guard let resolution = zmuxResolveVisibleLinePath(
             visibleLines[visibleRow],
             column: column,
             cwd: cwd
@@ -8240,7 +8240,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
             terminalPanel: panel,
             lineLimit: max(200, rows * 4)
         ) ?? ""
-        let visibleLines = cmuxVisibleTerminalLines(from: visibleText, rows: rows)
+        let visibleLines = zmuxVisibleTerminalLines(from: visibleText, rows: rows)
         let rowOffset = max(0, rows - visibleLines.count)
         let xInset = max(0, (bounds.width - (CGFloat(cols) * resolvedCellWidth)) / 2)
         let yInset = max(0, (bounds.height - (CGFloat(rows) * resolvedCellHeight)) / 2)
@@ -8251,7 +8251,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
         guard visibleRow >= 0, visibleRow < visibleLines.count else { return nil }
 
         let column = max(0, min(cols - 1, Int((point.x - xInset) / resolvedCellWidth)))
-        guard let resolution = cmuxResolveVisibleLinePath(
+        guard let resolution = zmuxResolveVisibleLinePath(
             visibleLines[visibleRow],
             column: column,
             cwd: cwd
@@ -8355,7 +8355,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
         }
 
         #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "link.wordFallback resolved=\(resolution.path) source=\(resolution.source.rawValue) consumed=\(ghosttyConsumed ? 1 : 0)"
         )
         var payload: [String: Any] = [
@@ -8830,7 +8830,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
     deinit {
         // Surface lifecycle is managed by TerminalSurface, not the view
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "surface.view.deinit view=\(Unmanaged.passUnretained(self).toOpaque()) " +
             "surface=\(terminalSurface?.id.uuidString.prefix(5) ?? "nil") " +
             "inWindow=\(window != nil ? 1 : 0) hasSuperview=\(superview != nil ? 1 : 0)"
@@ -8958,7 +8958,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
                 }
             },
             uploadDetectedSSH: { _, _, _, finish in
-                finish(.failure(NSError(domain: "cmux.remote.drop", code: 4)))
+                finish(.failure(NSError(domain: "zmux.remote.drop", code: 4)))
             },
             insertText: sendText,
             onFailure: { _ in onFailure() }
@@ -8994,7 +8994,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
                 guard let workspace = MainActor.assumeIsolated({
                     self?.terminalSurface?.owningWorkspace()
                 }) else {
-                    finish(.failure(NSError(domain: "cmux.remote.drop", code: 3)))
+                    finish(.failure(NSError(domain: "zmux.remote.drop", code: 3)))
                     GhosttyPasteboardHelper.cleanupTransferredTemporaryImageFiles(fileURLs)
                     return
                 }
@@ -9040,7 +9040,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
                 DispatchQueue.main.async {
                     NSSound.beep()
 #if DEBUG
-                    cmuxDebugLog("terminal.remoteDropUpload.failed surface=\(self?.terminalSurface?.id.uuidString.prefix(5) ?? "nil")")
+                    zmuxDebugLog("terminal.remoteDropUpload.failed surface=\(self?.terminalSurface?.id.uuidString.prefix(5) ?? "nil")")
 #endif
                 }
             }
@@ -9097,7 +9097,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
     fileprivate func debugSimulateFileDrop(paths: [String]) -> Bool {
         guard !paths.isEmpty else { return false }
         let urls = paths.map { URL(fileURLWithPath: $0) as NSURL }
-        let pbName = NSPasteboard.Name("cmux.debug.drop.\(UUID().uuidString)")
+        let pbName = NSPasteboard.Name("zmux.debug.drop.\(UUID().uuidString)")
         let pasteboard = NSPasteboard(name: pbName)
         pasteboard.clearContents()
         pasteboard.writeObjects(urls)
@@ -9114,7 +9114,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
     override func draggingEntered(_ sender: any NSDraggingInfo) -> NSDragOperation {
         #if DEBUG
         let types = sender.draggingPasteboard.types ?? []
-        cmuxDebugLog("terminal.draggingEntered surface=\(terminalSurface?.id.uuidString.prefix(5) ?? "nil") types=\(types.map(\.rawValue))")
+        zmuxDebugLog("terminal.draggingEntered surface=\(terminalSurface?.id.uuidString.prefix(5) ?? "nil") types=\(types.map(\.rawValue))")
         #endif
         guard let types = sender.draggingPasteboard.types else { return [] }
         // Defer to bonsplit when a tab/session drag is in flight: bonsplit's pane
@@ -9131,7 +9131,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
     override func draggingUpdated(_ sender: any NSDraggingInfo) -> NSDragOperation {
         #if DEBUG
         let types = sender.draggingPasteboard.types ?? []
-        cmuxDebugLog("terminal.draggingUpdated surface=\(terminalSurface?.id.uuidString.prefix(5) ?? "nil") types=\(types.map(\.rawValue))")
+        zmuxDebugLog("terminal.draggingUpdated surface=\(terminalSurface?.id.uuidString.prefix(5) ?? "nil") types=\(types.map(\.rawValue))")
         #endif
         guard let types = sender.draggingPasteboard.types else { return [] }
         if types.contains(Self.tabTransferPasteboardType) || types.contains(Self.sidebarTabReorderPasteboardType) {
@@ -9149,7 +9149,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
             return false
         }
         #if DEBUG
-        cmuxDebugLog("terminal.fileDrop surface=\(terminalSurface?.id.uuidString.prefix(5) ?? "nil")")
+        zmuxDebugLog("terminal.fileDrop surface=\(terminalSurface?.id.uuidString.prefix(5) ?? "nil")")
         #endif
         return insertDroppedPasteboard(sender.draggingPasteboard)
     }
@@ -9357,7 +9357,7 @@ final class GhosttySurfaceScrollView: NSView {
     private var lastDragGeometryLogSignature: String?
     private var dragLayoutLogSequence: UInt64 = 0
     private static let tabTransferPasteboardType = NSPasteboard.PasteboardType("com.splittabbar.tabtransfer")
-    private static let sidebarTabReorderPasteboardType = NSPasteboard.PasteboardType("com.cmux.sidebar-tab-reorder")
+    private static let sidebarTabReorderPasteboardType = NSPasteboard.PasteboardType("com.zmux.sidebar-tab-reorder")
     private static var flashCounts: [UUID: Int] = [:]
     private static var drawCounts: [UUID: Int] = [:]
     private static var lastDrawTimes: [UUID: CFTimeInterval] = [:]
@@ -9573,8 +9573,8 @@ final class GhosttySurfaceScrollView: NSView {
         inactiveOverlayView.isHidden = true
         addSubview(inactiveOverlayView)
         dropZoneOverlayView.wantsLayer = true
-        dropZoneOverlayView.layer?.backgroundColor = cmuxAccentNSColor().withAlphaComponent(0.25).cgColor
-        dropZoneOverlayView.layer?.borderColor = cmuxAccentNSColor().cgColor
+        dropZoneOverlayView.layer?.backgroundColor = zmuxAccentNSColor().withAlphaComponent(0.25).cgColor
+        dropZoneOverlayView.layer?.borderColor = zmuxAccentNSColor().cgColor
         dropZoneOverlayView.layer?.borderWidth = 2
         dropZoneOverlayView.layer?.cornerRadius = 8
         dropZoneOverlayView.isHidden = true
@@ -9852,7 +9852,7 @@ final class GhosttySurfaceScrollView: NSView {
 
     deinit {
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "surface.hosted.deinit surface=\(debugSurfaceId?.uuidString.prefix(5) ?? "nil") " +
             "inWindow=\(window != nil ? 1 : 0) hasSuperview=\(superview != nil ? 1 : 0) " +
             "hidden=\(isHidden ? 1 : 0) frame=\(String(format: "%.1fx%.1f", frame.width, frame.height))"
@@ -10089,7 +10089,7 @@ final class GhosttySurfaceScrollView: NSView {
             "\(String(format: "%.1f,%.1f", new.x, new.y))|\(overlaySuperviewClass)|\(dropZoneOverlayView.isHidden ? 1 : 0)"
         guard lastDragGeometryLogSignature != signature else { return }
         lastDragGeometryLogSignature = signature
-        cmuxDebugLog(
+        zmuxDebugLog(
             "terminal.dragGeometry event=\(event) surface=\(surface) " +
             "old=\(String(format: "%.1f,%.1f", old.x, old.y)) " +
             "new=\(String(format: "%.1f,%.1f", new.x, new.y)) " +
@@ -10116,7 +10116,7 @@ final class GhosttySurfaceScrollView: NSView {
         let pendingZone = pendingDropZone.map { String(describing: $0) } ?? "none"
         let event = eventType.map { String(describing: $0) } ?? "nil"
         let overlaySuperviewClass = dropZoneOverlayView.superview.map { String(describing: type(of: $0)) } ?? "nil"
-        cmuxDebugLog(
+        zmuxDebugLog(
             "terminal.layout.drag surface=\(surface) seq=\(dragLayoutLogSequence) " +
             "activeZone=\(activeZone) pendingZone=\(pendingZone) " +
             "hasTabDrag=\(hasTabDrag ? 1 : 0) hasSidebarDrag=\(hasSidebarDrag ? 1 : 0) " +
@@ -10143,7 +10143,7 @@ final class GhosttySurfaceScrollView: NSView {
             guard let self else { return }
             let searchActive = self.surfaceView.terminalSurface?.searchState != nil
 #if DEBUG
-            cmuxDebugLog("find.window.didBecomeKey surface=\(self.surfaceView.terminalSurface?.id.uuidString.prefix(5) ?? "nil") searchActive=\(searchActive) focusTarget=\(self.searchFocusTarget) firstResponder=\(String(describing: self.window?.firstResponder))")
+            zmuxDebugLog("find.window.didBecomeKey surface=\(self.surfaceView.terminalSurface?.id.uuidString.prefix(5) ?? "nil") searchActive=\(searchActive) focusTarget=\(self.searchFocusTarget) firstResponder=\(String(describing: self.window?.firstResponder))")
 #endif
             self.scheduleAutomaticFirstResponderApply(reason: "didBecomeKey")
         })
@@ -10159,12 +10159,12 @@ final class GhosttySurfaceScrollView: NSView {
             if let fr = window.firstResponder as? NSView,
                fr === self.surfaceView || fr.isDescendant(of: self.surfaceView) {
 #if DEBUG
-                cmuxDebugLog("find.window.didResignKey surface=\(self.surfaceView.terminalSurface?.id.uuidString.prefix(5) ?? "nil") searchActive=\(searchActive) resigningFirstResponder")
+                zmuxDebugLog("find.window.didResignKey surface=\(self.surfaceView.terminalSurface?.id.uuidString.prefix(5) ?? "nil") searchActive=\(searchActive) resigningFirstResponder")
 #endif
                 window.makeFirstResponder(nil)
             } else {
 #if DEBUG
-                cmuxDebugLog("find.window.didResignKey surface=\(self.surfaceView.terminalSurface?.id.uuidString.prefix(5) ?? "nil") searchActive=\(searchActive) firstResponder=\(String(describing: window.firstResponder)) (not terminal, skipping)")
+                zmuxDebugLog("find.window.didResignKey surface=\(self.surfaceView.terminalSurface?.id.uuidString.prefix(5) ?? "nil") searchActive=\(searchActive) firstResponder=\(String(describing: window.firstResponder)) (not terminal, skipping)")
 #endif
             }
         })
@@ -10481,7 +10481,7 @@ final class GhosttySurfaceScrollView: NSView {
         surfaceView.terminalSurface?.setFocus(false)
         let result = window.makeFirstResponder(field)
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "find.mountedFieldFocus surface=\(surfaceView.terminalSurface?.id.uuidString.prefix(5) ?? "nil") " +
             "result=\(result ? 1 : 0) attemptsRemaining=\(attemptsRemaining) " +
             "firstResponder=\(String(describing: window.firstResponder))"
@@ -10520,7 +10520,7 @@ final class GhosttySurfaceScrollView: NSView {
                 return
             }
 #if DEBUG
-            cmuxDebugLog("find.setSearchOverlay REMOVE surface=\(surfaceView.terminalSurface?.id.uuidString.prefix(5) ?? "nil") hadOverlay=\(hadOverlay)")
+            zmuxDebugLog("find.setSearchOverlay REMOVE surface=\(surfaceView.terminalSurface?.id.uuidString.prefix(5) ?? "nil") hadOverlay=\(hadOverlay)")
 #endif
             scheduleDeferredSearchOverlayMutation(generation: mutationGeneration) { [weak self] in
                 self?.searchOverlayHostingView?.removeFromSuperview()
@@ -10541,7 +10541,7 @@ final class GhosttySurfaceScrollView: NSView {
 
         let hadOverlay = searchOverlayHostingView != nil
 #if DEBUG
-        cmuxDebugLog("find.setSearchOverlay MOUNT surface=\(terminalSurface.id.uuidString.prefix(5)) existingOverlay=\(hadOverlay ? "yes(update)" : "no(create)")")
+        zmuxDebugLog("find.setSearchOverlay MOUNT surface=\(terminalSurface.id.uuidString.prefix(5)) existingOverlay=\(hadOverlay ? "yes(update)" : "no(create)")")
 #endif
 
         let rootView = makeSearchOverlayRootView(
@@ -10789,7 +10789,7 @@ final class GhosttySurfaceScrollView: NSView {
             "\(scrollOriginText)|\(surfaceOriginText)|\(dropZoneOverlayView.isHidden ? 1 : 0)"
         guard lastDropZoneOverlayLogSignature != signature else { return }
         lastDropZoneOverlayLogSignature = signature
-        cmuxDebugLog(
+        zmuxDebugLog(
             "terminal.dropOverlay event=\(event) surface=\(surface) zone=\(zoneText) " +
             "hidden=\(dropZoneOverlayView.isHidden ? 1 : 0) bounds=\(boundsText) frame=\(frameText) " +
             "overlaySuper=\(overlaySuperviewClass) overlayExternal=\(dropZoneOverlayView.superview === self ? 0 : 1) " +
@@ -10823,7 +10823,7 @@ final class GhosttySurfaceScrollView: NSView {
                     return CAMediaTimingFunction(name: .easeOut)
                 }
             }
-            self.flashLayer.add(animation, forKey: "cmux.flash")
+            self.flashLayer.add(animation, forKey: "zmux.flash")
         }
     }
 
@@ -10908,11 +10908,11 @@ final class GhosttySurfaceScrollView: NSView {
 #if DEBUG
     private func debugLogWorkspaceSwitchTiming(event: String, suffix: String) {
         guard let snapshot = AppDelegate.shared?.tabManager?.debugCurrentWorkspaceSwitchSnapshot() else {
-            cmuxDebugLog("\(event) id=none \(suffix)")
+            zmuxDebugLog("\(event) id=none \(suffix)")
             return
         }
         let dtMs = (CACurrentMediaTime() - snapshot.startedAt) * 1000
-        cmuxDebugLog("\(event) id=\(snapshot.id) dt=\(String(format: "%.2fms", dtMs)) \(suffix)")
+        zmuxDebugLog("\(event) id=\(snapshot.id) dt=\(String(format: "%.2fms", dtMs)) \(suffix)")
     }
 
     private func debugFirstResponderLabel() -> String {
@@ -10951,7 +10951,7 @@ final class GhosttySurfaceScrollView: NSView {
 #if DEBUG
         let surfaceShort = String(self.surfaceView.terminalSurface?.id.uuidString.prefix(5) ?? "nil")
         let searchActive = self.surfaceView.terminalSurface?.searchState != nil
-        cmuxDebugLog(
+        zmuxDebugLog(
             "find.moveFocus to=\(surfaceShort) " +
             "from=\(previous?.surfaceView.terminalSurface?.id.uuidString.prefix(5) ?? "nil") " +
             "searchState=\(searchActive ? "active" : "nil") " +
@@ -10970,7 +10970,7 @@ final class GhosttySurfaceScrollView: NSView {
             }
             let result = window.makeFirstResponder(self.surfaceView)
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "find.moveFocus.apply to=\(self.surfaceView.terminalSurface?.id.uuidString.prefix(5) ?? "nil") " +
                 "result=\(result ? 1 : 0) before=\(before) after=\(String(describing: window.firstResponder))"
             )
@@ -11050,7 +11050,7 @@ final class GhosttySurfaceScrollView: NSView {
     /// Handle file/URL drops, forwarding to the terminal as shell-escaped paths.
     func handleDroppedURLs(_ urls: [URL]) -> Bool {
         #if DEBUG
-        cmuxDebugLog("terminal.swiftUIDrop surface=\(surfaceView.terminalSurface?.id.uuidString.prefix(5) ?? "nil") urls=\(urls.map(\.lastPathComponent))")
+        zmuxDebugLog("terminal.swiftUIDrop surface=\(surfaceView.terminalSurface?.id.uuidString.prefix(5) ?? "nil") urls=\(urls.map(\.lastPathComponent))")
         #endif
         return surfaceView.handleDroppedFileURLs(urls)
     }
@@ -11135,7 +11135,7 @@ final class GhosttySurfaceScrollView: NSView {
         guard let window else { return }
         guard surfaceView.isVisibleInUI else {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "focus.ensure.defer surface=\(surfaceView.terminalSurface?.id.uuidString.prefix(5) ?? "nil") " +
                 "reason=not_visible"
             )
@@ -11145,7 +11145,7 @@ final class GhosttySurfaceScrollView: NSView {
         }
         guard !isHiddenForFocus, hasUsablePortalGeometry else {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "focus.ensure.defer surface=\(surfaceView.terminalSurface?.id.uuidString.prefix(5) ?? "nil") " +
                 "reason=hidden_or_tiny hidden=\(isHiddenForFocus ? 1 : 0) " +
                 "frame=\(String(format: "%.1fx%.1f", bounds.width, bounds.height))"
@@ -11187,7 +11187,7 @@ final class GhosttySurfaceScrollView: NSView {
         // Search focus restoration — only after confirming this is the active tab/pane.
         if surfaceView.terminalSurface?.searchState != nil {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "focus.ensure.search surface=\(surfaceView.terminalSurface?.id.uuidString.prefix(5) ?? "nil") " +
                 "tab=\(tabId.uuidString.prefix(5)) panel=\(surfaceId.uuidString.prefix(5)) " +
                 "firstResponder=\(String(describing: window.firstResponder))"
@@ -11231,7 +11231,7 @@ final class GhosttySurfaceScrollView: NSView {
         }
         let result = window.makeFirstResponder(surfaceView)
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "focus.ensure.apply surface=\(surfaceView.terminalSurface?.id.uuidString.prefix(5) ?? "nil") " +
             "tab=\(tabId.uuidString.prefix(5)) panel=\(surfaceId.uuidString.prefix(5)) " +
             "result=\(result ? 1 : 0) firstResponder=\(String(describing: window.firstResponder))"
@@ -11293,7 +11293,7 @@ final class GhosttySurfaceScrollView: NSView {
         guard let window, window.isKeyWindow else { return }
         guard !isHiddenForFocus, hasUsablePortalGeometry else {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "focus.reparent.resume.defer surface=\(surfaceShort) " +
                 "reason=hidden_or_tiny hidden=\(isHiddenForFocus ? 1 : 0) " +
                 "frame=\(String(format: "%.1fx%.1f", bounds.width, bounds.height))"
@@ -11304,7 +11304,7 @@ final class GhosttySurfaceScrollView: NSView {
         }
         if !surfaceOwnsFirstResponder && !isSurfaceViewFirstResponder() {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "focus.reparent.resume.restoreFirstResponder surface=\(surfaceShort) " +
                 "firstResponder=\(String(describing: window.firstResponder))"
             )
@@ -11313,7 +11313,7 @@ final class GhosttySurfaceScrollView: NSView {
                   isSurfaceViewFirstResponder() else { return }
         }
 #if DEBUG
-        cmuxDebugLog("focus.reparent.resume surface=\(surfaceShort) firstResponder=\(String(describing: window.firstResponder))")
+        zmuxDebugLog("focus.reparent.resume surface=\(surfaceShort) firstResponder=\(String(describing: window.firstResponder))")
 #endif
         reassertTerminalSurfaceFocus(reason: "clearSuppressReparentFocus")
     }
@@ -11362,7 +11362,7 @@ final class GhosttySurfaceScrollView: NSView {
             self.pendingAutomaticFirstResponderApply = false
 #if DEBUG
             let surfaceShort = String(self.surfaceView.terminalSurface?.id.uuidString.prefix(5) ?? "nil")
-            cmuxDebugLog("find.applyFirstResponder.defer surface=\(surfaceShort) reason=\(reason)")
+            zmuxDebugLog("find.applyFirstResponder.defer surface=\(surfaceShort) reason=\(reason)")
 #endif
             self.applyFirstResponderIfNeeded()
         }
@@ -11374,7 +11374,7 @@ final class GhosttySurfaceScrollView: NSView {
             terminalSurface.requestBackgroundSurfaceStartIfNeeded()
         }
 #if DEBUG
-        cmuxDebugLog("focus.surface.reassert surface=\(terminalSurface.id.uuidString.prefix(5)) reason=\(reason)")
+        zmuxDebugLog("focus.surface.reassert surface=\(terminalSurface.id.uuidString.prefix(5)) reason=\(reason)")
 #endif
         terminalSurface.setFocus(true)
         refreshSurfaceAfterFocusIfNeeded(reason: reason)
@@ -11393,7 +11393,7 @@ final class GhosttySurfaceScrollView: NSView {
         }
         lastFocusRefreshAt = now
 #if DEBUG
-        cmuxDebugLog("focus.surface.refresh surface=\(terminalSurface.id.uuidString.prefix(5)) reason=\(reason)")
+        zmuxDebugLog("focus.surface.refresh surface=\(terminalSurface.id.uuidString.prefix(5)) reason=\(reason)")
 #endif
         terminalSurface.forceRefresh(reason: "focus.surface.\(reason)")
     }
@@ -11410,7 +11410,7 @@ final class GhosttySurfaceScrollView: NSView {
         guard surfaceView.isVisibleInUI else { return }
         guard !isHiddenForFocus, hasUsablePortalGeometry else {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "focus.apply.skip surface=\(surfaceShort) " +
                 "reason=hidden_or_tiny hidden=\(isHiddenForFocus ? 1 : 0) frame=\(String(format: "%.1fx%.1f", bounds.width, bounds.height))"
             )
@@ -11422,7 +11422,7 @@ final class GhosttySurfaceScrollView: NSView {
               let panelId = surfaceView.terminalSurface?.id,
               matchesCurrentTerminalFocusTarget(tabId: tabId, surfaceId: panelId) else {
 #if DEBUG
-            cmuxDebugLog("focus.apply.skip surface=\(surfaceShort) reason=stale_target")
+            zmuxDebugLog("focus.apply.skip surface=\(surfaceShort) reason=stale_target")
 #endif
             return
         }
@@ -11434,7 +11434,7 @@ final class GhosttySurfaceScrollView: NSView {
         }
         if AppDelegate.shared?.isCommandPaletteEffectivelyVisible(for: window) == true {
 #if DEBUG
-            cmuxDebugLog("find.applyFirstResponder SKIP surface=\(surfaceShort) reason=commandPaletteVisible")
+            zmuxDebugLog("find.applyFirstResponder SKIP surface=\(surfaceShort) reason=commandPaletteVisible")
 #endif
             return
         }
@@ -11451,7 +11451,7 @@ final class GhosttySurfaceScrollView: NSView {
         // Don't steal focus from a search overlay on another surface in this window.
         if let fr = window.firstResponder, isSearchOverlayOrDescendant(fr) {
 #if DEBUG
-            cmuxDebugLog("find.applyFirstResponder SKIP surface=\(surfaceShort) reason=searchOverlayFocused")
+            zmuxDebugLog("find.applyFirstResponder SKIP surface=\(surfaceShort) reason=searchOverlayFocused")
 #endif
             return
         }
@@ -11462,12 +11462,12 @@ final class GhosttySurfaceScrollView: NSView {
            firstResponder is NSText || AppDelegate.shared?.isRightSidebarFocusResponder(firstResponder, in: window) == true {
 #if DEBUG
             let reason = firstResponder is NSText ? "textEditorFocused" : "rightSidebarFocused"
-            cmuxDebugLog("find.applyFirstResponder SKIP surface=\(surfaceShort) reason=\(reason)")
+            zmuxDebugLog("find.applyFirstResponder SKIP surface=\(surfaceShort) reason=\(reason)")
 #endif
             return
         }
 #if DEBUG
-        cmuxDebugLog("find.applyFirstResponder APPLY surface=\(surfaceShort) prevFirstResponder=\(String(describing: window.firstResponder))")
+        zmuxDebugLog("find.applyFirstResponder APPLY surface=\(surfaceShort) prevFirstResponder=\(String(describing: window.firstResponder))")
 #endif
         window.makeFirstResponder(surfaceView)
         if isSurfaceViewFirstResponder() {
@@ -11485,7 +11485,7 @@ final class GhosttySurfaceScrollView: NSView {
                isCurrentSurfaceSearchFieldResponder(firstResponder) {
                 surfaceView.terminalSurface?.setFocus(false)
 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "find.restoreSearchFocus.skip surface=\(surfaceShort) target=searchField " +
                     "reason=alreadyFocused firstResponder=\(String(describing: firstResponder))"
                 )
@@ -11497,7 +11497,7 @@ final class GhosttySurfaceScrollView: NSView {
                !isCurrentSurfaceSearchResponder(firstResponder) {
                 surfaceView.terminalSurface?.setFocus(false)
 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "find.restoreSearchFocus.skip surface=\(surfaceShort) target=searchField " +
                     "reason=foreignSearchResponder firstResponder=\(String(describing: firstResponder))"
                 )
@@ -11516,7 +11516,7 @@ final class GhosttySurfaceScrollView: NSView {
                 NotificationCenter.default.post(name: .ghosttySearchFocus, object: terminalSurface)
             }
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "find.restoreSearchFocus surface=\(surfaceShort) target=searchField " +
                 "via=notification firstResponder=\(String(describing: window.firstResponder))"
             )
@@ -11524,7 +11524,7 @@ final class GhosttySurfaceScrollView: NSView {
         case .terminal:
             let result = requestSurfaceFirstResponder(in: window, reason: "restoreSearchFocus.terminal")
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "find.restoreSearchFocus surface=\(surfaceShort) target=terminal " +
                 "result=\(result ? 1 : 0) firstResponder=\(String(describing: window.firstResponder))"
             )
@@ -11551,7 +11551,7 @@ final class GhosttySurfaceScrollView: NSView {
 
 #if DEBUG
         if alreadyFocused {
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "find.restoreSearchFocus.skip surface=\(surfaceShort) target=searchField " +
                 "reason=mountedFieldAlreadyFocused firstResponder=\(String(describing: firstResponder))"
             )
@@ -11563,7 +11563,7 @@ final class GhosttySurfaceScrollView: NSView {
         let ownsField = mountedSearchFieldOwnsResponder(window.firstResponder, field: field)
 
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "find.restoreSearchFocus surface=\(surfaceShort) target=searchField " +
             "via=mountedField result=\(result ? 1 : 0) firstResponder=\(String(describing: window.firstResponder))"
         )
@@ -11617,7 +11617,7 @@ final class GhosttySurfaceScrollView: NSView {
             searchFocusTarget = .searchField
         }
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "find.preparePanelFocusIntent surface=\(surfaceView.terminalSurface?.id.uuidString.prefix(5) ?? "nil") " +
             "target=\(intent == .findField ? "searchField" : "terminal")"
         )
@@ -11646,7 +11646,7 @@ final class GhosttySurfaceScrollView: NSView {
                 NotificationCenter.default.post(name: .ghosttySearchFocus, object: terminalSurface)
             }
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "find.restorePanelFocusIntent surface=\(terminalSurface.id.uuidString.prefix(5)) " +
                 "target=searchField firstResponder=\(String(describing: window?.firstResponder))"
             )
@@ -11677,7 +11677,7 @@ final class GhosttySurfaceScrollView: NSView {
         surfaceView.terminalSurface?.setFocus(false)
         resignOwnedFirstResponderIfNeeded(reason: "yieldPanelFocusIntent")
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "focus.handoff.yield surface=\(surfaceView.terminalSurface?.id.uuidString.prefix(5) ?? "nil") " +
             "target=\(intent == .findField ? "searchField" : "terminal")"
         )
@@ -11697,7 +11697,7 @@ final class GhosttySurfaceScrollView: NSView {
         guard ownsSurfaceResponder || isCurrentSurfaceSearchResponder(firstResponder) else { return }
 
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "focus.surface.resign surface=\(surfaceView.terminalSurface?.id.uuidString.prefix(5) ?? "nil") " +
             "reason=\(reason) firstResponder=\(String(describing: firstResponder))"
         )
@@ -12300,12 +12300,12 @@ extension GhosttyNSView: NSTextInputClient {
     fileprivate func sendTextToSurface(_ chars: String, preserveLiteralEscape: Bool) {
         guard let surface = surface else { return }
 #if DEBUG
-        let typingTimingStart = CmuxTypingTiming.start()
+        let typingTimingStart = ZmuxTypingTiming.start()
 #endif
 #if DEBUG
-        cmuxWriteChildExitProbe(
+        zmuxWriteChildExitProbe(
             [
-                "probeInsertTextCharsHex": cmuxScalarHex(chars),
+                "probeInsertTextCharsHex": zmuxScalarHex(chars),
                 "probeInsertTextSurfaceId": terminalSurface?.id.uuidString ?? "",
             ],
             increments: ["probeInsertTextCount": 1]
@@ -12374,7 +12374,7 @@ extension GhosttyNSView: NSTextInputClient {
         }
         flushBufferedText()
 #if DEBUG
-        CmuxTypingTiming.logDuration(
+        ZmuxTypingTiming.logDuration(
             path: "terminal.sendTextToSurface",
             startedAt: typingTimingStart,
             extra: "textBytes=\(chars.utf8.count)"
@@ -12506,9 +12506,9 @@ extension GhosttyNSView: NSTextInputClient {
 
     func setMarkedText(_ string: Any, selectedRange: NSRange, replacementRange: NSRange) {
 #if DEBUG
-        let typingTimingStart = CmuxTypingTiming.start()
+        let typingTimingStart = ZmuxTypingTiming.start()
         defer {
-            CmuxTypingTiming.logDuration(
+            ZmuxTypingTiming.logDuration(
                 path: "terminal.setMarkedText",
                 startedAt: typingTimingStart,
                 extra: "markedLength=\(markedText.length)"
@@ -12536,9 +12536,9 @@ extension GhosttyNSView: NSTextInputClient {
     func unmarkText() {
 #if DEBUG
         let hadMarkedText = markedText.length > 0
-        let typingTimingStart = CmuxTypingTiming.start()
+        let typingTimingStart = ZmuxTypingTiming.start()
         defer {
-            CmuxTypingTiming.logDuration(
+            ZmuxTypingTiming.logDuration(
                 path: "terminal.unmarkText",
                 startedAt: typingTimingStart,
                 extra: "hadMarkedText=\(hadMarkedText ? 1 : 0)"
@@ -12557,9 +12557,9 @@ extension GhosttyNSView: NSTextInputClient {
     /// preedit overlay (e.g. for Korean, Japanese, Chinese input).
     private func syncPreedit(clearIfNeeded: Bool = true) {
 #if DEBUG
-        let typingTimingStart = CmuxTypingTiming.start()
+        let typingTimingStart = ZmuxTypingTiming.start()
         defer {
-            CmuxTypingTiming.logDuration(
+            ZmuxTypingTiming.logDuration(
                 path: "terminal.syncPreedit",
                 startedAt: typingTimingStart,
                 extra: "markedLength=\(markedText.length) clearIfNeeded=\(clearIfNeeded ? 1 : 0)"
@@ -12676,9 +12676,9 @@ extension GhosttyNSView: NSTextInputClient {
 
     func insertText(_ string: Any, replacementRange: NSRange) {
 #if DEBUG
-        let typingTimingStart = CmuxTypingTiming.start()
+        let typingTimingStart = ZmuxTypingTiming.start()
         defer {
-            CmuxTypingTiming.logDuration(
+            ZmuxTypingTiming.logDuration(
                 path: "terminal.insertText",
                 startedAt: typingTimingStart,
                 event: NSApp.currentEvent,
@@ -12706,7 +12706,7 @@ extension GhosttyNSView: NSTextInputClient {
 
 #if DEBUG
         if NSApp.currentEvent == nil {
-            cmuxDebugLog("ime.insertText.noEvent len=\(chars.count)")
+            zmuxDebugLog("ime.insertText.noEvent len=\(chars.count)")
         }
 #endif
 
@@ -12728,7 +12728,7 @@ extension GhosttyNSView: NSTextInputClient {
 
 #if DEBUG
         if sanitizedChars != chars {
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "ime.insertText.sanitized originalBytes=\(chars.utf8.count) " +
                 "sanitizedBytes=\(sanitizedChars.utf8.count)"
             )
@@ -12921,7 +12921,7 @@ struct GhosttyTerminalView: NSViewRepresentable {
         if desiredStateChanged {
             if let snapshot = AppDelegate.shared?.tabManager?.debugCurrentWorkspaceSwitchSnapshot() {
                 let dtMs = (CACurrentMediaTime() - snapshot.startedAt) * 1000
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "ws.swiftui.update id=\(snapshot.id) dt=\(String(format: "%.2fms", dtMs)) " +
                     "surface=\(terminalSurface.id.uuidString.prefix(5)) visible=\(isVisibleInUI ? 1 : 0) " +
                     "active=\(isActive ? 1 : 0) z=\(portalZPriority) " +
@@ -12929,7 +12929,7 @@ struct GhosttyTerminalView: NSViewRepresentable {
                     "hostedSuperview=\(hostedView.superview != nil ? 1 : 0)"
                 )
             } else {
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "ws.swiftui.update id=none surface=\(terminalSurface.id.uuidString.prefix(5)) " +
                     "visible=\(isVisibleInUI ? 1 : 0) active=\(isActive ? 1 : 0) z=\(portalZPriority) " +
                     "hostWindow=\(nsView.window != nil ? 1 : 0) hostedWindow=\(hostedView.window != nil ? 1 : 0) " +
@@ -12978,7 +12978,7 @@ struct GhosttyTerminalView: NSViewRepresentable {
         if coordinator.lastPaneDropZone != paneDropZone {
             let oldZone = coordinator.lastPaneDropZone.map { String(describing: $0) } ?? "none"
             let newZone = paneDropZone.map { String(describing: $0) } ?? "none"
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "terminal.paneDropZone surface=\(terminalSurface.id.uuidString.prefix(5)) " +
                 "old=\(oldZone) new=\(newZone) " +
                 "active=\(isActive ? 1 : 0) visible=\(isVisibleInUI ? 1 : 0) " +
@@ -12987,7 +12987,7 @@ struct GhosttyTerminalView: NSViewRepresentable {
             coordinator.lastPaneDropZone = paneDropZone
         }
         if paneDropZone != nil, !isVisibleInUI {
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "terminal.paneDropZone.suppress surface=\(terminalSurface.id.uuidString.prefix(5)) " +
                 "requested=\(String(describing: paneDropZone!)) visible=0 active=\(isActive ? 1 : 0)"
             )
@@ -13045,7 +13045,7 @@ struct GhosttyTerminalView: NSViewRepresentable {
                    (coordinator.lastBoundHostId != hostId ||
                     !TerminalWindowPortalRegistry.isHostedView(hostedView, boundTo: host)) {
 #if DEBUG
-                    cmuxDebugLog(
+                    zmuxDebugLog(
                         "ws.hostState.rebindOnGeometry surface=\(terminalSurface.id.uuidString.prefix(5)) " +
                         "reason=portalEntryMissing visible=\(coordinator.desiredIsVisibleInUI ? 1 : 0) " +
                         "active=\(coordinator.desiredIsActive ? 1 : 0) z=\(coordinator.desiredPortalZPriority)"
@@ -13087,7 +13087,7 @@ struct GhosttyTerminalView: NSViewRepresentable {
                 if portalBindingLive && shouldBindNow {
 #if DEBUG
                     if portalEntryMissing {
-                        cmuxDebugLog(
+                        zmuxDebugLog(
                             "ws.hostState.rebindOnUpdate surface=\(terminalSurface.id.uuidString.prefix(5)) " +
                             "reason=portalEntryMissing visible=\(coordinator.desiredIsVisibleInUI ? 1 : 0) " +
                             "active=\(coordinator.desiredIsActive ? 1 : 0) z=\(coordinator.desiredPortalZPriority)"
@@ -13116,7 +13116,7 @@ struct GhosttyTerminalView: NSViewRepresentable {
                 // that runs before the deferred bind completes won't hide the view.
 #if DEBUG
                 if desiredStateChanged {
-                    cmuxDebugLog(
+                    zmuxDebugLog(
                         "ws.hostState.deferBind surface=\(terminalSurface.id.uuidString.prefix(5)) " +
                         "reason=hostNoWindow visible=\(coordinator.desiredIsVisibleInUI ? 1 : 0) " +
                         "active=\(coordinator.desiredIsActive ? 1 : 0) z=\(coordinator.desiredPortalZPriority) " +
@@ -13148,7 +13148,7 @@ struct GhosttyTerminalView: NSViewRepresentable {
             // The currently bound host remains authoritative for immediate visible/active state.
 #if DEBUG
             if desiredStateChanged {
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "ws.hostState.deferApply surface=\(terminalSurface.id.uuidString.prefix(5)) " +
                     "reason=\(hostOwnsPortalNow ? "staleHostBinding" : "hostOwnershipRejected") " +
                     "hostWindow=\(hostWindowAttached ? 1 : 0) " +
@@ -13172,13 +13172,13 @@ struct GhosttyTerminalView: NSViewRepresentable {
         if let hostedView {
             if let snapshot = AppDelegate.shared?.tabManager?.debugCurrentWorkspaceSwitchSnapshot() {
                 let dtMs = (CACurrentMediaTime() - snapshot.startedAt) * 1000
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "ws.swiftui.dismantle id=\(snapshot.id) dt=\(String(format: "%.2fms", dtMs)) " +
                     "surface=\(hostedView.debugSurfaceId?.uuidString.prefix(5) ?? "nil") " +
                     "inWindow=\(hostedView.window != nil ? 1 : 0)"
                 )
             } else {
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "ws.swiftui.dismantle id=none surface=\(hostedView.debugSurfaceId?.uuidString.prefix(5) ?? "nil") " +
                     "inWindow=\(hostedView.window != nil ? 1 : 0)"
                 )

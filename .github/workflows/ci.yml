@@ -26,7 +26,7 @@ jobs:
       - name: Validate unit-test SwiftPM retry guard
         run: ./tests/test_ci_unit_test_spm_retry.sh
 
-      - name: Validate cmux scheme test configuration
+      - name: Validate zmux scheme test configuration
         run: ./tests/test_ci_scheme_testaction_debug.sh
 
       - name: Validate GhosttyKit checksum verification
@@ -90,13 +90,13 @@ jobs:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_DB: cmux_test
-          POSTGRES_PASSWORD: cmux
-          POSTGRES_USER: cmux
+          POSTGRES_DB: zmux_test
+          POSTGRES_PASSWORD: zmux
+          POSTGRES_USER: zmux
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U cmux -d cmux_test"
+          --health-cmd "pg_isready -U zmux -d zmux_test"
           --health-interval 1s
           --health-timeout 5s
           --health-retries 30
@@ -112,21 +112,21 @@ jobs:
 
       - name: Apply migrations
         env:
-          DATABASE_URL: postgres://cmux:cmux@localhost:5432/cmux_test
-          DIRECT_DATABASE_URL: postgres://cmux:cmux@localhost:5432/cmux_test
+          DATABASE_URL: postgres://zmux:zmux@localhost:5432/zmux_test
+          DIRECT_DATABASE_URL: postgres://zmux:zmux@localhost:5432/zmux_test
         run: bunx drizzle-kit migrate --config drizzle.config.ts
 
       - name: Re-apply migrations
         env:
-          DATABASE_URL: postgres://cmux:cmux@localhost:5432/cmux_test
-          DIRECT_DATABASE_URL: postgres://cmux:cmux@localhost:5432/cmux_test
+          DATABASE_URL: postgres://zmux:zmux@localhost:5432/zmux_test
+          DIRECT_DATABASE_URL: postgres://zmux:zmux@localhost:5432/zmux_test
         run: bunx drizzle-kit migrate --config drizzle.config.ts
 
       - name: Database behavior tests
         env:
-          CMUX_DB_TEST: "1"
-          DATABASE_URL: postgres://cmux:cmux@localhost:5432/cmux_test
-          DIRECT_DATABASE_URL: postgres://cmux:cmux@localhost:5432/cmux_test
+          ZMUX_DB_TEST: "1"
+          DATABASE_URL: postgres://zmux:zmux@localhost:5432/zmux_test
+          DIRECT_DATABASE_URL: postgres://zmux:zmux@localhost:5432/zmux_test
         run: |
           bun test tests/db-schema.test.ts
           bun test tests/drizzle-effect.test.ts
@@ -217,7 +217,7 @@ jobs:
           mkdir -p "$SOURCE_PACKAGES_DIR"
 
           for attempt in 1 2 3; do
-            if xcodebuild -project GhosttyTabs.xcodeproj -scheme cmux-unit -configuration Debug \
+            if xcodebuild -project GhosttyTabs.xcodeproj -scheme zmux-unit -configuration Debug \
               -clonedSourcePackagesDirPath "$SOURCE_PACKAGES_DIR" \
               -resolvePackageDependencies; then
               exit 0
@@ -235,11 +235,11 @@ jobs:
           set -euo pipefail
           SOURCE_PACKAGES_DIR="$PWD/.ci-source-packages"
           run_unit_tests() {
-            xcodebuild -project GhosttyTabs.xcodeproj -scheme cmux-unit -configuration Debug \
+            xcodebuild -project GhosttyTabs.xcodeproj -scheme zmux-unit -configuration Debug \
               -clonedSourcePackagesDirPath "$SOURCE_PACKAGES_DIR" \
               -disableAutomaticPackageResolution \
               -destination "platform=macOS" \
-              -skip-testing:cmuxTests/AppDelegateShortcutRoutingTests/testCmdWClosesWindowWhenClosingLastSurfaceInLastWorkspace \
+              -skip-testing:zmuxTests/AppDelegateShortcutRoutingTests/testCmdWClosesWindowWhenClosingLastSurfaceInLastWorkspace \
               test 2>&1
           }
 
@@ -279,7 +279,7 @@ jobs:
       - name: Run bundled Ghostty theme picker helper regression
         run: |
           set -euo pipefail
-          CMUX_SOURCE_PACKAGES_DIR="$PWD/.ci-source-packages" \
+          ZMUX_SOURCE_PACKAGES_DIR="$PWD/.ci-source-packages" \
             ./tests/test_bundled_ghostty_theme_picker_helper.sh
 
       - name: Run CLI version memory guard regression
@@ -287,20 +287,20 @@ jobs:
           set -euo pipefail
 
           CLI_BIN="$(
-            find "$HOME/Library/Developer/Xcode/DerivedData" -path "*/Build/Products/Debug/cmux" -exec stat -f '%m %N' {} \; \
+            find "$HOME/Library/Developer/Xcode/DerivedData" -path "*/Build/Products/Debug/zmux" -exec stat -f '%m %N' {} \; \
               | sort -nr \
               | head -1 \
               | cut -d' ' -f2-
           )"
           if [ -z "${CLI_BIN:-}" ] || [ ! -x "$CLI_BIN" ]; then
-            echo "cmux CLI binary not found in DerivedData" >&2
+            echo "zmux CLI binary not found in DerivedData" >&2
             exit 1
           fi
 
-          CMUX_CLI_BIN="$CLI_BIN" python3 tests/test_cli_version_memory_guard.py
+          ZMUX_CLI_BIN="$CLI_BIN" python3 tests/test_cli_version_memory_guard.py
 
   tests-build-and-lag:
-    # Build the full cmux scheme and run the lag regression on WarpBuild.
+    # Build the full zmux scheme and run the lag regression on WarpBuild.
     # Keep lag validation separate from UI regressions so functional UI failures
     # and performance regressions stay isolated. Broader interactive UI suites
     # still run via test-e2e.yml on GitHub-hosted runners.
@@ -388,7 +388,7 @@ jobs:
           mkdir -p "$SOURCE_PACKAGES_DIR"
 
           for attempt in 1 2 3; do
-            if xcodebuild -project GhosttyTabs.xcodeproj -scheme cmux -configuration Debug \
+            if xcodebuild -project GhosttyTabs.xcodeproj -scheme zmux -configuration Debug \
               -clonedSourcePackagesDirPath "$SOURCE_PACKAGES_DIR" \
               -resolvePackageDependencies; then
               exit 0
@@ -405,13 +405,13 @@ jobs:
         run: |
           set -euo pipefail
           SOURCE_PACKAGES_DIR="$PWD/.ci-source-packages"
-          xcodebuild -project GhosttyTabs.xcodeproj -scheme cmux -configuration Debug \
+          xcodebuild -project GhosttyTabs.xcodeproj -scheme zmux -configuration Debug \
             -clonedSourcePackagesDirPath "$SOURCE_PACKAGES_DIR" \
             -disableAutomaticPackageResolution \
-            -destination "platform=macOS" build 2>&1 | tee /tmp/cmux-build-output.txt
+            -destination "platform=macOS" build 2>&1 | tee /tmp/zmux-build-output.txt
 
       - name: Validate Swift warning budget
-        run: python3 scripts/swift_warning_budget.py --log /tmp/cmux-build-output.txt
+        run: python3 scripts/swift_warning_budget.py --log /tmp/zmux-build-output.txt
 
       - name: Create virtual display
         run: |
@@ -428,24 +428,24 @@ jobs:
         run: |
           set -euo pipefail
 
-          APP="$(find "$HOME/Library/Developer/Xcode/DerivedData" -path "*/Build/Products/Debug/cmux DEV.app" -print -quit)"
+          APP="$(find "$HOME/Library/Developer/Xcode/DerivedData" -path "*/Build/Products/Debug/zmux DEV.app" -print -quit)"
           if [ -z "${APP:-}" ] || [ ! -d "$APP" ]; then
-            echo "cmux DEV.app not found in DerivedData" >&2
+            echo "zmux DEV.app not found in DerivedData" >&2
             exit 1
           fi
 
           TAG="ci-lag"
-          SOCK="/tmp/cmux-debug-${TAG}.sock"
+          SOCK="/tmp/zmux-debug-${TAG}.sock"
           BUNDLE_ID="$(
             /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP/Contents/Info.plist" 2>/dev/null \
-              || echo 'com.cmuxterm.app.debug'
+              || echo 'com.zmuxterm.app.debug'
           )"
 
-          pkill -x "cmux DEV" || true
-          rm -f "$SOCK" "/tmp/cmux-${TAG}.sock" || true
+          pkill -x "zmux DEV" || true
+          rm -f "$SOCK" "/tmp/zmux-${TAG}.sock" || true
           defaults write "$BUNDLE_ID" socketControlMode -string full >/dev/null 2>&1 || true
 
-          CMUX_TAG="$TAG" CMUX_SOCKET_PATH="$SOCK" CMUX_UI_TEST_MODE=1 "$APP/Contents/MacOS/cmux DEV" >/tmp/cmux-ci-lag.log 2>&1 &
+          ZMUX_TAG="$TAG" ZMUX_SOCKET_PATH="$SOCK" ZMUX_UI_TEST_MODE=1 "$APP/Contents/MacOS/zmux DEV" >/tmp/zmux-ci-lag.log 2>&1 &
           APP_PID=$!
           trap 'kill "$APP_PID" >/dev/null 2>&1 || true' EXIT
 
@@ -455,15 +455,15 @@ jobs:
           done
           [ -S "$SOCK" ] || { echo "Socket not ready at $SOCK" >&2; exit 1; }
 
-          CMUX_SOCKET_PATH="$SOCK" \
-          CMUX_LAG_MAX_P95_RATIO=1.70 \
-          CMUX_LAG_MAX_AVG_RATIO=1.70 \
-          CMUX_LAG_MIN_BASELINE_P95_MS_FOR_RATIO=6.0 \
-          CMUX_LAG_MIN_BASELINE_AVG_MS_FOR_RATIO=4.0 \
-          CMUX_LAG_MAX_P95_DELTA_MS=20.0 \
-          CMUX_LAG_MAX_AVG_DELTA_MS=12.0 \
-          CMUX_LAG_MAX_CHURN_P95_MS=35 \
-          CMUX_LAG_KEY_EVENTS=180 \
+          ZMUX_SOCKET_PATH="$SOCK" \
+          ZMUX_LAG_MAX_P95_RATIO=1.70 \
+          ZMUX_LAG_MAX_AVG_RATIO=1.70 \
+          ZMUX_LAG_MIN_BASELINE_P95_MS_FOR_RATIO=6.0 \
+          ZMUX_LAG_MIN_BASELINE_AVG_MS_FOR_RATIO=4.0 \
+          ZMUX_LAG_MAX_P95_DELTA_MS=20.0 \
+          ZMUX_LAG_MAX_AVG_DELTA_MS=12.0 \
+          ZMUX_LAG_MAX_CHURN_P95_MS=35 \
+          ZMUX_LAG_KEY_EVENTS=180 \
           python3 tests/test_workspace_churn_up_arrow_lag.py
 
       - name: Cleanup virtual display
@@ -562,7 +562,7 @@ jobs:
       - name: Build universal app (Release)
         run: |
           set -euo pipefail
-          xcodebuild -project GhosttyTabs.xcodeproj -scheme cmux -configuration Release -derivedDataPath build-universal \
+          xcodebuild -project GhosttyTabs.xcodeproj -scheme zmux -configuration Release -derivedDataPath build-universal \
             -destination 'generic/platform=macOS' \
             -clonedSourcePackagesDirPath .spm-cache \
             ARCHS="arm64 x86_64" \
@@ -637,7 +637,7 @@ jobs:
           mkdir -p "$SOURCE_PACKAGES_DIR"
 
           for attempt in 1 2 3; do
-            if xcodebuild -project GhosttyTabs.xcodeproj -scheme cmux -configuration Debug \
+            if xcodebuild -project GhosttyTabs.xcodeproj -scheme zmux -configuration Debug \
               -clonedSourcePackagesDirPath "$SOURCE_PACKAGES_DIR" \
               -resolvePackageDependencies; then
               exit 0
@@ -654,7 +654,7 @@ jobs:
         run: |
           set -euo pipefail
           SOURCE_PACKAGES_DIR="$PWD/.ci-source-packages"
-          xcodebuild -project GhosttyTabs.xcodeproj -scheme cmux -configuration Debug \
+          xcodebuild -project GhosttyTabs.xcodeproj -scheme zmux -configuration Debug \
             -clonedSourcePackagesDirPath "$SOURCE_PACKAGES_DIR" \
             -disableAutomaticPackageResolution \
             -destination "platform=macOS" \
@@ -667,15 +667,15 @@ jobs:
           clang -framework Foundation -framework CoreGraphics \
             -o "$HELPER_PATH" scripts/create-virtual-display.m
 
-          VDISPLAY_READY="/tmp/cmux-vdisplay-persistent.ready"
-          VDISPLAY_ID_PATH="/tmp/cmux-vdisplay-persistent.id"
+          VDISPLAY_READY="/tmp/zmux-vdisplay-persistent.ready"
+          VDISPLAY_ID_PATH="/tmp/zmux-vdisplay-persistent.id"
           rm -f "$VDISPLAY_READY" "$VDISPLAY_ID_PATH"
 
           "$HELPER_PATH" \
             --modes "1920x1080" \
             --ready-path "$VDISPLAY_READY" \
             --display-id-path "$VDISPLAY_ID_PATH" \
-            > /tmp/cmux-vdisplay-persistent.log 2>&1 &
+            > /tmp/zmux-vdisplay-persistent.log 2>&1 &
           echo "VDISPLAY_PERSISTENT_PID=$!" >> "$GITHUB_ENV"
 
           echo "Waiting for persistent virtual display..."
@@ -685,7 +685,7 @@ jobs:
           done
           if [ ! -f "$VDISPLAY_READY" ]; then
             echo "ERROR: Persistent virtual display not ready after 12s" >&2
-            cat /tmp/cmux-vdisplay-persistent.log 2>/dev/null || true
+            cat /tmp/zmux-vdisplay-persistent.log 2>/dev/null || true
             exit 1
           fi
           echo "Persistent virtual display ready: ID=$(cat "$VDISPLAY_ID_PATH")"
@@ -696,17 +696,17 @@ jobs:
           SOURCE_PACKAGES_DIR="$PWD/.ci-source-packages"
           HELPER_PATH="/tmp/create-virtual-display"
           TOKEN="$(uuidgen)"
-          DIAG_PATH="/tmp/cmux-ui-test-display-churn-${TOKEN}.json"
-          DISPLAY_READY="/tmp/cmux-ui-test-display-${TOKEN}.ready"
-          DISPLAY_ID_PATH="/tmp/cmux-ui-test-display-${TOKEN}.id"
-          DISPLAY_START="/tmp/cmux-ui-test-display-${TOKEN}.start"
-          DISPLAY_DONE="/tmp/cmux-ui-test-display-${TOKEN}.done"
-          HELPER_LOG="/tmp/cmux-ui-test-display-${TOKEN}-helper.log"
+          DIAG_PATH="/tmp/zmux-ui-test-display-churn-${TOKEN}.json"
+          DISPLAY_READY="/tmp/zmux-ui-test-display-${TOKEN}.ready"
+          DISPLAY_ID_PATH="/tmp/zmux-ui-test-display-${TOKEN}.id"
+          DISPLAY_START="/tmp/zmux-ui-test-display-${TOKEN}.start"
+          DISPLAY_DONE="/tmp/zmux-ui-test-display-${TOKEN}.done"
+          HELPER_LOG="/tmp/zmux-ui-test-display-${TOKEN}-helper.log"
 
           cleanup() {
-            pkill -x "cmux DEV" 2>/dev/null || true
+            pkill -x "zmux DEV" 2>/dev/null || true
             rm -f "$DIAG_PATH" "$DISPLAY_READY" "$DISPLAY_ID_PATH" "$DISPLAY_START" "$DISPLAY_DONE" "$HELPER_LOG"
-            rm -f /tmp/cmux-ui-test-prelaunch.json /tmp/cmux-ui-test-display-harness.json
+            rm -f /tmp/zmux-ui-test-prelaunch.json /tmp/zmux-ui-test-display-harness.json
           }
           trap cleanup EXIT
 
@@ -715,7 +715,7 @@ jobs:
             -o "$HELPER_PATH" scripts/create-virtual-display.m
 
           # Find the app binary
-          APP_BINARY=$(find ~/Library/Developer/Xcode/DerivedData -path "*/Build/Products/Debug/cmux DEV.app/Contents/MacOS/cmux DEV" -print -quit 2>/dev/null || true)
+          APP_BINARY=$(find ~/Library/Developer/Xcode/DerivedData -path "*/Build/Products/Debug/zmux DEV.app/Contents/MacOS/zmux DEV" -print -quit 2>/dev/null || true)
           if [ -z "$APP_BINARY" ]; then
             echo "ERROR: App binary not found in DerivedData" >&2
             exit 1
@@ -755,12 +755,12 @@ jobs:
             echo "Virtual display ready: ID=$DISPLAY_ID"
 
             # Launch app from shell (non-sandboxed, outside XCTest sandbox)
-            CMUX_UI_TEST_MODE=1 \
-            CMUX_UI_TEST_DIAGNOSTICS_PATH="$DIAG_PATH" \
-            CMUX_UI_TEST_DISPLAY_RENDER_STATS=1 \
-            CMUX_UI_TEST_TARGET_DISPLAY_ID="$DISPLAY_ID" \
-            CMUX_TAG="ui-tests-display-resolution" \
-            "$APP_BINARY" > /tmp/cmux-ui-test-app.log 2>&1 &
+            ZMUX_UI_TEST_MODE=1 \
+            ZMUX_UI_TEST_DIAGNOSTICS_PATH="$DIAG_PATH" \
+            ZMUX_UI_TEST_DISPLAY_RENDER_STATS=1 \
+            ZMUX_UI_TEST_TARGET_DISPLAY_ID="$DISPLAY_ID" \
+            ZMUX_TAG="ui-tests-display-resolution" \
+            "$APP_BINARY" > /tmp/zmux-ui-test-app.log 2>&1 &
             APP_PID=$!
             echo "App launched: PID=$APP_PID"
 
@@ -776,7 +776,7 @@ jobs:
               fi
               if ! kill -0 "$APP_PID" 2>/dev/null; then
                 echo "ERROR: App crashed during startup"
-                cat /tmp/cmux-ui-test-app.log 2>/dev/null | tail -30 || true
+                cat /tmp/zmux-ui-test-app.log 2>/dev/null | tail -30 || true
                 break
               fi
               sleep 0.5
@@ -784,12 +784,12 @@ jobs:
 
             if [ "$APP_READY" != "true" ]; then
               echo "Attempt $attempt: App not ready after 15s"
-              pkill -x "cmux DEV" 2>/dev/null || true
+              pkill -x "zmux DEV" 2>/dev/null || true
               kill "$HELPER_PID" 2>/dev/null || true
               if [ "$attempt" -eq 2 ]; then
                 echo "Display resolution UI regression failed after 2 attempts" >&2
                 echo "--- App log ---"
-                cat /tmp/cmux-ui-test-app.log 2>/dev/null | tail -50 || true
+                cat /tmp/zmux-ui-test-app.log 2>/dev/null | tail -50 || true
                 echo "--- Helper log ---"
                 cat "$HELPER_LOG" 2>/dev/null | tail -20 || true
                 echo "--- Diagnostics ---"
@@ -818,31 +818,31 @@ jobs:
               echo "WARNING: Render stats not available after 20s. Diagnostics:"
               cat "$DIAG_PATH" 2>/dev/null || true
               echo "--- App log ---"
-              cat /tmp/cmux-ui-test-app.log 2>/dev/null | tail -30 || true
+              cat /tmp/zmux-ui-test-app.log 2>/dev/null | tail -30 || true
             fi
 
             # Write manifests so test can find the pre-launched state
-            MANIFEST_PATH="/tmp/cmux-ui-test-display-harness.json"
+            MANIFEST_PATH="/tmp/zmux-ui-test-display-harness.json"
             cat >"$MANIFEST_PATH" <<MANIFEST_EOF
           {"readyPath":"$DISPLAY_READY","displayIDPath":"$DISPLAY_ID_PATH","donePath":"$DISPLAY_DONE","logPath":"$HELPER_LOG"}
           MANIFEST_EOF
 
-            PRELAUNCH_PATH="/tmp/cmux-ui-test-prelaunch.json"
+            PRELAUNCH_PATH="/tmp/zmux-ui-test-prelaunch.json"
             cat >"$PRELAUNCH_PATH" <<PRELAUNCH_EOF
           {"diagnosticsPath":"$DIAG_PATH"}
           PRELAUNCH_EOF
 
             # Run test — app is already launched from shell
-            if xcodebuild -project GhosttyTabs.xcodeproj -scheme cmux -configuration Debug \
+            if xcodebuild -project GhosttyTabs.xcodeproj -scheme zmux -configuration Debug \
               -clonedSourcePackagesDirPath "$SOURCE_PACKAGES_DIR" \
               -disableAutomaticPackageResolution \
               -destination "platform=macOS" \
-              -only-testing:cmuxUITests/DisplayResolutionRegressionUITests \
+              -only-testing:zmuxUITests/DisplayResolutionRegressionUITests \
               test-without-building; then
               exit 0
             fi
 
-            pkill -x "cmux DEV" 2>/dev/null || true
+            pkill -x "zmux DEV" 2>/dev/null || true
             kill "$HELPER_PID" 2>/dev/null || true
 
             if [ "$attempt" -eq 2 ]; then
@@ -857,12 +857,12 @@ jobs:
         run: |
           set -euo pipefail
           SOURCE_PACKAGES_DIR="$PWD/.ci-source-packages"
-          xcodebuild -project GhosttyTabs.xcodeproj -scheme cmux -configuration Debug \
+          xcodebuild -project GhosttyTabs.xcodeproj -scheme zmux -configuration Debug \
             -clonedSourcePackagesDirPath "$SOURCE_PACKAGES_DIR" \
             -disableAutomaticPackageResolution \
             -destination "platform=macOS" \
             -maximum-test-execution-time-allowance 180 \
-            -only-testing:cmuxUITests/BrowserPaneNavigationKeybindUITests/testCmdFOpensBrowserFindAfterCmdDCmdLNavigation \
+            -only-testing:zmuxUITests/BrowserPaneNavigationKeybindUITests/testCmdFOpensBrowserFindAfterCmdDCmdLNavigation \
             test-without-building
 
       - name: Cleanup persistent virtual display
@@ -871,4 +871,4 @@ jobs:
           if [ -n "${VDISPLAY_PERSISTENT_PID:-}" ]; then
             kill "$VDISPLAY_PERSISTENT_PID" >/dev/null 2>&1 || true
           fi
-          rm -f /tmp/cmux-vdisplay-persistent.ready /tmp/cmux-vdisplay-persistent.id /tmp/cmux-vdisplay-persistent.log
+          rm -f /tmp/zmux-vdisplay-persistent.ready /tmp/zmux-vdisplay-persistent.id /tmp/zmux-vdisplay-persistent.log

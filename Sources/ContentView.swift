@@ -536,7 +536,7 @@ final class FileDropOverlayView: NSView {
         let signature = "\(shouldCapture ? 1 : 0)|\(debugEventName(eventType))|\(debugPasteboardTypes(pasteboardTypes))"
         guard lastHitTestLogSignature != signature else { return }
         lastHitTestLogSignature = signature
-        cmuxDebugLog(
+        zmuxDebugLog(
             "overlay.fileDrop.hitTest capture=\(shouldCapture ? 1 : 0) " +
             "event=\(debugEventName(eventType)) " +
             "topHit=\(debugTopHitViewForCurrentEvent()) " +
@@ -560,7 +560,7 @@ final class FileDropOverlayView: NSView {
         ].joined(separator: "|")
         guard lastDragRouteLogSignatureByPhase[phase] != signature else { return }
         lastDragRouteLogSignatureByPhase[phase] = signature
-        cmuxDebugLog(
+        zmuxDebugLog(
             "overlay.fileDrop.\(phase) capture=\(shouldCapture ? 1 : 0) " +
             "localSource=\(hasLocalDraggingSource ? 1 : 0) " +
             "hasTerminal=\(hasTerminalTarget ? 1 : 0) " +
@@ -593,8 +593,8 @@ final class FileDropOverlayView: NSView {
 var fileDropOverlayKey: UInt8 = 0
 private var commandPaletteWindowOverlayKey: UInt8 = 0
 private var tmuxWorkspacePaneWindowOverlayKey: UInt8 = 0
-let commandPaletteOverlayContainerIdentifier = NSUserInterfaceItemIdentifier("cmux.commandPalette.overlay.container")
-let tmuxWorkspacePaneOverlayContainerIdentifier = NSUserInterfaceItemIdentifier("cmux.tmuxWorkspacePane.overlay.container")
+let commandPaletteOverlayContainerIdentifier = NSUserInterfaceItemIdentifier("zmux.commandPalette.overlay.container")
+let tmuxWorkspacePaneOverlayContainerIdentifier = NSUserInterfaceItemIdentifier("zmux.tmuxWorkspacePane.overlay.container")
 
 enum CommandPaletteOverlayPromotionPolicy {
     static func shouldPromote(previouslyVisible: Bool, isVisible: Bool) -> Bool {
@@ -868,7 +868,7 @@ private final class WindowCommandPaletteOverlayController: NSObject {
     private func focusPaletteTextInput(in window: NSWindow) -> Bool {
         guard let input = firstEditableTextInput(in: hostingView) else {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.focus.direct missingInput window={\(debugCommandPaletteWindowSummary(window))} " +
                 "fr=\(debugCommandPaletteResponderSummary(window.firstResponder))"
             )
@@ -876,7 +876,7 @@ private final class WindowCommandPaletteOverlayController: NSObject {
             return false
         }
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "palette.focus.direct attempt window={\(debugCommandPaletteWindowSummary(window))} " +
             "input=\(debugCommandPaletteResponderSummary(input)) " +
             "frBefore=\(debugCommandPaletteResponderSummary(window.firstResponder))"
@@ -884,7 +884,7 @@ private final class WindowCommandPaletteOverlayController: NSObject {
 #endif
         guard window.makeFirstResponder(input) else {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.focus.direct failedMakeFirstResponder window={\(debugCommandPaletteWindowSummary(window))} " +
                 "input=\(debugCommandPaletteResponderSummary(input)) " +
                 "frAfter=\(debugCommandPaletteResponderSummary(window.firstResponder))"
@@ -902,7 +902,7 @@ private final class WindowCommandPaletteOverlayController: NSObject {
 
         let didSettle = isPaletteTextInputFirstResponder(window.firstResponder)
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "palette.focus.direct settled window={\(debugCommandPaletteWindowSummary(window))} " +
             "didSettle=\(didSettle ? 1 : 0) frAfter=\(debugCommandPaletteResponderSummary(window.firstResponder))"
         )
@@ -913,13 +913,13 @@ private final class WindowCommandPaletteOverlayController: NSObject {
     private func scheduleFocusIntoPalette(retries: Int = 4) {
 #if DEBUG
         if let window {
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.focus.schedule retries=\(retries) " +
                 "window={\(debugCommandPaletteWindowSummary(window))} " +
                 "fr=\(debugCommandPaletteResponderSummary(window.firstResponder))"
             )
         } else {
-            cmuxDebugLog("palette.focus.schedule retries=\(retries) window=nil")
+            zmuxDebugLog("palette.focus.schedule retries=\(retries) window=nil")
         }
 #endif
         scheduledFocusWorkItem?.cancel()
@@ -934,7 +934,7 @@ private final class WindowCommandPaletteOverlayController: NSObject {
     private func focusIntoPalette(retries: Int) {
         guard let window else { return }
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "palette.focus.retry start retries=\(retries) " +
             "window={\(debugCommandPaletteWindowSummary(window))} " +
             "fr=\(debugCommandPaletteResponderSummary(window.firstResponder))"
@@ -942,7 +942,7 @@ private final class WindowCommandPaletteOverlayController: NSObject {
 #endif
         if isPaletteTextInputFirstResponder(window.firstResponder) {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.focus.retry alreadyFocused window={\(debugCommandPaletteWindowSummary(window))} " +
                 "fr=\(debugCommandPaletteResponderSummary(window.firstResponder))"
             )
@@ -952,7 +952,7 @@ private final class WindowCommandPaletteOverlayController: NSObject {
 
         if focusPaletteTextInput(in: window) {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.focus.retry directSuccess retries=\(retries) " +
                 "window={\(debugCommandPaletteWindowSummary(window))}"
             )
@@ -962,7 +962,7 @@ private final class WindowCommandPaletteOverlayController: NSObject {
 
         let containerFocused = window.makeFirstResponder(containerView)
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "palette.focus.retry containerResult retries=\(retries) " +
             "window={\(debugCommandPaletteWindowSummary(window))} " +
             "didFocusContainer=\(containerFocused ? 1 : 0) " +
@@ -972,7 +972,7 @@ private final class WindowCommandPaletteOverlayController: NSObject {
         if containerFocused {
             if focusPaletteTextInput(in: window) {
 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "palette.focus.retry containerAssistedSuccess retries=\(retries) " +
                     "window={\(debugCommandPaletteWindowSummary(window))}"
                 )
@@ -983,7 +983,7 @@ private final class WindowCommandPaletteOverlayController: NSObject {
 
         guard retries > 0 else {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.focus.retry exhausted window={\(debugCommandPaletteWindowSummary(window))} " +
                 "fr=\(debugCommandPaletteResponderSummary(window.firstResponder))"
             )
@@ -991,7 +991,7 @@ private final class WindowCommandPaletteOverlayController: NSObject {
             return
         }
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "palette.focus.retry reschedule nextRetries=\(retries - 1) " +
             "window={\(debugCommandPaletteWindowSummary(window))}"
         )
@@ -1030,7 +1030,7 @@ private final class WindowCommandPaletteOverlayController: NSObject {
         }
         guard isPaletteVisible else {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.focus.lock inactive visible=0 window={\(debugCommandPaletteWindowSummary(window))}"
             )
 #endif
@@ -1040,7 +1040,7 @@ private final class WindowCommandPaletteOverlayController: NSObject {
 
         guard window.isKeyWindow else {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.focus.lock keyWindowMissing window={\(debugCommandPaletteWindowSummary(window))} " +
                 "fr=\(debugCommandPaletteResponderSummary(window.firstResponder))"
             )
@@ -1055,7 +1055,7 @@ private final class WindowCommandPaletteOverlayController: NSObject {
         startFocusLockTimer()
         if !isPaletteTextInputFirstResponder(window.firstResponder) {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.focus.lock requestRestore window={\(debugCommandPaletteWindowSummary(window))} " +
                 "fr=\(debugCommandPaletteResponderSummary(window.firstResponder))"
             )
@@ -1116,13 +1116,13 @@ private final class WindowCommandPaletteOverlayController: NSObject {
         )
 #if DEBUG
         if let window {
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.overlay.update visible=\(isVisible ? 1 : 0) promote=\(shouldPromote ? 1 : 0) " +
                 "window={\(debugCommandPaletteWindowSummary(window))} " +
                 "fr=\(debugCommandPaletteResponderSummary(window.firstResponder))"
             )
         } else {
-            cmuxDebugLog("palette.overlay.update visible=\(isVisible ? 1 : 0) promote=\(shouldPromote ? 1 : 0) window=nil")
+            zmuxDebugLog("palette.overlay.update visible=\(isVisible ? 1 : 0) promote=\(shouldPromote ? 1 : 0) window=nil")
         }
 #endif
         isPaletteVisible = isVisible
@@ -1535,7 +1535,7 @@ struct ContentView: View {
     @EnvironmentObject var notificationStore: TerminalNotificationStore
     @EnvironmentObject var sidebarState: SidebarState
     @EnvironmentObject var sidebarSelectionState: SidebarSelectionState
-    @EnvironmentObject var cmuxConfigStore: CmuxConfigStore
+    @EnvironmentObject var zmuxConfigStore: ZmuxConfigStore
     @EnvironmentObject var fileExplorerState: FileExplorerState
     @Environment(\.colorScheme) private var colorScheme
     @State private var sidebarWidth: CGFloat = 200
@@ -1607,8 +1607,8 @@ struct ContentView: View {
     private var commandPaletteRenameSelectAllOnFocus = CommandPaletteRenameSelectionSettings.defaultSelectAllOnFocus
     @AppStorage(CommandPaletteSwitcherSearchSettings.searchAllSurfacesKey)
     private var commandPaletteSearchAllSurfaces = CommandPaletteSwitcherSearchSettings.defaultSearchAllSurfaces
-    @AppStorage(BrowserLinkOpenSettings.openSidebarPullRequestLinksInCmuxBrowserKey)
-    private var openSidebarPullRequestLinksInCmuxBrowser = BrowserLinkOpenSettings.defaultOpenSidebarPullRequestLinksInCmuxBrowser
+    @AppStorage(BrowserLinkOpenSettings.openSidebarPullRequestLinksInZmuxBrowserKey)
+    private var openSidebarPullRequestLinksInZmuxBrowser = BrowserLinkOpenSettings.defaultOpenSidebarPullRequestLinksInZmuxBrowser
     @State private var commandPaletteShouldFocusWorkspaceDescriptionEditor = false
     @FocusState private var isCommandPaletteSearchFocused: Bool
     @FocusState private var isCommandPaletteRenameFocused: Bool
@@ -2686,7 +2686,7 @@ struct ContentView: View {
     @AppStorage("debugTitlebarLeadingExtra") private var debugTitlebarLeadingExtra: Double = 0
 
     @State private var titlebarLeadingInset: CGFloat = 12
-    private var windowIdentifier: String { "cmux.main.\(windowId.uuidString)" }
+    private var windowIdentifier: String { "zmux.main.\(windowId.uuidString)" }
     private var windowAppearanceSnapshot: WindowAppearanceSnapshot {
         _ = titlebarThemeGeneration
         return WindowAppearanceSnapshot.current(
@@ -2923,7 +2923,7 @@ struct ContentView: View {
             } ?? ""
 
             #if DEBUG
-            cmuxDebugLog("fileExplorer.sync remote dir=\(dir) ready=\(isReady) dest=\(config?.destination ?? "nil")")
+            zmuxDebugLog("fileExplorer.sync remote dir=\(dir) ready=\(isReady) dest=\(config?.destination ?? "nil")")
             #endif
 
             if let existingProvider = fileExplorerStore.provider as? SSHFileExplorerProvider,
@@ -3108,7 +3108,7 @@ struct ContentView: View {
 
                 if didRecover {
 #if DEBUG
-                    cmuxDebugLog("startup.recovery tabCount=\(tabManager.tabs.count) selected=\(tabManager.selectedTabId?.uuidString.prefix(8) ?? "nil") mounted=\(mountedWorkspaceIds.count)")
+                    zmuxDebugLog("startup.recovery tabCount=\(tabManager.tabs.count) selected=\(tabManager.selectedTabId?.uuidString.prefix(8) ?? "nil") mounted=\(mountedWorkspaceIds.count)")
 #endif
                     sentryBreadcrumb("startup.recovery", data: [
                         "tabCount": tabManager.tabs.count,
@@ -3123,11 +3123,11 @@ struct ContentView: View {
 #if DEBUG
             if let snapshot = tabManager.debugCurrentWorkspaceSwitchSnapshot() {
                 let dtMs = (CACurrentMediaTime() - snapshot.startedAt) * 1000
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "ws.view.selectedChange id=\(snapshot.id) dt=\(debugMsText(dtMs)) selected=\(debugShortWorkspaceId(newValue))"
                 )
             } else {
-                cmuxDebugLog("ws.view.selectedChange id=none selected=\(debugShortWorkspaceId(newValue))")
+                zmuxDebugLog("ws.view.selectedChange id=none selected=\(debugShortWorkspaceId(newValue))")
             }
 #endif
             tabManager.applyWindowBackgroundForSelectedTab()
@@ -3155,11 +3155,11 @@ struct ContentView: View {
 #if DEBUG
             if let snapshot = tabManager.debugCurrentWorkspaceSwitchSnapshot() {
                 let dtMs = (CACurrentMediaTime() - snapshot.startedAt) * 1000
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "ws.view.hotChange id=\(snapshot.id) dt=\(debugMsText(dtMs)) hot=\(tabManager.isWorkspaceCycleHot ? 1 : 0)"
                 )
             } else {
-                cmuxDebugLog("ws.view.hotChange id=none hot=\(tabManager.isWorkspaceCycleHot ? 1 : 0)")
+                zmuxDebugLog("ws.view.hotChange id=none hot=\(tabManager.isWorkspaceCycleHot ? 1 : 0)")
             }
 #endif
             reconcileMountedWorkspaceIds()
@@ -3326,7 +3326,7 @@ struct ContentView: View {
             let tabId = SidebarDragLifecycleNotification.tabId(from: notification)
             sidebarDraggedTabId = tabId
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "sidebar.dragState.content tab=\(debugShortWorkspaceId(tabId)) " +
                 "reason=\(SidebarDragLifecycleNotification.reason(from: notification))"
             )
@@ -3421,7 +3421,7 @@ struct ContentView: View {
                 mainWindow: NSApp.mainWindow
             )
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.wsDescription.request observed={\(debugCommandPaletteWindowSummary(observedWindow))} " +
                 "requested={\(debugCommandPaletteWindowSummary(requestedWindow))} " +
                 "shouldHandle=\(shouldHandle ? 1 : 0) presented=\(isCommandPalettePresented ? 1 : 0) " +
@@ -3661,7 +3661,7 @@ struct ContentView: View {
             }
             removeNativeTitlebarBackdrop(in: window)
 #if DEBUG
-            if ProcessInfo.processInfo.environment["CMUX_UI_TEST_MODE"] == "1" {
+            if ProcessInfo.processInfo.environment["ZMUX_UI_TEST_MODE"] == "1" {
                 UpdateLogStore.shared.append("ui test window accessor: id=\(windowIdentifier) visible=\(window.isVisible)")
             }
 #endif
@@ -3689,7 +3689,7 @@ struct ContentView: View {
             }
             AppDelegate.shared?.attachUpdateAccessory(to: window)
             AppDelegate.shared?.applyWindowDecorations(to: window)
-            // Let cmux supply the translucent titlebar fills. AppKit's native
+            // Let zmux supply the translucent titlebar fills. AppKit's native
             // material otherwise blends a lighter strip over the terminal area.
             syncNativeTitlebarBackdrop(
                 in: window,
@@ -3702,7 +3702,7 @@ struct ContentView: View {
                 sidebarState: sidebarState,
                 sidebarSelectionState: sidebarSelectionState,
                 fileExplorerState: fileExplorerState,
-                cmuxConfigStore: cmuxConfigStore
+                zmuxConfigStore: zmuxConfigStore
             )
             installFileDropOverlayWhenReady(on: window, tabManager: tabManager)
         }))
@@ -3745,14 +3745,14 @@ struct ContentView: View {
             let added = mountedWorkspaceIds.filter { !previousMountedIds.contains($0) }
             if let snapshot = tabManager.debugCurrentWorkspaceSwitchSnapshot() {
                 let dtMs = (CACurrentMediaTime() - snapshot.startedAt) * 1000
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "ws.mount.reconcile id=\(snapshot.id) dt=\(debugMsText(dtMs)) hot=\(isCycleHot ? 1 : 0) " +
                     "selected=\(debugShortWorkspaceId(effectiveSelectedId)) " +
                     "mounted=\(debugShortWorkspaceIds(mountedWorkspaceIds)) " +
                     "added=\(debugShortWorkspaceIds(added)) removed=\(debugShortWorkspaceIds(removedIds))"
                 )
             } else {
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "ws.mount.reconcile id=none hot=\(isCycleHot ? 1 : 0) selected=\(debugShortWorkspaceId(effectiveSelectedId)) " +
                     "mounted=\(debugShortWorkspaceIds(mountedWorkspaceIds))"
                 )
@@ -3791,7 +3791,7 @@ struct ContentView: View {
 
 #if DEBUG
         let startedAt = ProcessInfo.processInfo.systemUptime
-        cmuxDebugLog("workspace.backgroundPrime.start workspace=\(workspaceId.uuidString.prefix(5))")
+        zmuxDebugLog("workspace.backgroundPrime.start workspace=\(workspaceId.uuidString.prefix(5))")
 #endif
 
         let initialState = await MainActor.run {
@@ -3809,7 +3809,7 @@ struct ContentView: View {
         }
 #if DEBUG
         let elapsedMs = (ProcessInfo.processInfo.systemUptime - startedAt) * 1000
-        cmuxDebugLog(
+        zmuxDebugLog(
             "workspace.backgroundPrime.finish workspace=\(workspaceId.uuidString.prefix(5)) " +
             "reason=\(completionReason) ms=\(String(format: "%.2f", elapsedMs))"
         )
@@ -3969,7 +3969,7 @@ struct ContentView: View {
         guard let contentView = window.contentView,
               let themeFrame = contentView.superview else { return }
 
-        let identifier = NSUserInterfaceItemIdentifier("cmux.nativeTitlebarBackdrop")
+        let identifier = NSUserInterfaceItemIdentifier("zmux.nativeTitlebarBackdrop")
         let existing = themeFrame.subviews.first { $0.identifier == identifier } as? NativeTitlebarBackdropView
         existing?.removeFromSuperview()
     }
@@ -4175,7 +4175,7 @@ struct ContentView: View {
     }
 
     private func setTitlebarControlsHidden(_ hidden: Bool, in window: NSWindow) {
-        let controlsId = NSUserInterfaceItemIdentifier("cmux.titlebarControls")
+        let controlsId = NSUserInterfaceItemIdentifier("zmux.titlebarControls")
         for accessory in window.titlebarAccessoryViewControllers {
             if accessory.view.identifier == controlsId {
                 accessory.isHidden = hidden
@@ -4204,12 +4204,12 @@ struct ContentView: View {
 #if DEBUG
         if let snapshot = tabManager.debugCurrentWorkspaceSwitchSnapshot() {
             let dtMs = (CACurrentMediaTime() - snapshot.startedAt) * 1000
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "ws.handoff.start id=\(snapshot.id) dt=\(debugMsText(dtMs)) old=\(debugShortWorkspaceId(oldSelectedId)) " +
                 "new=\(debugShortWorkspaceId(newSelectedId))"
             )
         } else {
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "ws.handoff.start id=none old=\(debugShortWorkspaceId(oldSelectedId)) new=\(debugShortWorkspaceId(newSelectedId))"
             )
         }
@@ -4219,11 +4219,11 @@ struct ContentView: View {
 #if DEBUG
             if let snapshot = tabManager.debugCurrentWorkspaceSwitchSnapshot() {
                 let dtMs = (CACurrentMediaTime() - snapshot.startedAt) * 1000
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "ws.handoff.fastReady id=\(snapshot.id) dt=\(debugMsText(dtMs)) selected=\(debugShortWorkspaceId(newSelectedId))"
                 )
             } else {
-                cmuxDebugLog("ws.handoff.fastReady id=none selected=\(debugShortWorkspaceId(newSelectedId))")
+                zmuxDebugLog("ws.handoff.fastReady id=none selected=\(debugShortWorkspaceId(newSelectedId))")
             }
 #endif
             completeWorkspaceHandoff(reason: "ready")
@@ -4278,11 +4278,11 @@ struct ContentView: View {
 #if DEBUG
         if let snapshot = tabManager.debugCurrentWorkspaceSwitchSnapshot() {
             let dtMs = (CACurrentMediaTime() - snapshot.startedAt) * 1000
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "ws.handoff.complete id=\(snapshot.id) dt=\(debugMsText(dtMs)) reason=\(reason) retiring=\(debugShortWorkspaceId(retiring))"
             )
         } else {
-            cmuxDebugLog("ws.handoff.complete id=none reason=\(reason) retiring=\(debugShortWorkspaceId(retiring))")
+            zmuxDebugLog("ws.handoff.complete id=none reason=\(reason) retiring=\(debugShortWorkspaceId(retiring))")
         }
 #endif
     }
@@ -4402,7 +4402,7 @@ struct ContentView: View {
                             let isHovered = commandPaletteHoveredResultIndex == index
                             let trailingLabel = commandPaletteTrailingLabel(for: result.command)
                             let rowBackground: Color = isSelected
-                                ? cmuxAccentColor().opacity(0.12)
+                                ? zmuxAccentColor().opacity(0.12)
                                 : (isHovered ? Color.primary.opacity(0.08) : .clear)
 
                             Button {
@@ -4693,7 +4693,7 @@ struct ContentView: View {
         }
         .onAppear {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.wsDescription.view.appear workspace=\(target.workspaceId.uuidString.prefix(8)) " +
                 "draftLen=\((commandPaletteWorkspaceDescriptionDraft as NSString).length) " +
                 "height=\(String(format: "%.1f", commandPaletteWorkspaceDescriptionHeight)) " +
@@ -4704,7 +4704,7 @@ struct ContentView: View {
         }
         .onChange(of: commandPaletteShouldFocusWorkspaceDescriptionEditor) { _, newValue in
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.wsDescription.focus.binding new=\(newValue ? 1 : 0) " +
                 "mode=\(debugCommandPaletteModeLabel(commandPaletteMode)) " +
                 "window={\(debugCommandPaletteWindowSummary(observedWindow ?? NSApp.keyWindow ?? NSApp.mainWindow))} " +
@@ -4962,7 +4962,7 @@ struct ContentView: View {
 
         override func flagsChanged(with event: NSEvent) {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.wsDescription.editor.flagsChanged " +
                 "\(debugCommandPaletteKeyEventSummary(event))"
             )
@@ -4973,7 +4973,7 @@ struct ContentView: View {
         override func becomeFirstResponder() -> Bool {
             let becameFirstResponder = super.becomeFirstResponder()
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.wsDescription.editor.textView.becomeFirstResponder success=\(becameFirstResponder ? 1 : 0) " +
                 "window={\(debugCommandPaletteWindowSummary(window))} " +
                 "fr=\(debugCommandPaletteResponderSummary(window?.firstResponder))"
@@ -4988,7 +4988,7 @@ struct ContentView: View {
         override func keyDown(with event: NSEvent) {
             if hasMarkedText() {
 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "palette.wsDescription.editor.keyDown markedText=1 " +
                     "\(debugCommandPaletteKeyEventSummary(event))"
                 )
@@ -4998,7 +4998,7 @@ struct ContentView: View {
             }
             let handled = onHandleKeyEvent?(event, self) == true
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.wsDescription.editor.keyDown handled=\(handled ? 1 : 0) " +
                 "\(debugCommandPaletteKeyEventSummary(event))"
             )
@@ -5012,7 +5012,7 @@ struct ContentView: View {
         override func performKeyEquivalent(with event: NSEvent) -> Bool {
             if hasMarkedText() {
 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "palette.wsDescription.editor.performKeyEquivalent markedText=1 " +
                     "\(debugCommandPaletteKeyEventSummary(event))"
                 )
@@ -5021,7 +5021,7 @@ struct ContentView: View {
             }
             let handled = onHandleKeyEvent?(event, self) == true
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.wsDescription.editor.performKeyEquivalent handled=\(handled ? 1 : 0) " +
                 "\(debugCommandPaletteKeyEventSummary(event))"
             )
@@ -5031,7 +5031,7 @@ struct ContentView: View {
             }
             let result = super.performKeyEquivalent(with: event)
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.wsDescription.editor.performKeyEquivalent superResult=\(result ? 1 : 0) " +
                 "\(debugCommandPaletteKeyEventSummary(event))"
             )
@@ -5041,7 +5041,7 @@ struct ContentView: View {
 
         override func doCommand(by commandSelector: Selector) {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.wsDescription.editor.doCommand selector=\(NSStringFromSelector(commandSelector)) " +
                 "len=\((string as NSString).length) " +
                 "sel=\(selectedRange().location):\(selectedRange().length)"
@@ -5052,7 +5052,7 @@ struct ContentView: View {
 
         override func insertNewline(_ sender: Any?) {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.wsDescription.editor.insertNewline " +
                 "len=\((string as NSString).length) " +
                 "sel=\(selectedRange().location):\(selectedRange().length)"
@@ -5063,7 +5063,7 @@ struct ContentView: View {
 
         override func insertLineBreak(_ sender: Any?) {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.wsDescription.editor.insertLineBreak " +
                 "len=\((string as NSString).length) " +
                 "sel=\(selectedRange().location):\(selectedRange().length)"
@@ -5074,7 +5074,7 @@ struct ContentView: View {
 
         override func insertNewlineIgnoringFieldEditor(_ sender: Any?) {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.wsDescription.editor.insertNewlineIgnoringFieldEditor " +
                 "len=\((string as NSString).length) " +
                 "sel=\(selectedRange().location):\(selectedRange().length)"
@@ -5196,20 +5196,20 @@ struct ContentView: View {
         func focusIfNeeded() {
             guard let window else {
 #if DEBUG
-                cmuxDebugLog("palette.wsDescription.editor.focusIfNeeded window=nil")
+                zmuxDebugLog("palette.wsDescription.editor.focusIfNeeded window=nil")
 #endif
                 return
             }
             guard window.firstResponder !== textView else {
 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "palette.wsDescription.editor.focusIfNeeded alreadyFocused window={\(debugCommandPaletteWindowSummary(window))}"
                 )
 #endif
                 return
             }
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.wsDescription.editor.focusIfNeeded attempt window={\(debugCommandPaletteWindowSummary(window))} " +
                 "frBefore=\(debugCommandPaletteResponderSummary(window.firstResponder))"
             )
@@ -5218,7 +5218,7 @@ struct ContentView: View {
             let length = (textView.string as NSString).length
             textView.setSelectedRange(NSRange(location: length, length: 0))
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.wsDescription.editor.focusIfNeeded result didFocus=\(didFocus ? 1 : 0) " +
                 "window={\(debugCommandPaletteWindowSummary(window))} " +
                 "frAfter=\(debugCommandPaletteResponderSummary(window.firstResponder))"
@@ -5277,7 +5277,7 @@ struct ContentView: View {
             let newlineCount = textView.string.reduce(into: 0) { count, character in
                 if character == "\n" { count += 1 }
             }
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.wsDescription.editor.textDidChange len=\((textView.string as NSString).length) " +
                 "newlines=\(newlineCount)"
             )
@@ -5313,7 +5313,7 @@ struct ContentView: View {
 
             func textDidBeginEditing(_ notification: Notification) {
 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "palette.wsDescription.editor.beginEditing focus=\(parent.isFocused ? 1 : 0) " +
                     "responder=\(debugCommandPaletteResponderSummary(notification.object as? NSResponder))"
                 )
@@ -5333,7 +5333,7 @@ struct ContentView: View {
 
             func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "palette.wsDescription.editor.command selector=\(NSStringFromSelector(commandSelector)) " +
                     "len=\((textView.string as NSString).length) " +
                     "sel=\(textView.selectedRange().location):\(textView.selectedRange().length)"
@@ -5344,7 +5344,7 @@ struct ContentView: View {
 
             func handleDidBecomeFirstResponder() {
 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "palette.wsDescription.editor.didBecomeFirstResponder focus=\(parent.isFocused ? 1 : 0)"
                 )
 #endif
@@ -5368,7 +5368,7 @@ struct ContentView: View {
                     .subtracting([.numericPad, .function, .capsLock])
 
 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "palette.wsDescription.editor.handleKeyEvent " +
                     "\(debugCommandPaletteKeyEventSummary(event)) " +
                     "normalized=\(debugCommandPaletteModifierFlagsSummary(normalizedFlags))"
@@ -5379,8 +5379,8 @@ struct ContentView: View {
                     if normalizedFlags.isEmpty {
                         let currentText = editor?.string ?? parent.text
 #if DEBUG
-                        cmuxDebugLog("palette.wsDescription.editor.handleKeyEvent action=submit")
-                        cmuxDebugLog(
+                        zmuxDebugLog("palette.wsDescription.editor.handleKeyEvent action=submit")
+                        zmuxDebugLog(
                             "palette.wsDescription.editor.handleKeyEvent submitText " +
                             "len=\((currentText as NSString).length) " +
                             "text=\"\(debugCommandPaletteTextPreview(currentText))\""
@@ -5394,7 +5394,7 @@ struct ContentView: View {
                     }
                     if normalizedFlags == [.shift] {
 #if DEBUG
-                        cmuxDebugLog("palette.wsDescription.editor.handleKeyEvent action=allowShiftReturn")
+                        zmuxDebugLog("palette.wsDescription.editor.handleKeyEvent action=allowShiftReturn")
 #endif
                         return false
                     }
@@ -5402,14 +5402,14 @@ struct ContentView: View {
 
                 if event.keyCode == 53, normalizedFlags.isEmpty {
 #if DEBUG
-                    cmuxDebugLog("palette.wsDescription.editor.handleKeyEvent action=escape")
+                    zmuxDebugLog("palette.wsDescription.editor.handleKeyEvent action=escape")
 #endif
                     parent.onEscape()
                     return true
                 }
 
 #if DEBUG
-                cmuxDebugLog("palette.wsDescription.editor.handleKeyEvent action=passThrough")
+                zmuxDebugLog("palette.wsDescription.editor.handleKeyEvent action=passThrough")
 #endif
                 return false
             }
@@ -5439,7 +5439,7 @@ struct ContentView: View {
             }
             view.refreshMetrics()
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.wsDescription.editor.make focus=\(isFocused ? 1 : 0) " +
                 "textLen=\((text as NSString).length) " +
                 "height=\(String(format: "%.1f", measuredHeight))"
@@ -5469,7 +5469,7 @@ struct ContentView: View {
             guard let window = nsView.window else {
 #if DEBUG
                 if isFocused {
-                    cmuxDebugLog(
+                    zmuxDebugLog(
                         "palette.wsDescription.editor.update waitingForWindow focus=1 " +
                         "pending=\(context.coordinator.pendingFocusRequest ? 1 : 0)"
                     )
@@ -5480,7 +5480,7 @@ struct ContentView: View {
             let isFirstResponder = window.firstResponder === nsView.textView
 #if DEBUG
             if isFocused || context.coordinator.pendingFocusRequest {
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "palette.wsDescription.editor.update focus=\(isFocused ? 1 : 0) " +
                     "isFirstResponder=\(isFirstResponder ? 1 : 0) " +
                     "pending=\(context.coordinator.pendingFocusRequest ? 1 : 0) " +
@@ -5492,7 +5492,7 @@ struct ContentView: View {
             if isFocused, !isFirstResponder, !context.coordinator.pendingFocusRequest {
                 context.coordinator.pendingFocusRequest = true
 #if DEBUG
-                cmuxDebugLog(
+                zmuxDebugLog(
                     "palette.wsDescription.editor.update scheduleFocus window={\(debugCommandPaletteWindowSummary(window))} " +
                     "fr=\(debugCommandPaletteResponderSummary(window.firstResponder))"
                 )
@@ -6078,7 +6078,7 @@ struct ContentView: View {
     private func commandPaletteCommandsFingerprint(commandsContext: CommandPaletteCommandsContext) -> Int {
         var hasher = Hasher()
         hasher.combine(commandsContext.snapshot.fingerprint())
-        hasher.combine(cmuxConfigStore.configRevision)
+        hasher.combine(zmuxConfigStore.configRevision)
         return hasher.finalize()
     }
 
@@ -6491,7 +6491,7 @@ struct ContentView: View {
     private func commandPaletteCommandsContext(
         terminalOpenTargets: Set<TerminalDirectoryOpenTarget>
     ) -> CommandPaletteCommandsContext {
-        let cliInstalledInPATH = AppDelegate.shared?.isCmuxCLIInstalledInPATH() ?? false
+        let cliInstalledInPATH = AppDelegate.shared?.isZmuxCLIInstalledInPATH() ?? false
         var snapshot = commandPaletteContextSnapshot(terminalOpenTargets: terminalOpenTargets)
         snapshot.setBool(CommandPaletteContextKeys.cliInstalledInPATH, cliInstalledInPATH)
         return CommandPaletteCommandsContext(
@@ -6513,7 +6513,7 @@ struct ContentView: View {
 
         for contribution in contributions {
             let configuredPaletteAction = commandPaletteConfigActionID(for: contribution.commandId)
-                .flatMap { cmuxConfigStore.resolvedAction(id: $0) }
+                .flatMap { zmuxConfigStore.resolvedAction(id: $0) }
             if let configuredPaletteAction, !configuredPaletteAction.palette {
                 continue
             }
@@ -6546,13 +6546,13 @@ struct ContentView: View {
     private func commandPaletteConfigActionID(for commandId: String) -> String? {
         switch commandId {
         case "palette.newTerminalTab":
-            return CmuxSurfaceTabBarBuiltInAction.newTerminal.configID
+            return ZmuxSurfaceTabBarBuiltInAction.newTerminal.configID
         case "palette.newBrowserTab":
-            return CmuxSurfaceTabBarBuiltInAction.newBrowser.configID
+            return ZmuxSurfaceTabBarBuiltInAction.newBrowser.configID
         case "palette.terminalSplitRight":
-            return CmuxSurfaceTabBarBuiltInAction.splitRight.configID
+            return ZmuxSurfaceTabBarBuiltInAction.splitRight.configID
         case "palette.terminalSplitDown":
-            return CmuxSurfaceTabBarBuiltInAction.splitDown.configID
+            return ZmuxSurfaceTabBarBuiltInAction.splitDown.configID
         default:
             return nil
         }
@@ -6567,11 +6567,11 @@ struct ContentView: View {
            context.bool(CommandPaletteContextKeys.panelIsBrowser) {
             return nil
         }
-        if let configuredShortcut = cmuxConfigStore.resolvedAction(id: contribution.commandId)?.shortcut {
+        if let configuredShortcut = zmuxConfigStore.resolvedAction(id: contribution.commandId)?.shortcut {
             return configuredShortcut.displayString
         }
         if let configuredPaletteAction = commandPaletteConfigActionID(for: contribution.commandId),
-           let configuredShortcut = cmuxConfigStore.resolvedAction(id: configuredPaletteAction)?.shortcut {
+           let configuredShortcut = zmuxConfigStore.resolvedAction(id: configuredPaletteAction)?.shortcut {
             return configuredShortcut.displayString
         }
         if let action = commandPaletteShortcutAction(for: contribution.commandId) {
@@ -6810,7 +6810,7 @@ struct ContentView: View {
         contributions.append(
             CommandPaletteCommandContribution(
                 commandId: "palette.installCLI",
-                title: constant(String(localized: "command.installCLI.title", defaultValue: "Shell Command: Install 'cmux' in PATH")),
+                title: constant(String(localized: "command.installCLI.title", defaultValue: "Shell Command: Install 'zmux' in PATH")),
                 subtitle: constant(String(localized: "command.installCLI.subtitle", defaultValue: "CLI")),
                 keywords: ["install", "cli", "path", "shell", "command", "symlink"],
                 when: { !$0.bool(CommandPaletteContextKeys.cliInstalledInPATH) }
@@ -6819,7 +6819,7 @@ struct ContentView: View {
         contributions.append(
             CommandPaletteCommandContribution(
                 commandId: "palette.uninstallCLI",
-                title: constant(String(localized: "command.uninstallCLI.title", defaultValue: "Shell Command: Uninstall 'cmux' from PATH")),
+                title: constant(String(localized: "command.uninstallCLI.title", defaultValue: "Shell Command: Uninstall 'zmux' from PATH")),
                 subtitle: constant(String(localized: "command.uninstallCLI.subtitle", defaultValue: "CLI")),
                 keywords: ["uninstall", "remove", "cli", "path", "shell", "command", "symlink"],
                 when: { $0.bool(CommandPaletteContextKeys.cliInstalledInPATH) }
@@ -7022,7 +7022,7 @@ struct ContentView: View {
                 commandId: "palette.restartSocketListener",
                 title: constant(String(localized: "command.restartSocketListener.title", defaultValue: "Restart CLI Listener")),
                 subtitle: constant(String(localized: "command.restartSocketListener.subtitle", defaultValue: "Global")),
-                keywords: ["restart", "socket", "listener", "cli", "cmux", "control"]
+                keywords: ["restart", "socket", "listener", "cli", "zmux", "control"]
             )
         )
 
@@ -7539,23 +7539,23 @@ struct ContentView: View {
             )
         )
 
-        let cmuxConfigDefaultSubtitle = String(localized: "command.cmuxConfig.subtitle", defaultValue: "cmux.json")
-        for issue in cmuxConfigStore.configurationIssues {
+        let zmuxConfigDefaultSubtitle = String(localized: "command.zmuxConfig.subtitle", defaultValue: "zmux.json")
+        for issue in zmuxConfigStore.configurationIssues {
             contributions.append(
                 CommandPaletteCommandContribution(
-                    commandId: commandPaletteCmuxConfigIssueCommandID(issue),
-                    title: constant(commandPaletteCmuxConfigIssueTitle(issue)),
-                    subtitle: constant(commandPaletteCmuxConfigIssueSubtitle(issue)),
-                    keywords: ["cmux", "config", "json", "schema", "error", "warning"]
+                    commandId: commandPaletteZmuxConfigIssueCommandID(issue),
+                    title: constant(commandPaletteZmuxConfigIssueTitle(issue)),
+                    subtitle: constant(commandPaletteZmuxConfigIssueSubtitle(issue)),
+                    keywords: ["zmux", "config", "json", "schema", "error", "warning"]
                 )
             )
         }
-        for action in cmuxConfigStore.paletteCustomActions() {
-            let actionTitle = sanitizeCmuxConfigPaletteText(action.title)
+        for action in zmuxConfigStore.paletteCustomActions() {
+            let actionTitle = sanitizeZmuxConfigPaletteText(action.title)
             let subtitleText = action.subtitle
-                .map { sanitizeCmuxConfigPaletteText($0) }
+                .map { sanitizeZmuxConfigPaletteText($0) }
                 .flatMap { $0.isEmpty ? nil : $0 }
-                ?? cmuxConfigDefaultSubtitle
+                ?? zmuxConfigDefaultSubtitle
             contributions.append(
                 CommandPaletteCommandContribution(
                     commandId: action.id,
@@ -7569,7 +7569,7 @@ struct ContentView: View {
         return contributions
     }
 
-    private func sanitizeCmuxConfigPaletteText(_ text: String) -> String {
+    private func sanitizeZmuxConfigPaletteText(_ text: String) -> String {
         let dangerous: Set<Unicode.Scalar> = [
             "\u{200B}", "\u{200C}", "\u{200D}", "\u{200E}", "\u{200F}",
             "\u{202A}", "\u{202B}", "\u{202C}", "\u{202D}", "\u{202E}",
@@ -7580,71 +7580,71 @@ struct ContentView: View {
         return filtered.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private func commandPaletteCmuxConfigIssueCommandID(_ issue: CmuxConfigIssue) -> String {
+    private func commandPaletteZmuxConfigIssueCommandID(_ issue: ZmuxConfigIssue) -> String {
         var hash: UInt64 = 1_469_598_103_934_665_603
         for byte in issue.id.utf8 {
             hash ^= UInt64(byte)
             hash &*= 1_099_511_628_211
         }
-        return "palette.cmuxConfig.issue.\(String(hash, radix: 16))"
+        return "palette.zmuxConfig.issue.\(String(hash, radix: 16))"
     }
 
-    private func commandPaletteCmuxConfigIssueTitle(_ issue: CmuxConfigIssue) -> String {
+    private func commandPaletteZmuxConfigIssueTitle(_ issue: ZmuxConfigIssue) -> String {
         switch issue.kind {
         case .schemaError:
             return String(
-                localized: "command.cmuxConfig.issue.schemaError.title",
-                defaultValue: "cmux.json Schema Error"
+                localized: "command.zmuxConfig.issue.schemaError.title",
+                defaultValue: "zmux.json Schema Error"
             )
         default:
             return String(
-                localized: "command.cmuxConfig.issue.warning.title",
-                defaultValue: "cmux.json Configuration Warning"
+                localized: "command.zmuxConfig.issue.warning.title",
+                defaultValue: "zmux.json Configuration Warning"
             )
         }
     }
 
-    private func commandPaletteCmuxConfigIssueSubtitle(_ issue: CmuxConfigIssue) -> String {
+    private func commandPaletteZmuxConfigIssueSubtitle(_ issue: ZmuxConfigIssue) -> String {
         let rawPath = issue.sourcePath.map {
             NSString(string: $0).abbreviatingWithTildeInPath
         } ?? issue.settingName
-        let path = sanitizeCmuxConfigPaletteText(rawPath)
-        let detail = sanitizeCmuxConfigPaletteText(commandPaletteCmuxConfigIssueDetail(issue))
+        let path = sanitizeZmuxConfigPaletteText(rawPath)
+        let detail = sanitizeZmuxConfigPaletteText(commandPaletteZmuxConfigIssueDetail(issue))
         guard !detail.isEmpty else { return path }
         let format = String(
-            localized: "command.cmuxConfig.issue.subtitle",
+            localized: "command.zmuxConfig.issue.subtitle",
             defaultValue: "%@: %@"
         )
         return String(format: format, path, detail)
     }
 
-    private func commandPaletteCmuxConfigIssueDetail(_ issue: CmuxConfigIssue) -> String {
+    private func commandPaletteZmuxConfigIssueDetail(_ issue: ZmuxConfigIssue) -> String {
         switch issue.kind {
         case .schemaError:
             let format = String(
-                localized: "command.cmuxConfig.issue.schemaError.detail",
+                localized: "command.zmuxConfig.issue.schemaError.detail",
                 defaultValue: "%@"
             )
             let fallback = String(
-                localized: "command.cmuxConfig.issue.schemaError.fallback",
-                defaultValue: "Invalid cmux.json"
+                localized: "command.zmuxConfig.issue.schemaError.fallback",
+                defaultValue: "Invalid zmux.json"
             )
             return String(format: format, issue.message ?? fallback)
         case .newWorkspaceActionRequiresWorkspaceCommand:
             let format = String(
-                localized: "command.cmuxConfig.issue.newWorkspaceActionRequiresWorkspaceCommand.detail",
+                localized: "command.zmuxConfig.issue.newWorkspaceActionRequiresWorkspaceCommand.detail",
                 defaultValue: "%@ must reference a workspace command action"
             )
             return String(format: format, issue.settingName)
         case .newWorkspaceCommandNotFound:
             let format = String(
-                localized: "command.cmuxConfig.issue.newWorkspaceCommandNotFound.detail",
+                localized: "command.zmuxConfig.issue.newWorkspaceCommandNotFound.detail",
                 defaultValue: "%@ references missing command '%@'"
             )
             return String(format: format, issue.settingName, issue.commandName ?? "")
         case .newWorkspaceCommandRequiresWorkspace:
             let format = String(
-                localized: "command.cmuxConfig.issue.newWorkspaceCommandRequiresWorkspace.detail",
+                localized: "command.zmuxConfig.issue.newWorkspaceCommandRequiresWorkspace.detail",
                 defaultValue: "%@ '%@' must reference a workspace command"
             )
             return String(format: format, issue.settingName, issue.commandName ?? "")
@@ -7687,18 +7687,18 @@ struct ContentView: View {
             appDelegate.openNewMainWindow(preferredWindow: appDelegate.mainWindow(for: windowId))
         }
         registry.register(commandId: "palette.installCLI") {
-            AppDelegate.shared?.installCmuxCLIInPath(nil)
+            AppDelegate.shared?.installZmuxCLIInPath(nil)
         }
         registry.register(commandId: "palette.uninstallCLI") {
-            AppDelegate.shared?.uninstallCmuxCLIInPath(nil)
+            AppDelegate.shared?.uninstallZmuxCLIInPath(nil)
         }
         registry.register(commandId: "palette.newTerminalTab") {
-            if !executeConfiguredAction(id: CmuxSurfaceTabBarBuiltInAction.newTerminal.configID) {
+            if !executeConfiguredAction(id: ZmuxSurfaceTabBarBuiltInAction.newTerminal.configID) {
                 tabManager.newSurface()
             }
         }
         registry.register(commandId: "palette.newBrowserTab") {
-            if executeConfiguredAction(id: CmuxSurfaceTabBarBuiltInAction.newBrowser.configID) {
+            if executeConfiguredAction(id: ZmuxSurfaceTabBarBuiltInAction.newBrowser.configID) {
                 return
             }
             // Let command-palette dismissal complete first so omnibar focus
@@ -7757,13 +7757,13 @@ struct ContentView: View {
         }
         registry.register(commandId: "palette.openSettings") {
 #if DEBUG
-            cmuxDebugLog("palette.openSettings.invoke")
+            zmuxDebugLog("palette.openSettings.invoke")
 #endif
             if let appDelegate = AppDelegate.shared {
                 appDelegate.openPreferencesWindow(debugSource: "palette.openSettings")
             } else {
 #if DEBUG
-                cmuxDebugLog("palette.openSettings.missingAppDelegate fallback=1")
+                zmuxDebugLog("palette.openSettings.missingAppDelegate fallback=1")
 #endif
                 AppDelegate.presentPreferencesWindow()
             }
@@ -7993,12 +7993,12 @@ struct ContentView: View {
             tabManager.searchSelection()
         }
         registry.register(commandId: "palette.terminalSplitRight") {
-            if !executeConfiguredAction(id: CmuxSurfaceTabBarBuiltInAction.splitRight.configID) {
+            if !executeConfiguredAction(id: ZmuxSurfaceTabBarBuiltInAction.splitRight.configID) {
                 tabManager.createSplit(direction: .right)
             }
         }
         registry.register(commandId: "palette.terminalSplitDown") {
-            if !executeConfiguredAction(id: CmuxSurfaceTabBarBuiltInAction.splitDown.configID) {
+            if !executeConfiguredAction(id: ZmuxSurfaceTabBarBuiltInAction.splitDown.configID) {
                 tabManager.createSplit(direction: .down)
             }
         }
@@ -8021,13 +8021,13 @@ struct ContentView: View {
             }
         }
 
-        for issue in cmuxConfigStore.configurationIssues {
+        for issue in zmuxConfigStore.configurationIssues {
             let captured = issue
-            registry.register(commandId: commandPaletteCmuxConfigIssueCommandID(issue)) {
-                openCmuxConfigIssue(captured)
+            registry.register(commandId: commandPaletteZmuxConfigIssueCommandID(issue)) {
+                openZmuxConfigIssue(captured)
             }
         }
-        for action in cmuxConfigStore.paletteCustomActions() {
+        for action in zmuxConfigStore.paletteCustomActions() {
             let captured = action
             registry.register(commandId: action.id) {
                 executeConfiguredAction(captured)
@@ -8035,7 +8035,7 @@ struct ContentView: View {
         }
     }
 
-    private func openCmuxConfigIssue(_ issue: CmuxConfigIssue) {
+    private func openZmuxConfigIssue(_ issue: ZmuxConfigIssue) {
         guard let sourcePath = issue.sourcePath,
               FileManager.default.fileExists(atPath: sourcePath) else {
             NSSound.beep()
@@ -8046,22 +8046,22 @@ struct ContentView: View {
 
     @discardableResult
     private func executeConfiguredAction(id: String) -> Bool {
-        guard let action = cmuxConfigStore.resolvedAction(id: id) else {
+        guard let action = zmuxConfigStore.resolvedAction(id: id) else {
             return false
         }
         return executeConfiguredAction(action)
     }
 
     @discardableResult
-    private func executeConfiguredAction(_ action: CmuxResolvedConfigAction) -> Bool {
+    private func executeConfiguredAction(_ action: ZmuxResolvedConfigAction) -> Bool {
         let baseCwd = configuredActionBaseCwd()
-        return CmuxConfigExecutor.execute(
+        return ZmuxConfigExecutor.execute(
             action: action,
-            commands: cmuxConfigStore.loadedCommands,
-            commandSourcePaths: cmuxConfigStore.commandSourcePaths,
+            commands: zmuxConfigStore.loadedCommands,
+            commandSourcePaths: zmuxConfigStore.commandSourcePaths,
             tabManager: tabManager,
             baseCwd: baseCwd,
-            globalConfigPath: cmuxConfigStore.globalConfigPath
+            globalConfigPath: zmuxConfigStore.globalConfigPath
         )
     }
 
@@ -8432,7 +8432,7 @@ struct ContentView: View {
             let newlineCount = commandPaletteWorkspaceDescriptionDraft.reduce(into: 0) { count, character in
                 if character == "\n" { count += 1 }
             }
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.wsDescription.submit.request workspace=\(target.workspaceId.uuidString.prefix(8)) " +
                 "draftLen=\((commandPaletteWorkspaceDescriptionDraft as NSString).length) " +
                 "newlines=\(newlineCount)"
@@ -8447,7 +8447,7 @@ struct ContentView: View {
 
     private func runCommandPaletteCommand(_ command: CommandPaletteCommand) {
 #if DEBUG
-        cmuxDebugLog("palette.run commandId=\(command.id) dismissOnRun=\(command.dismissOnRun ? 1 : 0)")
+        zmuxDebugLog("palette.run commandId=\(command.id) dismissOnRun=\(command.dismissOnRun ? 1 : 0)")
 #endif
         recordCommandPaletteUsage(command.id)
         command.action()
@@ -8504,7 +8504,7 @@ struct ContentView: View {
 
     private func openCommandPaletteWorkspaceDescriptionInput() {
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "palette.wsDescription.open begin presented=\(isCommandPalettePresented ? 1 : 0) " +
             "mode=\(debugCommandPaletteModeLabel(commandPaletteMode)) " +
             "window={\(debugCommandPaletteWindowSummary(observedWindow ?? NSApp.keyWindow ?? NSApp.mainWindow))}"
@@ -8515,7 +8515,7 @@ struct ContentView: View {
         }
         beginWorkspaceDescriptionFlow()
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "palette.wsDescription.open end presented=\(isCommandPalettePresented ? 1 : 0) " +
             "mode=\(debugCommandPaletteModeLabel(commandPaletteMode)) " +
             "focusFlag=\(commandPaletteShouldFocusWorkspaceDescriptionEditor ? 1 : 0)"
@@ -8643,7 +8643,7 @@ struct ContentView: View {
             let newlineCount = commandPaletteWorkspaceDescriptionDraft.reduce(into: 0) { count, character in
                 if character == "\n" { count += 1 }
             }
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.wsDescription.dismiss workspace=\(target.workspaceId.uuidString.prefix(8)) " +
                 "restoreFocus=\(restoreFocus ? 1 : 0) " +
                 "draftLen=\((commandPaletteWorkspaceDescriptionDraft as NSString).length) " +
@@ -8699,12 +8699,12 @@ struct ContentView: View {
         let clickedFocusTarget = commandPaletteBackdropFocusTarget(atContentPoint: contentPoint)
 #if DEBUG
         if let clickedFocusTarget {
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.dismiss.backdrop focusTarget panel=\(clickedFocusTarget.panelId.uuidString.prefix(5)) " +
                 "workspace=\(clickedFocusTarget.workspaceId.uuidString.prefix(5)) intent=\(debugCommandPaletteFocusIntent(clickedFocusTarget.intent))"
             )
         } else {
-            cmuxDebugLog("palette.dismiss.backdrop focusTarget=nil")
+            zmuxDebugLog("palette.dismiss.backdrop focusTarget=nil")
         }
 #endif
         dismissCommandPalette(restoreFocus: true, preferredFocusTarget: clickedFocusTarget)
@@ -8752,7 +8752,7 @@ struct ContentView: View {
     }
 
     private func commandPaletteBackdropFocusTarget(for responder: NSResponder) -> CommandPaletteRestoreFocusTarget? {
-        if let terminalView = cmuxOwningGhosttyView(for: responder),
+        if let terminalView = zmuxOwningGhosttyView(for: responder),
            let workspaceId = terminalView.tabId,
            let panelId = terminalView.terminalSurface?.id,
            tabManager.tabs.contains(where: { $0.id == workspaceId }) {
@@ -8907,7 +8907,7 @@ struct ContentView: View {
 
     private func resetCommandPaletteWorkspaceDescriptionFocus() {
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "palette.wsDescription.focus.reset schedule presented=\(isCommandPalettePresented ? 1 : 0) " +
             "mode=\(debugCommandPaletteModeLabel(commandPaletteMode)) " +
             "focusFlag=\(commandPaletteShouldFocusWorkspaceDescriptionEditor ? 1 : 0)"
@@ -8915,7 +8915,7 @@ struct ContentView: View {
 #endif
         DispatchQueue.main.async {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.wsDescription.focus.reset apply.before search=\(isCommandPaletteSearchFocused ? 1 : 0) " +
                 "rename=\(isCommandPaletteRenameFocused ? 1 : 0) " +
                 "editor=\(commandPaletteShouldFocusWorkspaceDescriptionEditor ? 1 : 0) " +
@@ -8928,7 +8928,7 @@ struct ContentView: View {
             commandPaletteShouldFocusWorkspaceDescriptionEditor = true
             commandPalettePendingTextSelectionBehavior = nil
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.wsDescription.focus.reset apply.after search=\(isCommandPaletteSearchFocused ? 1 : 0) " +
                 "rename=\(isCommandPaletteRenameFocused ? 1 : 0) " +
                 "editor=\(commandPaletteShouldFocusWorkspaceDescriptionEditor ? 1 : 0) " +
@@ -9107,7 +9107,7 @@ struct ContentView: View {
 #if DEBUG
         guard !didApplyUITestSidebarSelection else { return }
         let env = ProcessInfo.processInfo.environment
-        guard let rawValue = env["CMUX_UI_TEST_SIDEBAR_SELECTED_WORKSPACE_INDICES"]?
+        guard let rawValue = env["ZMUX_UI_TEST_SIDEBAR_SELECTED_WORKSPACE_INDICES"]?
             .trimmingCharacters(in: .whitespacesAndNewlines),
               !rawValue.isEmpty else {
             return
@@ -9191,7 +9191,7 @@ struct ContentView: View {
 
     private func startWorkspaceDescriptionFlow(_ target: CommandPaletteWorkspaceDescriptionTarget) {
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "palette.wsDescription.flow.start workspace=\(target.workspaceId.uuidString.prefix(8)) " +
             "descLen=\((target.currentDescription as NSString).length) " +
             "presented=\(isCommandPalettePresented ? 1 : 0) " +
@@ -9204,7 +9204,7 @@ struct ContentView: View {
         commandPaletteMode = .workspaceDescriptionInput(target)
         resetCommandPaletteWorkspaceDescriptionFocus()
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "palette.wsDescription.flow.armed workspace=\(target.workspaceId.uuidString.prefix(8)) " +
             "height=\(String(format: "%.1f", commandPaletteWorkspaceDescriptionHeight)) " +
             "modeAfter=\(debugCommandPaletteModeLabel(commandPaletteMode))"
@@ -9249,7 +9249,7 @@ struct ContentView: View {
         let newlineCount = proposedDescription.reduce(into: 0) { count, character in
             if character == "\n" { count += 1 }
         }
-        cmuxDebugLog(
+        zmuxDebugLog(
             "palette.wsDescription.apply.begin workspace=\(target.workspaceId.uuidString.prefix(8)) " +
             "proposedLen=\((proposedDescription as NSString).length) " +
             "newlines=\(newlineCount) " +
@@ -9263,7 +9263,7 @@ struct ContentView: View {
             let persistedNewlineCount = persisted.reduce(into: 0) { count, character in
                 if character == "\n" { count += 1 }
             }
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "palette.wsDescription.apply.end workspace=\(target.workspaceId.uuidString.prefix(8)) " +
                 "persistedLen=\((persisted as NSString).length) " +
                 "persistedNewlines=\(persistedNewlineCount) " +
@@ -9298,7 +9298,7 @@ struct ContentView: View {
         guard !pullRequests.isEmpty else { return false }
 
         var openedCount = 0
-        if openSidebarPullRequestLinksInCmuxBrowser {
+        if openSidebarPullRequestLinksInZmuxBrowser {
             for pullRequest in pullRequests {
                 if tabManager.openBrowser(url: pullRequest.url, insertAtEnd: true) != nil {
                     openedCount += 1
@@ -9410,8 +9410,8 @@ private struct SidebarTabItemSettingsSnapshot: Equatable {
     let usesVerticalBranchLayout: Bool
     let showsGitBranchIcon: Bool
     let showsSSH: Bool
-    let openPullRequestLinksInCmuxBrowser: Bool
-    let openPortLinksInCmuxBrowser: Bool
+    let openPullRequestLinksInZmuxBrowser: Bool
+    let openPortLinksInZmuxBrowser: Bool
     let showsNotificationMessage: Bool
     let activeTabIndicatorStyle: SidebarActiveTabIndicatorStyle
     let selectionColorHex: String?
@@ -9438,10 +9438,10 @@ private struct SidebarTabItemSettingsSnapshot: Equatable {
         usesVerticalBranchLayout = SidebarBranchLayoutSettings.usesVerticalLayout(defaults: defaults)
         showsGitBranchIcon = Self.bool(defaults: defaults, key: "sidebarShowGitBranchIcon", defaultValue: false)
         showsSSH = Self.bool(defaults: defaults, key: "sidebarShowSSH", defaultValue: true)
-        openPullRequestLinksInCmuxBrowser = BrowserLinkOpenSettings.openSidebarPullRequestLinksInCmuxBrowser(
+        openPullRequestLinksInZmuxBrowser = BrowserLinkOpenSettings.openSidebarPullRequestLinksInZmuxBrowser(
             defaults: defaults
         )
-        openPortLinksInCmuxBrowser = BrowserLinkOpenSettings.openSidebarPortLinksInCmuxBrowser(
+        openPortLinksInZmuxBrowser = BrowserLinkOpenSettings.openSidebarPortLinksInZmuxBrowser(
             defaults: defaults
         )
 
@@ -9710,7 +9710,7 @@ struct VerticalTabsSidebar: View {
                 reason: "drag_state_change"
             )
 #if DEBUG
-            cmuxDebugLog("sidebar.dragState.sidebar tab=\(debugShortSidebarTabId(newDraggedTabId))")
+            zmuxDebugLog("sidebar.dragState.sidebar tab=\(debugShortSidebarTabId(newDraggedTabId))")
 #endif
             if newDraggedTabId != nil {
                 dragFailsafeMonitor.start {
@@ -9731,7 +9731,7 @@ struct VerticalTabsSidebar: View {
             guard draggedTabId != nil else { return }
             let reason = SidebarDragLifecycleNotification.reason(from: notification)
 #if DEBUG
-            cmuxDebugLog("sidebar.dragClear tab=\(debugShortSidebarTabId(draggedTabId)) reason=\(reason)")
+            zmuxDebugLog("sidebar.dragClear tab=\(debugShortSidebarTabId(draggedTabId)) reason=\(reason)")
 #endif
             draggedTabId = nil
         }
@@ -10071,8 +10071,8 @@ enum DevBuildBannerDebugSettings {
 
 private enum FeedbackComposerSettings {
     static let storedEmailKey = "sidebarHelpFeedbackEmail"
-    static let endpointEnvironmentKey = "CMUX_FEEDBACK_API_URL"
-    static let defaultEndpoint = "https://cmux.com/api/feedback"
+    static let endpointEnvironmentKey = "ZMUX_FEEDBACK_API_URL"
+    static let defaultEndpoint = "https://zmux.com/api/feedback"
     static let foundersEmail = "founders@manaflow.com"
     static let maxMessageLength = 4_000
     static let maxAttachmentCount = 10
@@ -10145,9 +10145,9 @@ private struct FeedbackComposerAppMetadata {
     static var current: FeedbackComposerAppMetadata {
         let infoDictionary = Bundle.main.infoDictionary ?? [:]
         let env = ProcessInfo.processInfo.environment
-        let commit = (infoDictionary["CMUXCommit"] as? String).flatMap { value in
+        let commit = (infoDictionary["ZMUXCommit"] as? String).flatMap { value in
             value.isEmpty ? nil : value
-        } ?? env["CMUX_COMMIT"]
+        } ?? env["ZMUX_COMMIT"]
 
         return FeedbackComposerAppMetadata(
             appVersion: infoDictionary["CFBundleShortVersionString"] as? String ?? "",
@@ -10446,8 +10446,8 @@ private enum FeedbackComposerClient {
 }
 
 enum SidebarDragLifecycleNotification {
-    static let stateDidChange = Notification.Name("cmux.sidebarDragStateDidChange")
-    static let requestClear = Notification.Name("cmux.sidebarDragRequestClear")
+    static let stateDidChange = Notification.Name("zmux.sidebarDragStateDidChange")
+    static let requestClear = Notification.Name("zmux.sidebarDragRequestClear")
     static let tabIdKey = "tabId"
     static let reasonKey = "reason"
 
@@ -10587,11 +10587,11 @@ private final class SidebarDragFailsafeMonitor: ObservableObject {
     private func requestClearSoon(reason: String) {
         guard pendingClearWorkItem == nil else { return }
 #if DEBUG
-        cmuxDebugLog("sidebar.dragFailsafe.schedule reason=\(reason)")
+        zmuxDebugLog("sidebar.dragFailsafe.schedule reason=\(reason)")
 #endif
         let workItem = DispatchWorkItem { [weak self] in
 #if DEBUG
-            cmuxDebugLog("sidebar.dragFailsafe.fire reason=\(reason)")
+            zmuxDebugLog("sidebar.dragFailsafe.fire reason=\(reason)")
 #endif
             self?.pendingClearWorkItem = nil
             self?.onRequestClear?(reason)
@@ -10638,7 +10638,7 @@ private struct SidebarExternalDropDelegate: DropDelegate {
             hasSidebarDragPayload: hasSidebarPayload
         )
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "sidebar.dropOutside.validate tab=\(debugShortSidebarTabId(draggedTabId)) " +
             "hasType=\(hasSidebarPayload) allowed=\(shouldReset)"
         )
@@ -10648,20 +10648,20 @@ private struct SidebarExternalDropDelegate: DropDelegate {
 
     func dropEntered(info: DropInfo) {
 #if DEBUG
-        cmuxDebugLog("sidebar.dropOutside.entered tab=\(debugShortSidebarTabId(draggedTabId))")
+        zmuxDebugLog("sidebar.dropOutside.entered tab=\(debugShortSidebarTabId(draggedTabId))")
 #endif
     }
 
     func dropExited(info: DropInfo) {
 #if DEBUG
-        cmuxDebugLog("sidebar.dropOutside.exited tab=\(debugShortSidebarTabId(draggedTabId))")
+        zmuxDebugLog("sidebar.dropOutside.exited tab=\(debugShortSidebarTabId(draggedTabId))")
 #endif
     }
 
     func dropUpdated(info: DropInfo) -> DropProposal? {
         guard validateDrop(info: info) else { return nil }
 #if DEBUG
-        cmuxDebugLog("sidebar.dropOutside.updated tab=\(debugShortSidebarTabId(draggedTabId)) op=move")
+        zmuxDebugLog("sidebar.dropOutside.updated tab=\(debugShortSidebarTabId(draggedTabId)) op=move")
 #endif
         // Explicit move proposal avoids AppKit showing a copy (+) cursor.
         return DropProposal(operation: .move)
@@ -10670,7 +10670,7 @@ private struct SidebarExternalDropDelegate: DropDelegate {
     func performDrop(info: DropInfo) -> Bool {
         guard validateDrop(info: info) else { return false }
 #if DEBUG
-        cmuxDebugLog("sidebar.dropOutside.perform tab=\(debugShortSidebarTabId(draggedTabId))")
+        zmuxDebugLog("sidebar.dropOutside.perform tab=\(debugShortSidebarTabId(draggedTabId))")
 #endif
         SidebarDragLifecycleNotification.postClearRequest(reason: "outside_sidebar_drop")
         return true
@@ -11649,10 +11649,10 @@ enum FeedbackComposerBridge {
 }
 
 private struct SidebarHelpMenuButton: View {
-    private let docsURL = URL(string: "https://cmux.com/docs")
-    private let changelogURL = URL(string: "https://cmux.com/docs/changelog")
-    private let githubURL = URL(string: "https://github.com/manaflow-ai/cmux")
-    private let githubIssuesURL = URL(string: "https://github.com/manaflow-ai/cmux/issues")
+    private let docsURL = URL(string: "https://zmux.com/docs")
+    private let changelogURL = URL(string: "https://zmux.com/docs/changelog")
+    private let githubURL = URL(string: "https://github.com/manaflow-ai/zmux")
+    private let githubIssuesURL = URL(string: "https://github.com/manaflow-ai/zmux/issues")
     private let discordURL = URL(string: "https://discord.gg/xsgFEVrWCZ")
     private let helpTitle = String(localized: "sidebar.help.button", defaultValue: "Help")
     private let buttonSize: CGFloat = 22
@@ -11696,7 +11696,7 @@ private struct SidebarHelpMenuButton: View {
     private var helpPopover: some View {
         VStack(alignment: .leading, spacing: 2) {
             helpOptionButton(
-                title: String(localized: "sidebar.help.welcome", defaultValue: "Welcome to cmux!"),
+                title: String(localized: "sidebar.help.welcome", defaultValue: "Welcome to zmux!"),
                 action: .welcome,
                 accessibilityIdentifier: "SidebarHelpMenuOptionWelcome",
                 isExternalLink: false
@@ -12162,7 +12162,7 @@ private struct SidebarEmptyArea: View {
             .overlay(alignment: .top) {
                 if shouldShowTopDropIndicator {
                     Rectangle()
-                        .fill(cmuxAccentColor())
+                        .fill(zmuxAccentColor())
                         .frame(height: 2)
                         .padding(.horizontal, 8)
                         .offset(y: -(rowSpacing / 2))
@@ -12429,12 +12429,12 @@ private struct TabItemView: View, Equatable {
         settings.notificationBadgeColorHex
     }
 
-    private var openSidebarPullRequestLinksInCmuxBrowser: Bool {
-        settings.openPullRequestLinksInCmuxBrowser
+    private var openSidebarPullRequestLinksInZmuxBrowser: Bool {
+        settings.openPullRequestLinksInZmuxBrowser
     }
 
-    private var openSidebarPortLinksInCmuxBrowser: Bool {
-        settings.openPortLinksInCmuxBrowser
+    private var openSidebarPortLinksInZmuxBrowser: Bool {
+        settings.openPortLinksInZmuxBrowser
     }
 
     private var titleFontWeight: Font.Weight {
@@ -12484,7 +12484,7 @@ private struct TabItemView: View, Equatable {
         if let hex = sidebarNotificationBadgeColorHex, let nsColor = NSColor(hex: hex) {
             return Color(nsColor: nsColor)
         }
-        return usesInvertedActiveForeground ? Color.white.opacity(0.25) : cmuxAccentColor()
+        return usesInvertedActiveForeground ? Color.white.opacity(0.25) : zmuxAccentColor()
     }
 
     private var activeProgressTrackColor: Color {
@@ -12492,7 +12492,7 @@ private struct TabItemView: View, Equatable {
     }
 
     private var activeProgressFillColor: Color {
-        usesInvertedActiveForeground ? Color.white.opacity(0.8) : cmuxAccentColor()
+        usesInvertedActiveForeground ? Color.white.opacity(0.8) : zmuxAccentColor()
     }
 
     private var shortcutHintEmphasis: Double {
@@ -12659,7 +12659,7 @@ private struct TabItemView: View, Equatable {
                 ZStack(alignment: .trailing) {
                     Button(action: {
                         #if DEBUG
-                        cmuxDebugLog("sidebar.close workspace=\(tab.id.uuidString.prefix(5)) method=button")
+                        zmuxDebugLog("sidebar.close workspace=\(tab.id.uuidString.prefix(5)) method=button")
                         #endif
                         tabManager.closeWorkspaceWithConfirmation(tab)
                     }) {
@@ -12909,7 +12909,7 @@ private struct TabItemView: View, Equatable {
         .overlay {
             MiddleClickCapture {
                 #if DEBUG
-                cmuxDebugLog("sidebar.close workspace=\(tab.id.uuidString.prefix(5)) method=middleClick")
+                zmuxDebugLog("sidebar.close workspace=\(tab.id.uuidString.prefix(5)) method=middleClick")
                 #endif
                 tabManager.closeWorkspaceWithConfirmation(tab)
             }
@@ -12917,7 +12917,7 @@ private struct TabItemView: View, Equatable {
         .overlay(alignment: .top) {
             if showsCenteredTopDropIndicator {
                 Rectangle()
-                    .fill(cmuxAccentColor())
+                    .fill(zmuxAccentColor())
                     .frame(height: 2)
                     .padding(.horizontal, 8)
                     .offset(y: index == 0 ? 0 : -(rowSpacing / 2))
@@ -12932,7 +12932,7 @@ private struct TabItemView: View, Equatable {
         ) { _ in
 #if DEBUG
             let description = tab.customDescription ?? ""
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "sidebar.row.invalidate workspace=\(tab.id.uuidString.prefix(8)) " +
                 "source=immediate " +
                 "title=\"\(debugCommandPaletteTextPreview(tab.title))\" " +
@@ -12952,7 +12952,7 @@ private struct TabItemView: View, Equatable {
         ) { _ in
 #if DEBUG
             let description = tab.customDescription ?? ""
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "sidebar.row.invalidate workspace=\(tab.id.uuidString.prefix(8)) " +
                 "source=debounced " +
                 "title=\"\(debugCommandPaletteTextPreview(tab.title))\" " +
@@ -12967,7 +12967,7 @@ private struct TabItemView: View, Equatable {
         }
         .onDrag {
             #if DEBUG
-            cmuxDebugLog("sidebar.onDrag tab=\(tab.id.uuidString.prefix(5))")
+            zmuxDebugLog("sidebar.onDrag tab=\(tab.id.uuidString.prefix(5))")
             #endif
             draggedTabId = tab.id
             dropIndicator = nil
@@ -13404,7 +13404,7 @@ private struct TabItemView: View, Equatable {
         if mods.contains(.shift) { modStr += "shift " }
         if mods.contains(.option) { modStr += "opt " }
         if mods.contains(.control) { modStr += "ctrl " }
-        cmuxDebugLog("sidebar.select workspace=\(tab.id.uuidString.prefix(5)) modifiers=\(modStr.isEmpty ? "none" : modStr.trimmingCharacters(in: .whitespaces))")
+        zmuxDebugLog("sidebar.select workspace=\(tab.id.uuidString.prefix(5)) modifiers=\(modStr.isEmpty ? "none" : modStr.trimmingCharacters(in: .whitespaces))")
         #endif
         let modifiers = NSEvent.modifierFlags
         let isCommand = modifiers.contains(.command)
@@ -13761,7 +13761,7 @@ private struct TabItemView: View, Equatable {
 
     private func openPullRequestLink(_ url: URL) {
         updateSelection()
-        if openSidebarPullRequestLinksInCmuxBrowser {
+        if openSidebarPullRequestLinksInZmuxBrowser {
             if tabManager.openBrowser(
                 inWorkspace: tab.id,
                 url: url,
@@ -13778,7 +13778,7 @@ private struct TabItemView: View, Equatable {
     private func openPortLink(_ port: Int) {
         guard let url = URL(string: "http://localhost:\(port)") else { return }
         updateSelection()
-        if openSidebarPortLinksInCmuxBrowser {
+        if openSidebarPortLinksInZmuxBrowser {
             if tabManager.openBrowser(
                 inWorkspace: tab.id,
                 url: url,
@@ -14055,7 +14055,7 @@ private struct SidebarWorkspaceDescriptionText: View {
             let newlineCount = markdown.reduce(into: 0) { count, character in
                 if character == "\n" { count += 1 }
             }
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "sidebar.description.render workspaceState=appear " +
                 "len=\((markdown as NSString).length) " +
                 "newlines=\(newlineCount) " +
@@ -14068,7 +14068,7 @@ private struct SidebarWorkspaceDescriptionText: View {
             let newlineCount = newValue.reduce(into: 0) { count, character in
                 if character == "\n" { count += 1 }
             }
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "sidebar.description.render workspaceState=change " +
                 "len=\((newValue as NSString).length) " +
                 "newlines=\(newlineCount) " +
@@ -14641,10 +14641,10 @@ private final class SidebarDragAutoScrollController: ObservableObject {
 }
 
 private enum SidebarTabDragPayload {
-    static let typeIdentifier = "com.cmux.sidebar-tab-reorder"
+    static let typeIdentifier = "com.zmux.sidebar-tab-reorder"
     static let dropContentType = UTType(exportedAs: typeIdentifier)
     static let dropContentTypes: [UTType] = [dropContentType]
-    private static let prefix = "cmux.sidebar-tab."
+    private static let prefix = "zmux.sidebar-tab."
 
     static func provider(for tabId: UUID) -> NSItemProvider {
         let provider = NSItemProvider()
@@ -14778,14 +14778,14 @@ private struct SidebarTabDropDelegate: DropDelegate {
         let hasType = info.hasItemsConforming(to: [SidebarTabDragPayload.typeIdentifier])
         let hasDrag = draggedTabId != nil
         #if DEBUG
-        cmuxDebugLog("sidebar.validateDrop target=\(targetTabId?.uuidString.prefix(5) ?? "end") hasType=\(hasType) hasDrag=\(hasDrag)")
+        zmuxDebugLog("sidebar.validateDrop target=\(targetTabId?.uuidString.prefix(5) ?? "end") hasType=\(hasType) hasDrag=\(hasDrag)")
         #endif
         return hasType && hasDrag
     }
 
     func dropEntered(info: DropInfo) {
         #if DEBUG
-        cmuxDebugLog("sidebar.dropEntered target=\(targetTabId?.uuidString.prefix(5) ?? "end")")
+        zmuxDebugLog("sidebar.dropEntered target=\(targetTabId?.uuidString.prefix(5) ?? "end")")
         #endif
         dragAutoScrollController.updateFromDragLocation()
         updateDropIndicator(for: info)
@@ -14793,7 +14793,7 @@ private struct SidebarTabDropDelegate: DropDelegate {
 
     func dropExited(info: DropInfo) {
 #if DEBUG
-        cmuxDebugLog("sidebar.dropExited target=\(targetTabId?.uuidString.prefix(5) ?? "end")")
+        zmuxDebugLog("sidebar.dropExited target=\(targetTabId?.uuidString.prefix(5) ?? "end")")
 #endif
         if dropIndicator?.tabId == targetTabId {
             dropIndicator = nil
@@ -14804,7 +14804,7 @@ private struct SidebarTabDropDelegate: DropDelegate {
         dragAutoScrollController.updateFromDragLocation()
         updateDropIndicator(for: info)
 #if DEBUG
-        cmuxDebugLog(
+        zmuxDebugLog(
             "sidebar.dropUpdated target=\(targetTabId?.uuidString.prefix(5) ?? "end") " +
             "indicator=\(debugIndicator(dropIndicator))"
         )
@@ -14819,17 +14819,17 @@ private struct SidebarTabDropDelegate: DropDelegate {
             dragAutoScrollController.stop()
         }
         #if DEBUG
-        cmuxDebugLog("sidebar.drop target=\(targetTabId?.uuidString.prefix(5) ?? "end")")
+        zmuxDebugLog("sidebar.drop target=\(targetTabId?.uuidString.prefix(5) ?? "end")")
         #endif
         guard let draggedTabId else {
 #if DEBUG
-            cmuxDebugLog("sidebar.drop.abort reason=missingDraggedTab")
+            zmuxDebugLog("sidebar.drop.abort reason=missingDraggedTab")
 #endif
             return false
         }
         guard let fromIndex = tabManager.tabs.firstIndex(where: { $0.id == draggedTabId }) else {
 #if DEBUG
-            cmuxDebugLog("sidebar.drop.abort reason=draggedTabMissing tab=\(draggedTabId.uuidString.prefix(5))")
+            zmuxDebugLog("sidebar.drop.abort reason=draggedTabMissing tab=\(draggedTabId.uuidString.prefix(5))")
 #endif
             return false
         }
@@ -14842,7 +14842,7 @@ private struct SidebarTabDropDelegate: DropDelegate {
             pinnedTabIds: Set(tabManager.tabs.filter(\.isPinned).map(\.id))
         ) else {
 #if DEBUG
-            cmuxDebugLog(
+            zmuxDebugLog(
                 "sidebar.drop.abort reason=noTargetIndex tab=\(draggedTabId.uuidString.prefix(5)) " +
                 "target=\(targetTabId?.uuidString.prefix(5) ?? "end") indicator=\(debugIndicator(dropIndicator))"
             )
@@ -14852,14 +14852,14 @@ private struct SidebarTabDropDelegate: DropDelegate {
 
         guard fromIndex != targetIndex else {
 #if DEBUG
-            cmuxDebugLog("sidebar.drop.noop from=\(fromIndex) to=\(targetIndex)")
+            zmuxDebugLog("sidebar.drop.noop from=\(fromIndex) to=\(targetIndex)")
 #endif
             syncSidebarSelection()
             return true
         }
 
 #if DEBUG
-        cmuxDebugLog("sidebar.drop.commit tab=\(draggedTabId.uuidString.prefix(5)) from=\(fromIndex) to=\(targetIndex)")
+        zmuxDebugLog("sidebar.drop.commit tab=\(draggedTabId.uuidString.prefix(5)) from=\(fromIndex) to=\(targetIndex)")
 #endif
         _ = tabManager.reorderWorkspace(tabId: draggedTabId, toIndex: targetIndex)
         if let selectedId = tabManager.selectedTabId {
@@ -15089,7 +15089,7 @@ final class DraggableFolderNSView: NSView, NSDraggingSource {
         #if DEBUG
         let nowMovable = window.map { String($0.isMovable) } ?? "nil"
         let windowOrigin = window.map { formatPoint($0.frame.origin) } ?? "nil"
-        cmuxDebugLog("folder.dragEnd dir=\(directory) operation=\(operation.rawValue) screen=\(formatPoint(screenPoint)) nowMovable=\(nowMovable) windowOrigin=\(windowOrigin)")
+        zmuxDebugLog("folder.dragEnd dir=\(directory) operation=\(operation.rawValue) screen=\(formatPoint(screenPoint)) nowMovable=\(nowMovable) windowOrigin=\(windowOrigin)")
         #endif
     }
 
@@ -15101,7 +15101,7 @@ final class DraggableFolderNSView: NSView, NSDraggingSource {
         let imageHit = (hit === imageView)
         let wasMovable = previousWindowMovableState.map(String.init) ?? "nil"
         let nowMovable = window.map { String($0.isMovable) } ?? "nil"
-        cmuxDebugLog("folder.hitTest point=\(formatPoint(point)) hit=\(hitDesc) imageViewHit=\(imageHit) returning=DraggableFolderNSView wasMovable=\(wasMovable) nowMovable=\(nowMovable)")
+        zmuxDebugLog("folder.hitTest point=\(formatPoint(point)) hit=\(hitDesc) imageViewHit=\(imageHit) returning=DraggableFolderNSView wasMovable=\(wasMovable) nowMovable=\(nowMovable)")
         #endif
         return self
     }
@@ -15115,7 +15115,7 @@ final class DraggableFolderNSView: NSView, NSDraggingSource {
         let wasMovable = previousWindowMovableState.map(String.init) ?? "nil"
         let nowMovable = window.map { String($0.isMovable) } ?? "nil"
         let windowOrigin = window.map { formatPoint($0.frame.origin) } ?? "nil"
-        cmuxDebugLog("folder.mouseDown dir=\(directory) point=\(formatPoint(localPoint)) firstResponder=\(responderDesc) wasMovable=\(wasMovable) nowMovable=\(nowMovable) windowOrigin=\(windowOrigin)")
+        zmuxDebugLog("folder.mouseDown dir=\(directory) point=\(formatPoint(localPoint)) firstResponder=\(responderDesc) wasMovable=\(wasMovable) nowMovable=\(nowMovable) windowOrigin=\(windowOrigin)")
         #endif
         let fileURL = URL(fileURLWithPath: directory)
         let draggingItem = NSDraggingItem(pasteboardWriter: fileURL as NSURL)
@@ -15128,7 +15128,7 @@ final class DraggableFolderNSView: NSView, NSDraggingSource {
         hasActiveDragSession = true
         #if DEBUG
         let itemCount = session.draggingPasteboard.pasteboardItems?.count ?? 0
-        cmuxDebugLog("folder.dragStart dir=\(directory) pasteboardItems=\(itemCount)")
+        zmuxDebugLog("folder.dragStart dir=\(directory) pasteboardItems=\(itemCount)")
         #endif
     }
 
@@ -15216,7 +15216,7 @@ final class DraggableFolderNSView: NSView, NSDraggingSource {
         self.didArmWindowDragSuppression = false
         #if DEBUG
         let nowMovable = targetWindow.map { String($0.isMovable) } ?? "nil"
-        cmuxDebugLog("folder.dragSuppression restore depth=\(depthAfter) nowMovable=\(nowMovable)")
+        zmuxDebugLog("folder.dragSuppression restore depth=\(depthAfter) nowMovable=\(nowMovable)")
         #endif
     }
 
@@ -15239,7 +15239,7 @@ final class DraggableFolderNSView: NSView, NSDraggingSource {
         #if DEBUG
         let wasMovable = previousWindowMovableState.map(String.init) ?? "nil"
         let nowMovable = String(currentWindow.isMovable)
-        cmuxDebugLog(
+        zmuxDebugLog(
             "folder.dragSuppression trigger=\(trigger) event=\(eventType) depth=\(suppressionDepth) wasMovable=\(wasMovable) nowMovable=\(nowMovable)"
         )
         #endif

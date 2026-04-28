@@ -95,7 +95,7 @@ enum PaneFirstClickFocusSettings {
 enum TerminalScrollBarSettings {
     static let showScrollBarKey = "terminal.showScrollBar"
     static let defaultShowScrollBar = true
-    static let didChangeNotification = Notification.Name("cmux.terminalScrollBarSettingsDidChange")
+    static let didChangeNotification = Notification.Name("zmux.terminalScrollBarSettingsDidChange")
 
     static func isVisible(defaults: UserDefaults = .standard) -> Bool {
         if defaults.object(forKey: showScrollBarKey) == nil {
@@ -110,7 +110,7 @@ enum TerminalScrollBarSettings {
 }
 
 enum UITestLaunchManifest {
-    static let argumentName = "-cmuxUITestLaunchManifest"
+    static let argumentName = "-zmuxUITestLaunchManifest"
 
     struct Payload: Decodable {
         let environment: [String: String]

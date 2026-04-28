@@ -20,44 +20,44 @@ from pathlib import Path
 from typing import List
 
 sys.path.insert(0, str(Path(__file__).parent))
-from cmux import cmux, cmuxError
+from zmux import zmux, zmuxError
 
 
-SOCKET_PATH = os.environ.get("CMUX_SOCKET", "/tmp/cmux-debug.sock")
+SOCKET_PATH = os.environ.get("ZMUX_SOCKET", "/tmp/zmux-debug.sock")
 
 
 def _must(cond: bool, msg: str) -> None:
     if not cond:
-        raise cmuxError(msg)
+        raise zmuxError(msg)
 
 
 def _find_cli_binary() -> str:
-    env_cli = os.environ.get("CMUXTERM_CLI")
+    env_cli = os.environ.get("ZMUXTERM_CLI")
     if env_cli and os.path.isfile(env_cli) and os.access(env_cli, os.X_OK):
         return env_cli
 
     candidates = glob.glob(os.path.expanduser(
-        "~/Library/Developer/Xcode/DerivedData/**/Build/Products/Debug/cmux"
+        "~/Library/Developer/Xcode/DerivedData/**/Build/Products/Debug/zmux"
     ), recursive=True)
-    candidates += glob.glob("/tmp/cmux-*/Build/Products/Debug/cmux")
+    candidates += glob.glob("/tmp/zmux-*/Build/Products/Debug/zmux")
     candidates = [p for p in candidates if os.path.isfile(p) and os.access(p, os.X_OK)]
     if not candidates:
-        raise cmuxError("Could not locate cmux CLI binary; set CMUXTERM_CLI")
+        raise zmuxError("Could not locate zmux CLI binary; set ZMUXTERM_CLI")
     candidates.sort(key=lambda p: os.path.getmtime(p), reverse=True)
     return candidates[0]
 
 
 def _run_tmux_compat(cli: str, args: List[str]) -> subprocess.CompletedProcess[str]:
     env = dict(os.environ)
-    env.pop("CMUX_WORKSPACE_ID", None)
-    env.pop("CMUX_SURFACE_ID", None)
-    env["CMUX_SOCKET_PATH"] = SOCKET_PATH
-    env["CMUX_OMO_CMUX_BIN"] = cli
+    env.pop("ZMUX_WORKSPACE_ID", None)
+    env.pop("ZMUX_SURFACE_ID", None)
+    env["ZMUX_SOCKET_PATH"] = SOCKET_PATH
+    env["ZMUX_OMO_ZMUX_BIN"] = cli
     cmd = [cli, "--socket", SOCKET_PATH, "__tmux-compat"] + args
     return subprocess.run(cmd, capture_output=True, text=True, check=False, env=env)
 
 
-def test_pane_list_geometry_fields(c: cmux) -> None:
+def test_pane_list_geometry_fields(c: zmux) -> None:
     """pane.list response includes geometry fields for each pane."""
     print("  test_pane_list_geometry_fields ... ", end="", flush=True)
     panes_raw = c.list_panes()
@@ -130,7 +130,7 @@ def test_list_panes_geometry_format(cli: str) -> None:
     print("PASS")
 
 
-def test_list_panes_pane_target(cli: str, c: cmux) -> None:
+def test_list_panes_pane_target(cli: str, c: zmux) -> None:
     """list-panes -t %<pane-uuid> resolves pane target to workspace."""
     print("  test_list_panes_pane_target ... ", end="", flush=True)
     panes_raw = c.list_panes()
@@ -158,7 +158,7 @@ def test_display_geometry_format(cli: str) -> None:
     print("PASS")
 
 
-def test_multi_pane_geometry(cli: str, c: cmux) -> None:
+def test_multi_pane_geometry(cli: str, c: zmux) -> None:
     """After splitting, two panes have different pane_left values and halved widths."""
     print("  test_multi_pane_geometry ... ", end="", flush=True)
     ws = c.new_workspace()
@@ -215,7 +215,7 @@ def main() -> int:
     failed = 0
     errors = []
 
-    with cmux(SOCKET_PATH) as c:
+    with zmux(SOCKET_PATH) as c:
         tests = [
             ("test_pane_list_geometry_fields", lambda: test_pane_list_geometry_fields(c)),
             ("test_tmux_version", lambda: test_tmux_version(cli)),

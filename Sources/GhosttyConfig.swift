@@ -8,10 +8,10 @@ struct GhosttyConfig {
     }
 
     // Native fallback for fresh installs when the user hasn't chosen terminal colors yet.
-    static let cmuxDefaultLightThemeName = "Apple System Colors Light"
-    static let cmuxDefaultDarkThemeName = "Apple System Colors"
+    static let zmuxDefaultLightThemeName = "Apple System Colors Light"
+    static let zmuxDefaultDarkThemeName = "Apple System Colors"
 
-    private static let cmuxReleaseBundleIdentifier = "com.cmuxterm.app"
+    private static let zmuxReleaseBundleIdentifier = "com.zmuxterm.app"
     private static let loadCacheLock = NSLock()
     private static var cachedConfigsByColorScheme: [ColorSchemePreference: GhosttyConfig] = [:]
 
@@ -101,7 +101,7 @@ struct GhosttyConfig {
         loadCacheLock.unlock()
     }
 
-    private static func cmuxConfigPaths(
+    private static func zmuxConfigPaths(
         fileManager: FileManager = .default,
         currentBundleIdentifier: String? = Bundle.main.bundleIdentifier
     ) -> [String] {
@@ -129,11 +129,11 @@ struct GhosttyConfig {
             }
         }
 
-        let releasePaths = paths(for: cmuxReleaseBundleIdentifier)
+        let releasePaths = paths(for: zmuxReleaseBundleIdentifier)
         guard let currentBundleIdentifier, !currentBundleIdentifier.isEmpty else {
             return releasePaths
         }
-        if currentBundleIdentifier == cmuxReleaseBundleIdentifier {
+        if currentBundleIdentifier == zmuxReleaseBundleIdentifier {
             return releasePaths
         }
 
@@ -204,7 +204,7 @@ struct GhosttyConfig {
             "~/.config/ghostty/config.ghostty",
             "~/Library/Application Support/com.mitchellh.ghostty/config",
             "~/Library/Application Support/com.mitchellh.ghostty/config.ghostty",
-        ].map { NSString(string: $0).expandingTildeInPath } + cmuxConfigPaths()
+        ].map { NSString(string: $0).expandingTildeInPath } + zmuxConfigPaths()
 
         #if DEBUG
         let startupPreviewProfile = GhosttyStartupAppearancePreviewState.profile
@@ -217,7 +217,7 @@ struct GhosttyConfig {
 
             if config.theme == nil,
                GhosttyApp.shouldApplyManagedDefaultAppearance(configPaths: configPaths) {
-                config.applyCmuxDefaultAppearance(
+                config.applyZmuxDefaultAppearance(
                     environment: ProcessInfo.processInfo.environment,
                     bundleResourceURL: Bundle.main.resourceURL,
                     preferredColorScheme: preferredColorScheme
@@ -237,7 +237,7 @@ struct GhosttyConfig {
 
         if config.theme == nil,
            GhosttyApp.shouldApplyManagedDefaultAppearance(configPaths: configPaths) {
-            config.applyCmuxDefaultAppearance(
+            config.applyZmuxDefaultAppearance(
                 environment: ProcessInfo.processInfo.environment,
                 bundleResourceURL: Bundle.main.resourceURL,
                 preferredColorScheme: preferredColorScheme
@@ -261,13 +261,13 @@ struct GhosttyConfig {
         return config
     }
 
-    mutating func applyCmuxDefaultAppearance(
+    mutating func applyZmuxDefaultAppearance(
         environment: [String: String],
         bundleResourceURL: URL?,
         preferredColorScheme: ColorSchemePreference
     ) {
         parse(
-            Self.cmuxDefaultThemeConfigContents(
+            Self.zmuxDefaultThemeConfigContents(
                 preferredColorScheme: preferredColorScheme,
                 environment: environment,
                 bundleResourceURL: bundleResourceURL
@@ -275,21 +275,21 @@ struct GhosttyConfig {
         )
     }
 
-    static func cmuxDefaultThemeName(preferredColorScheme: ColorSchemePreference) -> String {
+    static func zmuxDefaultThemeName(preferredColorScheme: ColorSchemePreference) -> String {
         switch preferredColorScheme {
         case .light:
-            return cmuxDefaultLightThemeName
+            return zmuxDefaultLightThemeName
         case .dark:
-            return cmuxDefaultDarkThemeName
+            return zmuxDefaultDarkThemeName
         }
     }
 
-    static func cmuxDefaultThemeConfigContents(
+    static func zmuxDefaultThemeConfigContents(
         preferredColorScheme: ColorSchemePreference,
         environment: [String: String] = ProcessInfo.processInfo.environment,
         bundleResourceURL: URL? = Bundle.main.resourceURL
     ) -> String {
-        if let url = cmuxDefaultThemeConfigURL(
+        if let url = zmuxDefaultThemeConfigURL(
             preferredColorScheme: preferredColorScheme,
             environment: environment,
             bundleResourceURL: bundleResourceURL
@@ -297,15 +297,15 @@ struct GhosttyConfig {
             return contents
         }
 
-        return cmuxDefaultFallbackConfigContents(preferredColorScheme: preferredColorScheme)
+        return zmuxDefaultFallbackConfigContents(preferredColorScheme: preferredColorScheme)
     }
 
-    static func cmuxDefaultThemeConfigURL(
+    static func zmuxDefaultThemeConfigURL(
         preferredColorScheme: ColorSchemePreference,
         environment: [String: String] = ProcessInfo.processInfo.environment,
         bundleResourceURL: URL? = Bundle.main.resourceURL
     ) -> URL? {
-        let themeName = cmuxDefaultThemeName(preferredColorScheme: preferredColorScheme)
+        let themeName = zmuxDefaultThemeName(preferredColorScheme: preferredColorScheme)
         for candidateName in themeNameCandidates(from: themeName) {
             for path in themeSearchPaths(
                 forThemeName: candidateName,
@@ -319,7 +319,7 @@ struct GhosttyConfig {
         return nil
     }
 
-    private static func cmuxDefaultFallbackConfigContents(
+    private static func zmuxDefaultFallbackConfigContents(
         preferredColorScheme: ColorSchemePreference
     ) -> String {
         switch preferredColorScheme {

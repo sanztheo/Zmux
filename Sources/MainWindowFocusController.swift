@@ -622,7 +622,7 @@ final class MainWindowFocusController {
     }
 
     private func terminalFocusRequest(for responder: NSResponder?) -> TerminalFocusRequest? {
-        guard let ghosttyView = cmuxOwningGhosttyView(for: responder),
+        guard let ghosttyView = zmuxOwningGhosttyView(for: responder),
               let workspaceId = ghosttyView.tabId,
               let panelId = ghosttyView.terminalSurface?.id else {
             return nil

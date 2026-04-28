@@ -1,8 +1,8 @@
 #if DEBUG
-import CMUXDebugLog
+import ZMUXDebugLog
 
 @inline(__always)
-func cmuxDebugLog(_ message: @autoclosure () -> String) {
-    CMUXDebugLog.logDebugEvent(message())
+func zmuxDebugLog(_ message: @autoclosure () -> String) {
+    ZMUXDebugLog.logDebugEvent(message())
 }
 #endif

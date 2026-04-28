@@ -420,7 +420,7 @@ private enum BrowserFindCommandEquivalent {
     case hideFind
     case useSelection
 
-    var keepsCmuxBrowserFindBarOwnershipWhenVisible: Bool {
+    var keepsZmuxBrowserFindBarOwnershipWhenVisible: Bool {
         switch self {
         case .find, .findNext, .findPrevious, .hideFind:
             return true
@@ -430,7 +430,7 @@ private enum BrowserFindCommandEquivalent {
     }
 }
 
-func cmuxIsLikelyWebInspectorResponder(_ responder: NSResponder?) -> Bool {
+func zmuxIsLikelyWebInspectorResponder(_ responder: NSResponder?) -> Bool {
     guard let responder else { return false }
     let responderType = String(describing: type(of: responder))
     if responderType.contains("WKInspector") {
@@ -493,13 +493,13 @@ private func browserFindCommandEquivalent(for event: NSEvent) -> BrowserFindComm
     }
 }
 
-/// For browser content, let the page try browser-local Find-family commands before cmux's menu fallback.
-/// Cmd+F is excluded because cmux chooses terminal, browser, or right-sidebar
+/// For browser content, let the page try browser-local Find-family commands before zmux's menu fallback.
+/// Cmd+F is excluded because zmux chooses terminal, browser, or right-sidebar
 /// find from the current focus owner.
 func shouldRouteBrowserFindCommandEquivalentThroughWebContentFirst(
     _ event: NSEvent,
     responder: NSResponder? = nil,
-    owningWebView: CmuxWebView? = nil
+    owningWebView: ZmuxWebView? = nil
 ) -> Bool {
     guard let shortcut = browserFindCommandEquivalent(for: event) else {
         return false
@@ -509,11 +509,11 @@ func shouldRouteBrowserFindCommandEquivalentThroughWebContentFirst(
         return false
     }
 
-    if cmuxIsLikelyWebInspectorResponder(responder) {
+    if zmuxIsLikelyWebInspectorResponder(responder) {
         return false
     }
 
-    if shortcut.keepsCmuxBrowserFindBarOwnershipWhenVisible,
+    if shortcut.keepsZmuxBrowserFindBarOwnershipWhenVisible,
        let owningWebView {
         let browserFindBarIsVisible = MainActor.assumeIsolated {
             AppDelegate.shared?.browserFindBarIsVisible(for: owningWebView) == true
@@ -526,21 +526,21 @@ func shouldRouteBrowserFindCommandEquivalentThroughWebContentFirst(
     return true
 }
 
-func cmuxOwningGhosttyView(for responder: NSResponder?) -> GhosttyNSView? {
+func zmuxOwningGhosttyView(for responder: NSResponder?) -> GhosttyNSView? {
     guard let responder else { return nil }
     if let ghosttyView = responder as? GhosttyNSView {
         return ghosttyView
     }
 
     if let view = responder as? NSView,
-       let ghosttyView = cmuxOwningGhosttyView(for: view) {
+       let ghosttyView = zmuxOwningGhosttyView(for: view) {
         return ghosttyView
     }
 
     if let textView = responder as? NSTextView {
         if textView.isFieldEditor,
-           let ownerView = cmuxFieldEditorOwnerView(textView),
-           let ghosttyView = cmuxOwningGhosttyView(for: ownerView) {
+           let ownerView = zmuxFieldEditorOwnerView(textView),
+           let ghosttyView = zmuxOwningGhosttyView(for: ownerView) {
             return ghosttyView
         }
     }
@@ -551,7 +551,7 @@ func cmuxOwningGhosttyView(for responder: NSResponder?) -> GhosttyNSView? {
             return ghosttyView
         }
         if let view = next as? NSView,
-           let ghosttyView = cmuxOwningGhosttyView(for: view) {
+           let ghosttyView = zmuxOwningGhosttyView(for: view) {
             return ghosttyView
         }
         current = next.nextResponder
@@ -560,7 +560,7 @@ func cmuxOwningGhosttyView(for responder: NSResponder?) -> GhosttyNSView? {
     return nil
 }
 
-func cmuxFieldEditorOwnerView(_ editor: NSTextView) -> NSView? {
+func zmuxFieldEditorOwnerView(_ editor: NSTextView) -> NSView? {
     guard editor.isFieldEditor else { return nil }
 
     var current = editor.nextResponder
@@ -574,7 +574,7 @@ func cmuxFieldEditorOwnerView(_ editor: NSTextView) -> NSView? {
     return editor.superview
 }
 
-private func cmuxOwningGhosttyView(for view: NSView) -> GhosttyNSView? {
+private func zmuxOwningGhosttyView(for view: NSView) -> GhosttyNSView? {
     if let ghosttyView = view as? GhosttyNSView {
         return ghosttyView
     }

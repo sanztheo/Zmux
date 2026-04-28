@@ -6,7 +6,7 @@ import Security
 
 enum SocketControlMode: String, CaseIterable, Identifiable {
     case off
-    case cmuxOnly
+    case zmuxOnly
     case automation
     case password
     /// Full open access (all local users/processes) with no ancestry or password gate.
@@ -14,14 +14,14 @@ enum SocketControlMode: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
-    static var uiCases: [SocketControlMode] { [.off, .cmuxOnly, .automation, .password, .allowAll] }
+    static var uiCases: [SocketControlMode] { [.off, .zmuxOnly, .automation, .password, .allowAll] }
 
     var displayName: String {
         switch self {
         case .off:
             return String(localized: "socketControl.off.name", defaultValue: "Off")
-        case .cmuxOnly:
-            return String(localized: "socketControl.cmuxOnly.name", defaultValue: "cmux processes only")
+        case .zmuxOnly:
+            return String(localized: "socketControl.zmuxOnly.name", defaultValue: "zmux processes only")
         case .automation:
             return String(localized: "socketControl.automation.name", defaultValue: "Automation mode")
         case .password:
@@ -35,8 +35,8 @@ enum SocketControlMode: String, CaseIterable, Identifiable {
         switch self {
         case .off:
             return String(localized: "socketControl.off.description", defaultValue: "Disable the local control socket.")
-        case .cmuxOnly:
-            return String(localized: "socketControl.cmuxOnly.description", defaultValue: "Only processes started inside cmux terminals can send commands.")
+        case .zmuxOnly:
+            return String(localized: "socketControl.zmuxOnly.description", defaultValue: "Only processes started inside zmux terminals can send commands.")
         case .automation:
             return String(localized: "socketControl.automation.description", defaultValue: "Allow external local automation clients from this macOS user (no ancestry check).")
         case .password:
@@ -50,7 +50,7 @@ enum SocketControlMode: String, CaseIterable, Identifiable {
         switch self {
         case .allowAll:
             return 0o666
-        case .off, .cmuxOnly, .automation, .password:
+        case .off, .zmuxOnly, .automation, .password:
             return 0o600
         }
     }
@@ -61,12 +61,12 @@ enum SocketControlMode: String, CaseIterable, Identifiable {
 }
 
 enum SocketControlPasswordStore {
-    static let directoryName = "cmux"
+    static let directoryName = "zmux"
     static let fileName = "socket-control-password"
-    static let didChangeNotification = Notification.Name("cmux.socketControlPasswordDidChange")
+    static let didChangeNotification = Notification.Name("zmux.socketControlPasswordDidChange")
     private static let keychainMigrationDefaultsKey = "socketControlPasswordMigrationVersion"
     private static let keychainMigrationVersion = 1
-    private static let legacyKeychainService = "com.cmuxterm.app.socket-control"
+    private static let legacyKeychainService = "com.zmuxterm.app.socket-control"
     private static let legacyKeychainAccount = "local-socket-password"
     private struct LazyKeychainFallbackCache {
         var hasLoaded = false
@@ -292,15 +292,15 @@ enum SocketControlPasswordStore {
 struct SocketControlSettings {
     static let appStorageKey = "socketControlMode"
     static let legacyEnabledKey = "socketControlEnabled"
-    static let allowSocketPathOverrideKey = "CMUX_ALLOW_SOCKET_OVERRIDE"
-    static let socketPasswordEnvKey = "CMUX_SOCKET_PASSWORD"
-    static let launchTagEnvKey = "CMUX_TAG"
-    static let baseDebugBundleIdentifier = "com.cmuxterm.app.debug"
-    private static let socketDirectoryName = "cmux"
-    private static let stableSocketFileName = "cmux.sock"
+    static let allowSocketPathOverrideKey = "ZMUX_ALLOW_SOCKET_OVERRIDE"
+    static let socketPasswordEnvKey = "ZMUX_SOCKET_PASSWORD"
+    static let launchTagEnvKey = "ZMUX_TAG"
+    static let baseDebugBundleIdentifier = "com.zmuxterm.app.debug"
+    private static let socketDirectoryName = "zmux"
+    private static let stableSocketFileName = "zmux.sock"
     private static let lastSocketPathFileName = "last-socket-path"
-    static let legacyStableDefaultSocketPath = "/tmp/cmux.sock"
-    static let legacyLastSocketPathFile = "/tmp/cmux-last-socket-path"
+    static let legacyStableDefaultSocketPath = "/tmp/zmux.sock"
+    static let legacyLastSocketPathFile = "/tmp/zmux-last-socket-path"
 
     static var stableDefaultSocketPath: String {
         stableSocketFileURL()?.path ?? legacyStableDefaultSocketPath
@@ -329,8 +329,8 @@ struct SocketControlSettings {
         switch normalizeMode(raw) {
         case "off":
             return .off
-        case "cmuxonly":
-            return .cmuxOnly
+        case "zmuxonly":
+            return .zmuxOnly
         case "automation":
             return .automation
         case "password":
@@ -353,7 +353,7 @@ struct SocketControlSettings {
     }
 
     static var defaultMode: SocketControlMode {
-        return .cmuxOnly
+        return .zmuxOnly
     }
 
     private static var isDebugBuild: Bool {
@@ -382,8 +382,8 @@ struct SocketControlSettings {
             return false
         }
         // XCUITest launches the app as a separate process without XCTest env vars,
-        // so isRunningUnderXCTest() misses it. Check for any CMUX_UI_TEST_ env var.
-        if environment.keys.contains(where: { $0.hasPrefix("CMUX_UI_TEST_") }) {
+        // so isRunningUnderXCTest() misses it. Check for any ZMUX_UI_TEST_ env var.
+        if environment.keys.contains(where: { $0.hasPrefix("ZMUX_UI_TEST_") }) {
             return false
         }
 
@@ -442,14 +442,14 @@ struct SocketControlSettings {
             environment: environment
         ) {
             if isTruthy(environment[allowSocketPathOverrideKey]),
-               let override = environment["CMUX_SOCKET_PATH"],
+               let override = environment["ZMUX_SOCKET_PATH"],
                !override.isEmpty {
                 return override
             }
             return taggedDebugPath
         }
 
-        guard let override = environment["CMUX_SOCKET_PATH"], !override.isEmpty else {
+        guard let override = environment["ZMUX_SOCKET_PATH"], !override.isEmpty else {
             return fallback
         }
 
@@ -473,14 +473,14 @@ struct SocketControlSettings {
         if let taggedDebugPath = taggedDebugSocketPath(bundleIdentifier: bundleIdentifier, environment: [:]) {
             return taggedDebugPath
         }
-        if bundleIdentifier == "com.cmuxterm.app.nightly" {
-            return "/tmp/cmux-nightly.sock"
+        if bundleIdentifier == "com.zmuxterm.app.nightly" {
+            return "/tmp/zmux-nightly.sock"
         }
         if isDebugLikeBundleIdentifier(bundleIdentifier) || isDebugBuild {
-            return "/tmp/cmux-debug.sock"
+            return "/tmp/zmux-debug.sock"
         }
         if isStagingBundleIdentifier(bundleIdentifier) {
-            return "/tmp/cmux-staging.sock"
+            return "/tmp/zmux-staging.sock"
         }
         return resolvedStableDefaultSocketPath(
             currentUserID: currentUserID,
@@ -490,8 +490,8 @@ struct SocketControlSettings {
 
     static func userScopedStableSocketPath(currentUserID: uid_t = getuid()) -> String {
         stableSocketDirectoryURL()?
-            .appendingPathComponent("cmux-\(currentUserID).sock", isDirectory: false)
-            .path ?? "/tmp/cmux-\(currentUserID).sock"
+            .appendingPathComponent("zmux-\(currentUserID).sock", isDirectory: false)
+            .path ?? "/tmp/zmux-\(currentUserID).sock"
     }
 
     static func resolvedStableDefaultSocketPath(
@@ -532,11 +532,11 @@ struct SocketControlSettings {
 
     static func isDebugLikeBundleIdentifier(_ bundleIdentifier: String?) -> Bool {
         guard let bundleIdentifier else { return false }
-        return bundleIdentifier == "com.cmuxterm.app.debug"
-            || bundleIdentifier.hasPrefix("com.cmuxterm.app.debug.")
+        return bundleIdentifier == "com.zmuxterm.app.debug"
+            || bundleIdentifier.hasPrefix("com.zmuxterm.app.debug.")
     }
 
-    /// Tagged DEV builds have bundle IDs like `com.cmuxterm.app.debug.<tag>`.
+    /// Tagged DEV builds have bundle IDs like `com.zmuxterm.app.debug.<tag>`.
     static func isTaggedDevBuild(bundleIdentifier: String? = Bundle.main.bundleIdentifier) -> Bool {
         guard let bundleIdentifier else { return false }
         return bundleIdentifier.hasPrefix("\(baseDebugBundleIdentifier).")
@@ -553,7 +553,7 @@ struct SocketControlSettings {
                 .replacingOccurrences(of: ".", with: "-")
                 .trimmingCharacters(in: CharacterSet(charactersIn: "-"))
             if !slug.isEmpty {
-                return "/tmp/cmux-debug-\(slug).sock"
+                return "/tmp/zmux-debug-\(slug).sock"
             }
         }
 
@@ -570,13 +570,13 @@ struct SocketControlSettings {
               !tag.isEmpty else {
             return nil
         }
-        return "/tmp/cmux-debug-\(tag).sock"
+        return "/tmp/zmux-debug-\(tag).sock"
     }
 
     static func isStagingBundleIdentifier(_ bundleIdentifier: String?) -> Bool {
         guard let bundleIdentifier else { return false }
-        return bundleIdentifier == "com.cmuxterm.app.staging"
-            || bundleIdentifier.hasPrefix("com.cmuxterm.app.staging.")
+        return bundleIdentifier == "com.zmuxterm.app.staging"
+            || bundleIdentifier.hasPrefix("com.zmuxterm.app.staging.")
     }
 
     static func stableSocketDirectoryURL(fileManager: FileManager = .default) -> URL? {
@@ -637,7 +637,7 @@ struct SocketControlSettings {
     static func envOverrideEnabled(
         environment: [String: String] = ProcessInfo.processInfo.environment
     ) -> Bool? {
-        guard let raw = environment["CMUX_SOCKET_ENABLE"], !raw.isEmpty else {
+        guard let raw = environment["ZMUX_SOCKET_ENABLE"], !raw.isEmpty else {
             return nil
         }
 
@@ -654,7 +654,7 @@ struct SocketControlSettings {
     static func envOverrideMode(
         environment: [String: String] = ProcessInfo.processInfo.environment
     ) -> SocketControlMode? {
-        guard let raw = environment["CMUX_SOCKET_MODE"], !raw.isEmpty else {
+        guard let raw = environment["ZMUX_SOCKET_MODE"], !raw.isEmpty else {
             return nil
         }
         return parseMode(raw)
@@ -671,7 +671,7 @@ struct SocketControlSettings {
             if let overrideMode = envOverrideMode(environment: environment) {
                 return overrideMode
             }
-            return userMode == .off ? .cmuxOnly : userMode
+            return userMode == .off ? .zmuxOnly : userMode
         }
 
         if let overrideMode = envOverrideMode(environment: environment) {

@@ -10,32 +10,32 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
-from cmux import cmuxError
+from zmux import zmuxError
 
 
-SOCKET_PATH = os.environ.get("CMUX_SOCKET", "/tmp/cmux-debug.sock")
-LAST_SOCKET_HINT_PATH = Path("/tmp/cmux-last-socket-path")
+SOCKET_PATH = os.environ.get("ZMUX_SOCKET", "/tmp/zmux-debug.sock")
+LAST_SOCKET_HINT_PATH = Path("/tmp/zmux-last-socket-path")
 
 
 def _must(cond: bool, msg: str) -> None:
     if not cond:
-        raise cmuxError(msg)
+        raise zmuxError(msg)
 
 
 def _find_cli_binary() -> str:
-    env_cli = os.environ.get("CMUXTERM_CLI")
+    env_cli = os.environ.get("ZMUXTERM_CLI")
     if env_cli and os.path.isfile(env_cli) and os.access(env_cli, os.X_OK):
         return env_cli
 
-    fixed = os.path.expanduser("~/Library/Developer/Xcode/DerivedData/cmux-tests-v2/Build/Products/Debug/cmux")
+    fixed = os.path.expanduser("~/Library/Developer/Xcode/DerivedData/zmux-tests-v2/Build/Products/Debug/zmux")
     if os.path.isfile(fixed) and os.access(fixed, os.X_OK):
         return fixed
 
-    candidates = glob.glob(os.path.expanduser("~/Library/Developer/Xcode/DerivedData/**/Build/Products/Debug/cmux"), recursive=True)
-    candidates += glob.glob("/tmp/cmux-*/Build/Products/Debug/cmux")
+    candidates = glob.glob(os.path.expanduser("~/Library/Developer/Xcode/DerivedData/**/Build/Products/Debug/zmux"), recursive=True)
+    candidates += glob.glob("/tmp/zmux-*/Build/Products/Debug/zmux")
     candidates = [p for p in candidates if os.path.isfile(p) and os.access(p, os.X_OK)]
     if not candidates:
-        raise cmuxError("Could not locate cmux CLI binary; set CMUXTERM_CLI")
+        raise zmuxError("Could not locate zmux CLI binary; set ZMUXTERM_CLI")
     candidates.sort(key=lambda p: os.path.getmtime(p), reverse=True)
     return candidates[0]
 
@@ -55,10 +55,10 @@ def main() -> int:
     version_proc = _run([cli, "--version"])
     version_out = _merged_output(version_proc).lower()
     _must(version_proc.returncode == 0, f"--version should succeed: {version_proc.returncode} {version_out!r}")
-    _must("cmux" in version_out, f"--version output should mention cmux: {version_out!r}")
+    _must("zmux" in version_out, f"--version output should mention zmux: {version_out!r}")
 
-    # Debug builds should auto-resolve the active debug socket via /tmp/cmux-last-socket-path
-    # when CMUX_SOCKET_PATH is not set.
+    # Debug builds should auto-resolve the active debug socket via /tmp/zmux-last-socket-path
+    # when ZMUX_SOCKET_PATH is not set.
     hint_backup: str | None = None
     hint_had_file = LAST_SOCKET_HINT_PATH.exists()
     if hint_had_file:
@@ -66,8 +66,8 @@ def main() -> int:
     try:
         LAST_SOCKET_HINT_PATH.write_text(f"{SOCKET_PATH}\n", encoding="utf-8")
         auto_env = dict(os.environ)
-        auto_env.pop("CMUX_SOCKET_PATH", None)
-        auto_env.pop("CMUX_SOCKET", None)
+        auto_env.pop("ZMUX_SOCKET_PATH", None)
+        auto_env.pop("ZMUX_SOCKET", None)
         auto_ping = _run([cli, "ping"], env=auto_env)
         auto_ping_out = _merged_output(auto_ping).lower()
         _must(auto_ping.returncode == 0, f"debug auto socket resolution should succeed: {auto_ping.returncode} {auto_ping_out!r}")
@@ -82,7 +82,7 @@ def main() -> int:
             pass
 
     # Global --password should parse as a flag (not a command name) and still allow non-password sockets.
-    ping_proc = _run([cli, "--socket", SOCKET_PATH, "--password", "ignored-in-cmuxonly", "ping"])
+    ping_proc = _run([cli, "--socket", SOCKET_PATH, "--password", "ignored-in-zmuxonly", "ping"])
     ping_out = _merged_output(ping_proc).lower()
     _must(ping_proc.returncode == 0, f"ping with --password should succeed: {ping_proc.returncode} {ping_out!r}")
     _must("pong" in ping_out, f"ping should still return pong: {ping_out!r}")

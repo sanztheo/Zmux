@@ -2,22 +2,22 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-OUTPUT_DIR="$(mktemp -d "${TMPDIR:-/tmp}/cmux-remote-assets-test.XXXXXX")"
+OUTPUT_DIR="$(mktemp -d "${TMPDIR:-/tmp}/zmux-remote-assets-test.XXXXXX")"
 trap 'rm -rf "$OUTPUT_DIR"' EXIT
 
 "$ROOT_DIR/scripts/build_remote_daemon_release_assets.sh" \
   --version "0.62.0-test" \
   --release-tag "v0.62.0-test" \
-  --repo "manaflow-ai/cmux" \
+  --repo "manaflow-ai/zmux" \
   --output-dir "$OUTPUT_DIR" >/dev/null
 
 for asset in \
-  cmuxd-remote-darwin-arm64 \
-  cmuxd-remote-darwin-amd64 \
-  cmuxd-remote-linux-arm64 \
-  cmuxd-remote-linux-amd64 \
-  cmuxd-remote-checksums.txt \
-  cmuxd-remote-manifest.json
+  zmuxd-remote-darwin-arm64 \
+  zmuxd-remote-darwin-amd64 \
+  zmuxd-remote-linux-arm64 \
+  zmuxd-remote-linux-amd64 \
+  zmuxd-remote-checksums.txt \
+  zmuxd-remote-manifest.json
 do
   if [[ ! -f "$OUTPUT_DIR/$asset" ]]; then
     echo "FAIL: missing asset $asset" >&2
@@ -25,7 +25,7 @@ do
   fi
 done
 
-python3 - <<'PY' "$OUTPUT_DIR/cmuxd-remote-manifest.json" "$OUTPUT_DIR/cmuxd-remote-checksums.txt"
+python3 - <<'PY' "$OUTPUT_DIR/zmuxd-remote-manifest.json" "$OUTPUT_DIR/zmuxd-remote-checksums.txt"
 import json
 import sys
 from pathlib import Path
@@ -48,7 +48,7 @@ if manifest["appVersion"] != "0.62.0-test":
     raise SystemExit(f"FAIL: unexpected appVersion {manifest['appVersion']}")
 if manifest["releaseTag"] != "v0.62.0-test":
     raise SystemExit(f"FAIL: unexpected releaseTag {manifest['releaseTag']}")
-if not manifest["checksumsURL"].endswith("/cmuxd-remote-checksums.txt"):
+if not manifest["checksumsURL"].endswith("/zmuxd-remote-checksums.txt"):
     raise SystemExit(f"FAIL: unexpected checksumsURL {manifest['checksumsURL']}")
 
 checksum_lines = [line for line in checksums_path.read_text(encoding="utf-8").splitlines() if line.strip()]
@@ -67,23 +67,23 @@ PY
 # ------------------------------------------------------------------
 # Test with --asset-suffix (nightly-style immutable asset names)
 # ------------------------------------------------------------------
-SUFFIX_DIR="$(mktemp -d "${TMPDIR:-/tmp}/cmux-remote-assets-suffix-test.XXXXXX")"
+SUFFIX_DIR="$(mktemp -d "${TMPDIR:-/tmp}/zmux-remote-assets-suffix-test.XXXXXX")"
 trap 'rm -rf "$OUTPUT_DIR" "$SUFFIX_DIR"' EXIT
 
 "$ROOT_DIR/scripts/build_remote_daemon_release_assets.sh" \
   --version "0.62.0-nightly.123456" \
   --release-tag "nightly" \
-  --repo "manaflow-ai/cmux" \
+  --repo "manaflow-ai/zmux" \
   --output-dir "$SUFFIX_DIR" \
   --asset-suffix "123456" >/dev/null
 
 for asset in \
-  cmuxd-remote-darwin-arm64-123456 \
-  cmuxd-remote-darwin-amd64-123456 \
-  cmuxd-remote-linux-arm64-123456 \
-  cmuxd-remote-linux-amd64-123456 \
-  cmuxd-remote-checksums-123456.txt \
-  cmuxd-remote-manifest-123456.json
+  zmuxd-remote-darwin-arm64-123456 \
+  zmuxd-remote-darwin-amd64-123456 \
+  zmuxd-remote-linux-arm64-123456 \
+  zmuxd-remote-linux-amd64-123456 \
+  zmuxd-remote-checksums-123456.txt \
+  zmuxd-remote-manifest-123456.json
 do
   if [[ ! -f "$SUFFIX_DIR/$asset" ]]; then
     echo "FAIL: missing suffixed asset $asset" >&2
@@ -91,7 +91,7 @@ do
   fi
 done
 
-python3 - <<'PY' "$SUFFIX_DIR/cmuxd-remote-manifest-123456.json"
+python3 - <<'PY' "$SUFFIX_DIR/zmuxd-remote-manifest-123456.json"
 import json
 import sys
 from pathlib import Path

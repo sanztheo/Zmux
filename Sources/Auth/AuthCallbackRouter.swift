@@ -1,6 +1,6 @@
 import Foundation
 
-struct CMUXAuthCallbackPayload: Equatable, Sendable {
+struct ZMUXAuthCallbackPayload: Equatable, Sendable {
     let refreshToken: String
     let accessToken: String
 }
@@ -11,7 +11,7 @@ enum AuthCallbackRouter {
         return callbackTarget(for: url) == "auth-callback"
     }
 
-    static func callbackPayload(from url: URL) -> CMUXAuthCallbackPayload? {
+    static func callbackPayload(from url: URL) -> ZMUXAuthCallbackPayload? {
         guard isAuthCallbackURL(url) else { return nil }
         guard let components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
             return nil
@@ -27,7 +27,7 @@ enum AuthCallbackRouter {
             return nil
         }
 
-        return CMUXAuthCallbackPayload(
+        return ZMUXAuthCallbackPayload(
             refreshToken: refreshToken,
             accessToken: accessToken
         )
@@ -35,11 +35,11 @@ enum AuthCallbackRouter {
 
     private static func isAllowedScheme(_ scheme: String?) -> Bool {
         guard let normalized = scheme?.lowercased() else { return false }
-        if normalized == "cmux" || normalized == "cmux-dev" {
+        if normalized == "zmux" || normalized == "zmux-dev" {
             return true
         }
         // Honor the runtime override so any AuthEnvironment.callbackScheme
-        // chosen via CMUX_AUTH_CALLBACK_SCHEME round-trips through the
+        // chosen via ZMUX_AUTH_CALLBACK_SCHEME round-trips through the
         // router (e.g. per-tag Debug builds with a unique scheme).
         return normalized == AuthEnvironment.callbackScheme.lowercased()
     }

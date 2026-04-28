@@ -13,10 +13,10 @@ When we change the fork, update this document and the parent submodule SHA.
 ## Current fork changes
 
 The fork was refreshed from upstream `main` again on April 28, 2026.
-Current cmux pinned fork head: `d3117e03e`, merged into fork `main` via
+Current zmux pinned fork head: `d3117e03e`, merged into fork `main` via
 `manaflow-ai/ghostty` PR https://github.com/manaflow-ai/ghostty/pull/48
 (`xcframework-f7880c47313a8697ee7f58969564772cb70eb6e9-300-gd3117e03e`).
-This head merges upstream `659019666` and preserves the previous cmux pin
+This head merges upstream `659019666` and preserves the previous zmux pin
 `465a9a621`.
 
 ### 1) macOS display link restart on display changes
@@ -58,26 +58,26 @@ tend to conflict together during rebases.
   - `src/terminal/osc/parsers/kitty_notification.zig`
 - Summary:
   - Adds a parser for kitty OSC 99 notifications and wires it into the OSC dispatcher.
-  - Adapts the parser to upstream's newer capture API so the cmux OSC 99 hook survives the March 30 upstream sync.
+  - Adapts the parser to upstream's newer capture API so the zmux OSC 99 hook survives the March 30 upstream sync.
 
-### 4) cmux theme picker helper hooks
+### 4) zmux theme picker helper hooks
 
 - Commits:
-  - `1da7281fd` (Add cmux theme picker helper hooks)
-  - `ea482b73e` (Fix cmux theme picker preview writes)
-  - `c7ab66056` (Improve cmux theme picker footer contrast)
-  - `c49f69f7b` (Respect system theme in cmux picker)
-  - `599b0ff43` (Skip theme detection in cmux picker)
+  - `1da7281fd` (Add zmux theme picker helper hooks)
+  - `ea482b73e` (Fix zmux theme picker preview writes)
+  - `c7ab66056` (Improve zmux theme picker footer contrast)
+  - `c49f69f7b` (Respect system theme in zmux picker)
+  - `599b0ff43` (Skip theme detection in zmux picker)
   - `b75388d95` (Match Ghostty theme picker startup)
-  - `f985d2d04` (Harden cmux theme override writes)
+  - `f985d2d04` (Harden zmux theme override writes)
 - Files:
   - `build.zig`
   - `src/cli/list_themes.zig`
   - `src/main_ghostty.zig`
 - Summary:
-  - Adds a `zig build cli-helper` step so cmux can bundle Ghostty's CLI helper binary on macOS.
-  - Lets `+list-themes` switch into a cmux-managed mode via env vars, writing the cmux theme override file and posting the existing cmux reload notification for live app-wide preview.
-  - Keeps the preview UI readable in light mode, matches upstream picker startup behavior, and hardens writes to the cmux-managed theme override file.
+  - Adds a `zig build cli-helper` step so zmux can bundle Ghostty's CLI helper binary on macOS.
+  - Lets `+list-themes` switch into a zmux-managed mode via env vars, writing the zmux theme override file and posting the existing zmux reload notification for live app-wide preview.
+  - Keeps the preview UI readable in light mode, matches upstream picker startup behavior, and hardens writes to the zmux-managed theme override file.
 
 ### 5) Color scheme mode 2031 reporting
 
@@ -89,18 +89,18 @@ tend to conflict together during rebases.
   - `src/termio/stream_handler.zig`
 - Summary:
   - Keeps Ghostty's mode 2031 color-scheme response aligned with the surface's actual conditional state after config reloads.
-  - Sends the initial DSR 997 report as soon as mode 2031 is enabled, which cmux relies on for immediate color-scheme awareness.
+  - Sends the initial DSR 997 report as soon as mode 2031 is enabled, which zmux relies on for immediate color-scheme awareness.
 
 ### 6) Keyboard copy mode selection C API
 
-- Commit: `0b231db94` (Re-export cmux selection APIs removed from upstream)
+- Commit: `0b231db94` (Re-export zmux selection APIs removed from upstream)
 - Files:
   - `include/ghostty.h`
   - `src/Surface.zig`
   - `src/apprt/embedded.zig`
 - Summary:
   - Restores `ghostty_surface_select_cursor_cell` and `ghostty_surface_clear_selection`.
-  - Keeps cmux keyboard copy mode working against the refreshed Ghostty base after upstream removed those exports.
+  - Keeps zmux keyboard copy mode working against the refreshed Ghostty base after upstream removed those exports.
 
 ### 7) macos-background-from-layer config flag
 
@@ -117,7 +117,7 @@ tend to conflict together during rebases.
   - Adds a `macos-background-from-layer` bool config (default false).
   - When true, sets `bg_color[3] = 0` in the per-frame uniform update so the Metal renderer skips the full-screen background fill.
   - Allows the host app to provide the terminal background via `CALayer.backgroundColor` for instant coverage during view resizes, avoiding alpha double-stacking.
-  - Replays the layer-background restore on top of the refreshed Ghostty base so cmux keeps the resize-coverage fix after the upstream sync.
+  - Replays the layer-background restore on top of the refreshed Ghostty base so zmux keeps the resize-coverage fix after the upstream sync.
 
 ### 8) TerminalStream kitty graphics APC handling
 
@@ -126,7 +126,7 @@ tend to conflict together during rebases.
   - `src/terminal/stream_terminal.zig`
 - Summary:
   - Wires `.apc_start`, `.apc_put`, and `.apc_end` through the shared APC parser in `TerminalStream`.
-  - Restores kitty graphics execution and APC OK/error replies for the non-termio stream path used by cmux/libghostty integrations.
+  - Restores kitty graphics execution and APC OK/error replies for the non-termio stream path used by zmux/libghostty integrations.
 
 ### 9) Config load string C API
 
@@ -137,9 +137,9 @@ tend to conflict together during rebases.
   - `src/config/Config.zig`
 - Summary:
   - Adds a C API for loading Ghostty config from an in-memory string.
-  - Lets cmux parse generated or override config without materializing a separate config file first.
+  - Lets zmux parse generated or override config without materializing a separate config file first.
 
-The current cmux pin is the head listed above. It is reachable from the
+The current zmux pin is the head listed above. It is reachable from the
 `manaflow-ai/ghostty` fork `main` branch and has a matching prebuilt release
 tag `xcframework-d3117e03ea19665bc83a28f7e0428c63937e6140`.
 
@@ -153,12 +153,12 @@ tag `xcframework-d3117e03ea19665bc83a28f7e0428c63937e6140`.
 ### zsh prompt redraw follow-ups
 
 - Were local in the fork as `8ade43ce5`, `0cf559581`, `312c7b23a`, and `404a3f175`.
-- Dropped during the March 30, 2026 rebase because newer Ghostty prompt-marking changes on the refreshed base superseded these fork-only zsh redraw patches, so cmux no longer carries them separately.
+- Dropped during the March 30, 2026 rebase because newer Ghostty prompt-marking changes on the refreshed base superseded these fork-only zsh redraw patches, so zmux no longer carries them separately.
 
 ### initial focus seeding and DECSET 1004 startup behavior
 
 - Was local in the fork as `c19c82bfd`.
-- Dropped from the current pinned fork head when cmux removed the corresponding
+- Dropped from the current pinned fork head when zmux removed the corresponding
   app-side initial focus seed and went back to post-create focus sync.
 
 ## Merge conflict notes
@@ -167,8 +167,8 @@ These files change frequently upstream; be careful when rebasing the fork:
 
 - April 28, 2026, upstream merge:
   - Merged upstream `659019666` into `465a9a621` without textual conflicts.
-  - Verified with `CMUX_GHOSTTYKIT_NO_PREBUILT=1 ./scripts/ensure-ghosttykit.sh`.
-  - Verified cmux with `./scripts/reload.sh --tag gtyup`.
+  - Verified with `ZMUX_GHOSTTYKIT_NO_PREBUILT=1 ./scripts/ensure-ghosttykit.sh`.
+  - Verified zmux with `./scripts/reload.sh --tag gtyup`.
   - Published `xcframework-d3117e03ea19665bc83a28f7e0428c63937e6140` and pinned
     its archive checksum in `scripts/ghosttykit-checksums.txt`.
   - Merged `d3117e03e` into fork `main` with https://github.com/manaflow-ai/ghostty/pull/48.
@@ -183,16 +183,16 @@ These files change frequently upstream; be careful when rebasing the fork:
   - Ensure `kitty_notification` stays imported after upstream parser reorganizations.
 
 - `src/cli/list_themes.zig`
-  - cmux now relies on the upstream picker UI plus local env-driven hooks for live preview and restore.
-    If upstream reorganizes the preview loop or key handling, re-check the cmux mode path and keep the
-    stock Ghostty behavior unchanged when the cmux env vars are absent.
+  - zmux now relies on the upstream picker UI plus local env-driven hooks for live preview and restore.
+    If upstream reorganizes the preview loop or key handling, re-check the zmux mode path and keep the
+    stock Ghostty behavior unchanged when the zmux env vars are absent.
 
 - `build.zig`
-  - Upstream's new wasm/libghostty work touched the same build graph. Keep the cmux-only `cli-helper`
+  - Upstream's new wasm/libghostty work touched the same build graph. Keep the zmux-only `cli-helper`
     step wired in without regressing the upstream `lib-vt` or wasm build paths.
 
 - `include/ghostty.h`, `src/Surface.zig`, `src/apprt/embedded.zig`
-  - Upstream removed cmux-used selection exports. Preserve the re-exported
+  - Upstream removed zmux-used selection exports. Preserve the re-exported
     `ghostty_surface_select_cursor_cell` and `ghostty_surface_clear_selection` functions.
 
 - `src/renderer/generic.zig`

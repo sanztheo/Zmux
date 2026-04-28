@@ -1,16 +1,16 @@
-// cmux-feed-plugin-marker v1
-// Bridges OpenCode's plugin event bus to the cmux socket's feed.* verbs.
-// Installed by `cmux setup-hooks` or `cmux opencode install-hooks`.
-// DO NOT EDIT MANUALLY — cmux upgrades this file in place.
+// zmux-feed-plugin-marker v1
+// Bridges OpenCode's plugin event bus to the zmux socket's feed.* verbs.
+// Installed by `zmux setup-hooks` or `zmux opencode install-hooks`.
+// DO NOT EDIT MANUALLY — zmux upgrades this file in place.
 
 const net = require("node:net");
 const os = require("node:os");
 
-const DEFAULT_SOCKET = `${os.homedir()}/.config/cmux/cmux.sock`;
-const SOCKET_PATH = process.env.CMUX_SOCKET_PATH || DEFAULT_SOCKET;
+const DEFAULT_SOCKET = `${os.homedir()}/.config/zmux/zmux.sock`;
+const SOCKET_PATH = process.env.ZMUX_SOCKET_PATH || DEFAULT_SOCKET;
 const REPLY_TIMEOUT_MS = 120_000;
 
-export const CMUXFeed = async (ctx) => {
+export const ZMUXFeed = async (ctx) => {
   let client = null;
   let buffered = "";
   const pending = new Map();

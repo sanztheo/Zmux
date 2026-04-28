@@ -698,7 +698,7 @@ extension WorkspaceContentView {
         if !found {
             let ts = ISO8601DateFormatter().string(from: Date())
             let line = "[\(ts)] PANEL NOT FOUND for tabId=\(tab.id) ws=\(workspace.id) panelCount=\(workspace.panels.count)\n"
-            let logPath = "/tmp/cmux-panel-debug.log"
+            let logPath = "/tmp/zmux-panel-debug.log"
             if let handle = FileHandle(forWritingAtPath: logPath) {
                 defer { try? handle.close() }
                 guard (try? handle.seekToEnd()) != nil else { return }
@@ -741,7 +741,7 @@ struct EmptyPanelView: View {
 
     private func createTerminal() {
         #if DEBUG
-        cmuxDebugLog("emptyPane.newTerminal pane=\(paneId.id.uuidString.prefix(5))")
+        zmuxDebugLog("emptyPane.newTerminal pane=\(paneId.id.uuidString.prefix(5))")
         #endif
         focusPane()
         _ = workspace.newTerminalSurface(inPane: paneId)
@@ -749,7 +749,7 @@ struct EmptyPanelView: View {
 
     private func createBrowser() {
         #if DEBUG
-        cmuxDebugLog("emptyPane.newBrowser pane=\(paneId.id.uuidString.prefix(5))")
+        zmuxDebugLog("emptyPane.newBrowser pane=\(paneId.id.uuidString.prefix(5))")
         #endif
         focusPane()
         _ = workspace.newBrowserSurface(inPane: paneId)

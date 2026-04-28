@@ -24,7 +24,7 @@ final class PortScanner: @unchecked Sendable {
 
     // MARK: - State (all guarded by `queue`)
 
-    private let queue = DispatchQueue(label: "com.cmux.port-scanner", qos: .utility)
+    private let queue = DispatchQueue(label: "com.zmux.port-scanner", qos: .utility)
 
     /// TTY name per (workspace, panel).
     private var ttyNames: [PanelKey: String] = [:]

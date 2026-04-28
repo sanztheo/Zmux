@@ -27,13 +27,13 @@ enum RestorableAgentKind: String, Codable, CaseIterable, Sendable {
         environment: [String: String] = ProcessInfo.processInfo.environment
     ) -> URL {
         let directory: URL
-        if let override = environment["CMUX_AGENT_HOOK_STATE_DIR"]?
+        if let override = environment["ZMUX_AGENT_HOOK_STATE_DIR"]?
             .trimmingCharacters(in: .whitespacesAndNewlines),
            !override.isEmpty {
             directory = URL(fileURLWithPath: NSString(string: override).expandingTildeInPath, isDirectory: true)
         } else {
             directory = URL(fileURLWithPath: homeDirectory, isDirectory: true)
-                .appendingPathComponent(".cmuxterm", isDirectory: true)
+                .appendingPathComponent(".zmuxterm", isDirectory: true)
         }
         return directory
             .appendingPathComponent(hookStoreFilename, isDirectory: false)
@@ -258,7 +258,7 @@ private enum AgentResumeCommandBuilder {
         case "claudeTeams":
             let original = commandParts(
                 launchCommand: launchCommand,
-                fallbackExecutable: "cmux"
+                fallbackExecutable: "zmux"
             )
             var args = original.tail
             if args.first == "claude-teams" {
@@ -269,7 +269,7 @@ private enum AgentResumeCommandBuilder {
         case "omo":
             let original = commandParts(
                 launchCommand: launchCommand,
-                fallbackExecutable: "cmux"
+                fallbackExecutable: "zmux"
             )
             var args = original.tail
             if args.first == "omo" {
@@ -553,7 +553,7 @@ private enum AgentResumeCommandBuilder {
         switch key {
         case "ANTHROPIC_MODEL",
              "CLAUDE_CONFIG_DIR",
-             "CMUX_CUSTOM_CLAUDE_PATH",
+             "ZMUX_CUSTOM_CLAUDE_PATH",
              "CODEX_HOME",
              "NODE_OPTIONS",
              "OPENCODE_CONFIG_DIR":
@@ -590,13 +590,13 @@ private enum AgentResumeCommandBuilder {
             shouldDropInjectedHeapCap = false
 
             if isRequireOption(token), index + 1 < tokens.count,
-               isCmuxNodeOptionsRestoreModulePath(tokens[index + 1]) {
+               isZmuxNodeOptionsRestoreModulePath(tokens[index + 1]) {
                 index += 2
                 shouldDropInjectedHeapCap = true
                 continue
             }
             if let path = inlineRequireOptionPath(token),
-               isCmuxNodeOptionsRestoreModulePath(path) {
+               isZmuxNodeOptionsRestoreModulePath(path) {
                 index += 1
                 shouldDropInjectedHeapCap = true
                 continue
@@ -622,12 +622,12 @@ private enum AgentResumeCommandBuilder {
         return nil
     }
 
-    private static func isCmuxNodeOptionsRestoreModulePath(_ value: String) -> Bool {
+    private static func isZmuxNodeOptionsRestoreModulePath(_ value: String) -> Bool {
         let trimmed = value.trimmingCharacters(in: CharacterSet(charactersIn: "'\""))
         guard URL(fileURLWithPath: trimmed).lastPathComponent == "restore-node-options.cjs" else {
             return false
         }
-        return trimmed.contains("/cmux-")
+        return trimmed.contains("/zmux-")
     }
 
     private static func isInjectedNodeHeapCap(_ tokens: [String], index: Int) -> Bool {
@@ -695,7 +695,7 @@ struct SessionRestorableAgentSnapshot: Codable, Sendable {
 }
 
 private enum AgentResumeScriptStore {
-    private static let directoryName = "cmux-agent-resume"
+    private static let directoryName = "zmux-agent-resume"
     private static let scriptTTL: TimeInterval = 24 * 60 * 60
 
     static func writeLauncherScript(
