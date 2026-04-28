@@ -538,6 +538,8 @@ extension Workspace {
             terminalSnapshot = nil
             browserSnapshot = nil
             markdownSnapshot = SessionMarkdownPanelSnapshot(filePath: markdownPanel.filePath)
+        case .fileExplorer:
+            return nil
         }
 
         return SessionPanelSnapshot(
@@ -774,6 +776,8 @@ extension Workspace {
             }
             applySessionPanelMetadata(snapshot, toPanelId: markdownPanel.id)
             return markdownPanel.id
+        case .fileExplorer:
+            return nil
         }
     }
 
@@ -7473,6 +7477,7 @@ final class Workspace: Identifiable, ObservableObject {
         static let terminal = "terminal"
         static let browser = "browser"
         static let markdown = "markdown"
+        static let fileExplorer = "fileExplorer"
     }
 
     enum PanelShellActivityState: String {
@@ -8284,6 +8289,8 @@ final class Workspace: Identifiable, ObservableObject {
             return SurfaceKind.browser
         case .markdown:
             return SurfaceKind.markdown
+        case .fileExplorer:
+            return SurfaceKind.fileExplorer
         }
     }
 

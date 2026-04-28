@@ -55,6 +55,15 @@ struct PanelContentView: View {
                     onRequestPanelFocus: onRequestPanelFocus
                 )
             }
+        case .fileExplorer:
+            if let fileExplorerPanel = panel as? FileExplorerPanel {
+                FileExplorerTabView(
+                    panel: fileExplorerPanel,
+                    isFocused: isFocused,
+                    isVisibleInUI: isVisibleInUI,
+                    onRequestPanelFocus: onRequestPanelFocus
+                )
+            }
         }
     }
 }
