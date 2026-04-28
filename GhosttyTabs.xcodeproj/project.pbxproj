@@ -93,6 +93,8 @@
 		A5001421 /* MarkdownPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5001419 /* MarkdownPanelView.swift */; };
 		A5001422 /* FileExplorerPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A500141A /* FileExplorerPanel.swift */; };
 		A5001423 /* FileExplorerPanelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A500141B /* FileExplorerPanelView.swift */; };
+		A5001424 /* SyntaxHighlighter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A500141C /* SyntaxHighlighter.swift */; };
+		A5001425 /* CodeEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A500141D /* CodeEditorView.swift */; };
 		A5001500 /* ZmuxWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5001510 /* ZmuxWebView.swift */; };
 		A5001501 /* UITestRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5001511 /* UITestRecorder.swift */; };
 		A5001521 /* PostHogAnalytics.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5001520 /* PostHogAnalytics.swift */; };
@@ -340,6 +342,8 @@
 		A5001419 /* MarkdownPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/MarkdownPanelView.swift; sourceTree = "<group>"; };
 		A500141A /* FileExplorerPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/FileExplorerPanel.swift; sourceTree = "<group>"; };
 		A500141B /* FileExplorerPanelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/FileExplorerPanelView.swift; sourceTree = "<group>"; };
+		A500141C /* SyntaxHighlighter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/SyntaxHighlighter.swift; sourceTree = "<group>"; };
+		A500141D /* CodeEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/CodeEditorView.swift; sourceTree = "<group>"; };
 		A5001510 /* ZmuxWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/ZmuxWebView.swift; sourceTree = "<group>"; };
 		A5001511 /* UITestRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UITestRecorder.swift; sourceTree = "<group>"; };
 		A5001520 /* PostHogAnalytics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PostHogAnalytics.swift; sourceTree = "<group>"; };
@@ -628,6 +632,8 @@
 				A5001419 /* MarkdownPanelView.swift */,
 				A500141A /* FileExplorerPanel.swift */,
 				A500141B /* FileExplorerPanelView.swift */,
+				A500141C /* SyntaxHighlighter.swift */,
+				A500141D /* CodeEditorView.swift */,
 				A5001510 /* ZmuxWebView.swift */,
 				A5001415 /* PanelContentView.swift */,
 				A5001211 /* UpdateController.swift */,
@@ -1015,6 +1021,8 @@
 				A5001421 /* MarkdownPanelView.swift in Sources */,
 				A5001422 /* FileExplorerPanel.swift in Sources */,
 				A5001423 /* FileExplorerPanelView.swift in Sources */,
+				A5001424 /* SyntaxHighlighter.swift in Sources */,
+				A5001425 /* CodeEditorView.swift in Sources */,
 				A5001500 /* ZmuxWebView.swift in Sources */,
 				A5001405 /* PanelContentView.swift in Sources */,
 				A5001201 /* UpdateController.swift in Sources */,
