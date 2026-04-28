@@ -5753,7 +5753,7 @@ class GhosttyNSView: NSView, NSUserInterfaceValidations {
     private var trackingArea: NSTrackingArea?
     private var windowObserver: NSObjectProtocol?
     private var lastScrollEventTime: CFTimeInterval = 0
-    private var visibleInUI: Bool = true
+    private var visibleInUI: Bool = false
     private var pendingSurfaceSize: CGSize?
     private var deferredSurfaceSizeRetryQueued = false
     private var lastDrawableSize: CGSize = .zero
