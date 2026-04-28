@@ -38,7 +38,7 @@ struct CodeEditorView: NSViewRepresentable {
         textView.isVerticallyResizable = true
         textView.isHorizontallyResizable = false
         textView.textContainer?.widthTracksTextView = true
-        textView.textContainer?.containerSize = NSSize(width: 0, height: CGFloat.greatestFiniteMagnitude)
+        textView.textContainer?.containerSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)
 
         applyColors(to: textView)
 
