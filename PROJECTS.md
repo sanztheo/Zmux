@@ -1,6 +1,11 @@
-# PROJECTS
+# Zmux Projects
 
-Cross-project tracking (features, bugs, backlog) for zmux.
+Cross-project tracking (features, bugs, backlog) for Zmux, the improved Cmux-inspired macOS terminal workspace for AI coding agents.
+
+## Product Roadmap
+- [x] File explorer in the right sidebar.
+- [ ] Git diff viewer for working tree, staged, branch, and commit diffs.
+- [ ] Clearer docs and design-plan organization under `docs/plans`.
 
 ## Done
 - 2026-02-14: Fixed updater release regression path: made `.github/workflows/release.yml` Sparkle Info.plist key injection idempotent (re-running tags no longer fails with "Entry Already Exists"), and hardened `scripts/bump-version.sh` to keep `CURRENT_PROJECT_VERSION` above the latest published Sparkle appcast build number so upgrades from `0.27.0` can be detected.

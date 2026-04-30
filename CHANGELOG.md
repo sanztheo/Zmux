@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to zmux are documented here.
+All notable changes to Zmux are documented here.
 
 ## [0.63.2] - 2026-04-06
 

@@ -113,21 +113,22 @@ final class MaterialIconResolver {
         let lower = name.lowercased()
         if let id = fileNames[lower] { return id }
 
-        let ns = lower as NSString
-        var ext = ns.pathExtension
-        while !ext.isEmpty {
-            if let id = fileExtensions[ext] { return id }
-            // Try compound extensions like "test.ts" by stripping leading parts.
-            let stripped = (ns.deletingPathExtension as NSString).pathExtension
-            if stripped.isEmpty { break }
-            ext = "\(stripped).\(ext)"
-            if let id = fileExtensions[ext] { return id }
-            ext = stripped
+        // Walk the suffix list once: ["spec.test.ts", "test.ts", "ts"] for "foo.spec.test.ts".
+        // Try longest match first to favour specific compound extensions like "d.ts" over "ts".
+        // The previous loop never reduced its working string and infinite-looped on any name
+        // with two or more extensions.
+        let dotComponents = lower.split(separator: ".", omittingEmptySubsequences: false)
+        if dotComponents.count > 1 {
+            for start in 1..<dotComponents.count {
+                let candidate = dotComponents[start...].joined(separator: ".")
+                if candidate.isEmpty { continue }
+                if let id = fileExtensions[candidate] { return id }
+            }
         }
 
         // Fallback: bridge through languageIds for extensions that VSCode
         // resolves via language registration (e.g. `.ts` → typescript).
-        let primaryExt = ns.pathExtension
+        let primaryExt = (lower as NSString).pathExtension
         if !primaryExt.isEmpty,
            let langId = Self.extensionToLanguageId[primaryExt],
            let id = languageIds[langId] {

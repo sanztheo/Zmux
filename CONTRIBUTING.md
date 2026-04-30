@@ -1,4 +1,4 @@
-# Contributing to zmux
+# Contributing to Zmux
 
 ## Prerequisites
 

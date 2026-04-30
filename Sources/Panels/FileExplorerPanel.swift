@@ -66,6 +66,22 @@ final class FileExplorerPanel: Panel, ObservableObject {
     /// the destination for toolbar New File / New Folder buttons. `nil` ⇒ root.
     @Published var activeFolder: String?
 
+    /// Path of the row currently visually selected in the tree (file or folder). Decoupled
+    /// from `selectedFile` so that clicking a folder clears the file's blue highlight
+    /// without closing the editor, and clicking the empty area clears the highlight without
+    /// touching either the editor or the active folder context.
+    @Published var selectedPath: String?
+
+    /// Stack of reversible filesystem operations. `Cmd+Z` pops the last entry and reverts
+    /// it. Limited scope by design: rename + trash are the common explorer actions; paste /
+    /// move-in are not undoable yet.
+    fileprivate enum UndoOp {
+        case rename(from: String, to: String)
+        case trash(originalPath: String, trashedURL: URL)
+    }
+    fileprivate var undoStack: [UndoOp] = []
+    private static let undoStackLimit = 50
+
     var displayIcon: String? { "folder" }
     var isDirty: Bool { isDirtyFlag }
 
@@ -145,12 +161,27 @@ final class FileExplorerPanel: Panel, ObservableObject {
         let children = loadDirectory(path)
         updateChildren(at: path, with: children, in: &fileTree)
         activeFolder = path
+        selectedPath = path
     }
 
     func collapseDirectory(_ path: String) {
         expandedDirs.remove(path)
         dirCache.removeValue(forKey: path)
         activeFolder = path
+        selectedPath = path
+    }
+
+    /// Click a folder row without toggling its expansion state — used by keyboard arrow
+    /// navigation so Up/Down can highlight folders without auto-opening them.
+    func selectFolder(_ path: String) {
+        activeFolder = path
+        selectedPath = path
+    }
+
+    /// Drop the visual row selection. Editor + active folder context untouched, matching
+    /// VSCode's "click empty area in tree" behavior.
+    func clearSelection() {
+        selectedPath = nil
     }
 
     private func loadDirectory(_ path: String) -> [FileNode] {
@@ -272,6 +303,7 @@ final class FileExplorerPanel: Panel, ObservableObject {
             fileLanguage = FileLanguage.detect(from: url.pathExtension)
             isDirtyFlag = false
             selectedFile = path
+            selectedPath = path
             activeFolder = (path as NSString).deletingLastPathComponent
             replaceFileContentFromDisk("")
             return
@@ -286,6 +318,7 @@ final class FileExplorerPanel: Panel, ObservableObject {
             fileLanguage = FileLanguage.detect(from: url.pathExtension)
             isDirtyFlag = false
             selectedFile = path
+            selectedPath = path
             activeFolder = (path as NSString).deletingLastPathComponent
             replaceFileContentFromDisk("")
             return
@@ -308,6 +341,7 @@ final class FileExplorerPanel: Panel, ObservableObject {
         fileLanguage = tooBigForHighlight ? .unknown : detected
         isDirtyFlag = false
         selectedFile = path
+        selectedPath = path
         activeFolder = (path as NSString).deletingLastPathComponent
         replaceFileContentFromDisk(decoded)
         startFileWatcher(for: path)
@@ -323,6 +357,9 @@ final class FileExplorerPanel: Panel, ObservableObject {
 
     func deselectFile() {
         stopFileWatcher()
+        if let path = selectedFile, selectedPath == path {
+            selectedPath = nil
+        }
         selectedFile = nil
         fileContent = ""
         cleanFileContent = ""
@@ -452,9 +489,13 @@ final class FileExplorerPanel: Panel, ObservableObject {
         } catch {
             return false
         }
+        if let trashedURL = trashed as URL? {
+            pushUndo(.trash(originalPath: path, trashedURL: trashedURL))
+        }
         if selectedFile == path {
             deselectFile()
         }
+        if selectedPath == path { selectedPath = nil }
         if activeFolder == path || activeFolder?.hasPrefix(path + "/") == true {
             activeFolder = nil
         }
@@ -500,7 +541,10 @@ final class FileExplorerPanel: Panel, ObservableObject {
         } catch {
             return false
         }
+        pushUndo(.rename(from: path, to: destination))
         if selectedFile == path { selectedFile = destination }
+        if selectedPath == path { selectedPath = destination }
+        if activeFolder == path { activeFolder = destination }
         if cutPaths.contains(path) {
             cutPaths.remove(path)
             cutPaths.insert(destination)
@@ -513,8 +557,158 @@ final class FileExplorerPanel: Panel, ObservableObject {
     func collapseAll() {
         expandedDirs.removeAll()
         activeFolder = nil
+        selectedPath = nil
         // Rebuild the tree so the cached `children` arrays don't keep stale subtrees.
         loadRootDirectory()
+    }
+
+    // MARK: - Keyboard navigation
+
+    /// Flat list of currently visible paths in the tree, top-to-bottom. Mirrors what the
+    /// view's `flattenedNodes` produces. Used by arrow-key navigation to compute the next
+    /// or previous row.
+    func visiblePaths() -> [String] {
+        var result: [String] = []
+        func walk(_ nodes: [FileNode]) {
+            for node in nodes {
+                result.append(node.path)
+                if node.isDirectory,
+                   expandedDirs.contains(node.path),
+                   let children = node.children {
+                    walk(children)
+                }
+            }
+        }
+        walk(fileTree)
+        return result
+    }
+
+    /// Look up a node anywhere in the visible tree by its absolute path.
+    func node(at path: String) -> FileNode? {
+        func walk(_ nodes: [FileNode]) -> FileNode? {
+            for node in nodes {
+                if node.path == path { return node }
+                if let children = node.children, let hit = walk(children) {
+                    return hit
+                }
+            }
+            return nil
+        }
+        return walk(fileTree)
+    }
+
+    /// Move the visual selection to the row above / below the current `selectedPath`.
+    /// If nothing is selected, lands on the first / last visible row.
+    func moveSelection(by delta: Int) {
+        let paths = visiblePaths()
+        guard !paths.isEmpty else { return }
+        if let current = selectedPath, let idx = paths.firstIndex(of: current) {
+            let next = max(0, min(paths.count - 1, idx + delta))
+            applyArrowSelection(paths[next])
+        } else {
+            applyArrowSelection(delta >= 0 ? paths.first! : paths.last!)
+        }
+    }
+
+    /// Helper for arrow nav: select a row without auto-expanding folders. Folders update
+    /// `activeFolder` so the section header reflects the move; files update `activeFolder`
+    /// to the file's parent without opening the editor (Enter / Return is the open key).
+    private func applyArrowSelection(_ path: String) {
+        selectedPath = path
+        if let n = node(at: path), n.isDirectory {
+            activeFolder = path
+        } else {
+            activeFolder = (path as NSString).deletingLastPathComponent
+        }
+    }
+
+    /// VSCode-style Right arrow: expand a collapsed folder, or step into the first child of
+    /// an already-expanded folder.
+    func arrowRight() {
+        guard let path = selectedPath, let node = node(at: path), node.isDirectory else {
+            return
+        }
+        if !expandedDirs.contains(path) {
+            expandDirectory(path)
+        } else if let first = node.children?.first {
+            applyArrowSelection(first.path)
+        }
+    }
+
+    /// VSCode-style Left arrow: collapse an expanded folder, otherwise jump up to the parent.
+    func arrowLeft() {
+        guard let path = selectedPath else { return }
+        if let node = node(at: path), node.isDirectory, expandedDirs.contains(path) {
+            collapseDirectory(path)
+            return
+        }
+        let parent = (path as NSString).deletingLastPathComponent
+        // Don't try to select the root itself — it's not rendered as a row.
+        guard parent != path, parent != rootPath, parent.hasPrefix(rootPath) else { return }
+        applyArrowSelection(parent)
+    }
+
+    /// Open whatever is selected: files load into the editor, folders toggle expansion.
+    /// Mirrors the row's tap handler so Enter behaves like a click.
+    func activateSelection() {
+        guard let path = selectedPath else { return }
+        if let node = node(at: path) {
+            if node.isDirectory {
+                if expandedDirs.contains(path) {
+                    collapseDirectory(path)
+                } else {
+                    expandDirectory(path)
+                }
+            } else {
+                openFile(path)
+            }
+        }
+    }
+
+    // MARK: - Undo
+
+    /// Append `op` to the undo stack, dropping the oldest entry if it grows past the limit.
+    fileprivate func pushUndo(_ op: UndoOp) {
+        undoStack.append(op)
+        if undoStack.count > Self.undoStackLimit {
+            undoStack.removeFirst(undoStack.count - Self.undoStackLimit)
+        }
+    }
+
+    /// True if there's at least one operation that can be undone.
+    var canUndo: Bool { !undoStack.isEmpty }
+
+    /// Pop and revert the last reversible operation. Trashed items are restored from the
+    /// `trashedURL` returned by `FileManager.trashItem`; renames are reversed.
+    @discardableResult
+    func undoLastOperation() -> Bool {
+        guard let op = undoStack.popLast() else { return false }
+        switch op {
+        case let .rename(from, to):
+            do {
+                try FileManager.default.moveItem(atPath: to, toPath: from)
+            } catch {
+                return false
+            }
+            if selectedFile == to { selectedFile = from }
+            if selectedPath == to { selectedPath = from }
+            if activeFolder == to { activeFolder = from }
+            if cutPaths.contains(to) {
+                cutPaths.remove(to)
+                cutPaths.insert(from)
+            }
+            refresh()
+            return true
+        case let .trash(originalPath, trashedURL):
+            let originalURL = URL(fileURLWithPath: originalPath)
+            do {
+                try FileManager.default.moveItem(at: trashedURL, to: originalURL)
+            } catch {
+                return false
+            }
+            refresh()
+            return true
+        }
     }
 
     /// Move external file URLs into `destination` (absolute path of a directory or a file —

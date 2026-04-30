@@ -1,9 +1,20 @@
-# Design: Git Diff Panel, File Explorer Panel, Notification Blocklist & Terminal Fix
+# Zmux Roadmap: panels, docs/plans et notifications
 
 **Date:** 2026-04-28
+**Produit:** Zmux — une version inspirée de Cmux, améliorée pour les agents de code avec Ghostty, panneaux natifs, notifications et contexte projet.
 **Priority order:** Bug fix → Notifications → Git Diff → File Explorer
 
 ---
+
+## Roadmap produit
+
+- **Explorateur de fichier** — déjà présent dans la barre latérale droite pour naviguer dans le workspace courant.
+- **Viewer Git diff** — panel prévu pour inspecter les diffs du working tree, de l'index, des branches et des commits sans quitter Zmux.
+- **Docs/plans** — organiser les spécifications et plans de design dans `docs/plans` pour garder la roadmap produit lisible.
+
+---
+
+## Design: Git Diff Panel, File Explorer Panel, Notification Blocklist & Terminal Fix
 
 ## 1. Bug: Terminal noir (surface Ghostty ne rend pas en solo)
 
