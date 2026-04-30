@@ -1,18 +1,24 @@
 #!/bin/bash
-# Rebuild and restart zmux app
-
 set -e
 
 cd "$(dirname "$0")/.."
 
-# Kill existing app if running
-pkill -9 -f "zmux" 2>/dev/null || true
+DERIVED_DATA="$HOME/Library/Developer/Xcode/DerivedData/GhosttyTabs-ezmehgztbryftedkhvvljsnyvyqf"
+APP_PATH="$DERIVED_DATA/Build/Products/Debug/zmux DEV.app"
 
-# Build
-swift build
+echo "Building..."
+xcodebuild \
+    -project GhosttyTabs.xcodeproj \
+    -scheme zmux \
+    -configuration Debug \
+    -destination "platform=macOS" \
+    -derivedDataPath "$DERIVED_DATA" \
+    ZMUX_SKIP_ZIG_BUILD=1 \
+    -skipPackagePluginValidation \
+    -skipPackageUpdates \
+    CODE_SIGN_IDENTITY="-" \
+    CODE_SIGNING_REQUIRED=NO \
+    build
 
-# Copy to app bundle
-cp .build/debug/zmux .build/debug/zmux.app/Contents/MacOS/
-
-# Open the app
-open .build/debug/zmux.app
+echo "Launching..."
+ZMUX_TAG=file-explorer open "$APP_PATH"

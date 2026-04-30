@@ -1435,11 +1435,19 @@ private final class FileExplorerSearchResultsTableView: NSTableView {
     }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        guard isFocusedFirstResponder else {
+            return super.performKeyEquivalent(with: event)
+        }
         if let delta = RightSidebarKeyboardNavigation.moveDelta(for: event) {
             onMoveSelection?(delta)
             return true
         }
         return super.performKeyEquivalent(with: event)
+    }
+
+    private var isFocusedFirstResponder: Bool {
+        guard let firstResponder = window?.firstResponder as? NSView else { return false }
+        return firstResponder === self || firstResponder.isDescendant(of: self)
     }
 
     private func redrawVisibleRows() {
@@ -1782,6 +1790,9 @@ final class FileExplorerNSOutlineView: NSOutlineView {
     }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        guard isFocusedFirstResponder else {
+            return super.performKeyEquivalent(with: event)
+        }
         if quickSearchActive, handleQuickSearchKey(event) {
             return true
         }
@@ -1796,6 +1807,11 @@ final class FileExplorerNSOutlineView: NSOutlineView {
             return true
         }
         return super.performKeyEquivalent(with: event)
+    }
+
+    private var isFocusedFirstResponder: Bool {
+        guard let firstResponder = window?.firstResponder as? NSView else { return false }
+        return firstResponder === self || firstResponder.isDescendant(of: self)
     }
 
     override func becomeFirstResponder() -> Bool {

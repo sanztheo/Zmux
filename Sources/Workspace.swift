@@ -10481,6 +10481,17 @@ final class Workspace: Identifiable, ObservableObject {
         let previousHostedView = focusedTerminalPanel?.hostedView
 
         let panel = FileExplorerPanel(workspaceId: id, rootPath: resolvedRoot)
+        panel.onOpenInIntegratedTerminal = { [weak self] directory in
+            guard let self else { return }
+            let targetPane = self.bonsplitController.focusedPaneId
+                ?? self.bonsplitController.allPaneIds.first
+            guard let paneId = targetPane else { return }
+            _ = self.newTerminalSurface(
+                inPane: paneId,
+                focus: true,
+                workingDirectory: directory
+            )
+        }
         panels[panel.id] = panel
         panelTitles[panel.id] = panel.displayTitle
 

@@ -4278,6 +4278,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         return responder as? NSView
     }
 
+    /// Recognise text-input views from third-party packages (e.g. `CodeEditTextView.TextView`)
+    /// that are NSView subclasses rather than NSText. Without this, focus-repair logic
+    /// designed for terminal panels can steal focus from a focused source-code editor on
+    /// every keystroke (arrow keys, letters, find bar input).
+    func isCustomTextInputResponder(_ responder: NSResponder) -> Bool {
+        var current: NSResponder? = responder
+        while let resp = current {
+            let name = String(describing: type(of: resp))
+            if name == "TextView"
+                || name.hasSuffix(".TextView")
+                || name.contains("CodeEdit") {
+                return true
+            }
+            current = resp.nextResponder
+        }
+        return false
+    }
+
     private func responderHasViableKeyRoutingOwner(
         _ responder: NSResponder,
         in window: NSWindow
@@ -4340,7 +4358,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         // never re-route the keystroke to the terminal. Symmetric with
         // applyFirstResponderIfNeeded's foreign focus guard.
         if let firstResponder = window.firstResponder,
-           firstResponder is NSText || isRightSidebarFocusResponder(firstResponder, in: window) {
+           firstResponder is NSText
+            || isRightSidebarFocusResponder(firstResponder, in: window)
+            || isCustomTextInputResponder(firstResponder) {
             return
         }
         guard let context = contextForMainWindow(window) ?? contextForMainTerminalWindow(window),

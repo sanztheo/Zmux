@@ -775,6 +775,9 @@ final class SessionIndexKeyboardFocusView: NSView {
     }
 
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
+        guard isFocusedFirstResponder else {
+            return super.performKeyEquivalent(with: event)
+        }
         if event.type == .keyDown, event.keyCode == 53 {
             onEscape?()
             return true
@@ -784,6 +787,11 @@ final class SessionIndexKeyboardFocusView: NSView {
             return true
         }
         return super.performKeyEquivalent(with: event)
+    }
+
+    private var isFocusedFirstResponder: Bool {
+        guard let firstResponder = window?.firstResponder as? NSView else { return false }
+        return firstResponder === self || firstResponder.isDescendant(of: self)
     }
 
     override func keyDown(with event: NSEvent) {

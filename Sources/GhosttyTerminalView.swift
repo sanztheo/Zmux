@@ -11209,9 +11209,18 @@ final class GhosttySurfaceScrollView: NSView {
         // surface already owns focus.
         if respectForeignFirstResponder,
            let firstResponder = window.firstResponder,
-           firstResponder is NSText || AppDelegate.shared?.isRightSidebarFocusResponder(firstResponder, in: window) == true {
+           firstResponder is NSText
+            || AppDelegate.shared?.isRightSidebarFocusResponder(firstResponder, in: window) == true
+            || AppDelegate.shared?.isCustomTextInputResponder(firstResponder) == true {
 #if DEBUG
-            let reason = firstResponder is NSText ? "textEditorFocused" : "rightSidebarFocused"
+            let reason: String
+            if firstResponder is NSText {
+                reason = "textEditorFocused"
+            } else if AppDelegate.shared?.isRightSidebarFocusResponder(firstResponder, in: window) == true {
+                reason = "rightSidebarFocused"
+            } else {
+                reason = "customTextInputFocused"
+            }
             dlog("focus.ensure.skip surface=\(surfaceView.terminalSurface?.id.uuidString.prefix(5) ?? "nil") reason=\(reason)")
 #endif
             return
@@ -11459,9 +11468,18 @@ final class GhosttySurfaceScrollView: NSView {
         // own GhosttyNSView for input, so NSText and the feed focus host are always foreign focus
         // owners that should survive deferred terminal visibility applies.
         if let firstResponder = window.firstResponder,
-           firstResponder is NSText || AppDelegate.shared?.isRightSidebarFocusResponder(firstResponder, in: window) == true {
+           firstResponder is NSText
+            || AppDelegate.shared?.isRightSidebarFocusResponder(firstResponder, in: window) == true
+            || AppDelegate.shared?.isCustomTextInputResponder(firstResponder) == true {
 #if DEBUG
-            let reason = firstResponder is NSText ? "textEditorFocused" : "rightSidebarFocused"
+            let reason: String
+            if firstResponder is NSText {
+                reason = "textEditorFocused"
+            } else if AppDelegate.shared?.isRightSidebarFocusResponder(firstResponder, in: window) == true {
+                reason = "rightSidebarFocused"
+            } else {
+                reason = "customTextInputFocused"
+            }
             zmuxDebugLog("find.applyFirstResponder SKIP surface=\(surfaceShort) reason=\(reason)")
 #endif
             return

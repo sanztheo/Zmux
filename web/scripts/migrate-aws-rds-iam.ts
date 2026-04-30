@@ -19,7 +19,7 @@ async function main() {
   }
 }
 
-main().catch((error) => {
+main().catch((error) => { 
   const message = error instanceof Error ? error.message : String(error);
   console.error(`aws-rds-iam migration failed: ${message}`);
   process.exit(1);
