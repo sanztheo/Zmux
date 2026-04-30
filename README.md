@@ -57,17 +57,11 @@ Sidebar shows git branch, linked PR status/number, working directory, listening 
 <h3>SSH</h3>
 <code>zmux ssh user@remote</code> creates a workspace for a remote machine. Browser panes route through the remote network so localhost just works. Drag an image into a remote session to upload via scp.
 </td>
-<td width="60%">
-<img src="./docs/assets/ssh.png" alt="zmux SSH" width="100%" />
-</td>
 </tr>
 <tr>
 <td width="40%" valign="middle">
 <h3>Claude Code Teams</h3>
 <code>zmux claude-teams</code> runs Claude Code's teammate mode with one command. Teammates spawn as native splits with sidebar metadata and notifications. No tmux required.
-</td>
-<td width="60%">
-<img src="./docs/assets/claude-code-teams.png" alt="Claude Code Teams" width="100%" />
 </td>
 </tr>
 </table>
