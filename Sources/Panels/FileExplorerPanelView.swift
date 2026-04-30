@@ -363,6 +363,9 @@ struct FileExplorerTabView: View {
                 .onTapGesture(count: 2) {
                     panel.createNewFile(in: nil)
                 }
+                .onTapGesture(count: 1) {
+                    panel.clearSelection()
+                }
                 .contextMenu {
                     emptyAreaContextMenu
                 }
@@ -447,8 +450,10 @@ struct FileExplorerTabView: View {
         func walk(_ nodes: [FileNode], depth: Int) {
             for node in nodes {
                 let isExpanded = panel.expandedDirs.contains(node.path)
-                let isSelected = panel.selectedFile == node.path
-                let isActiveFolder = node.isDirectory && panel.activeFolder == node.path
+                let isSelected = panel.selectedPath == node.path
+                let isActiveFolder = node.isDirectory
+                    && panel.activeFolder == node.path
+                    && panel.selectedPath != node.path
                 let isCut = panel.cutPaths.contains(node.path)
                 let isRenaming = panel.renamingPath == node.path
                 let isContextMenuTarget = panel.contextMenuPath == node.path
@@ -1102,6 +1107,7 @@ private struct FileExplorerKeyHandler: NSViewRepresentable {
         Coordinator(panel: panel, isActive: isActive)
     }
 
+    @MainActor
     final class Coordinator {
         var panel: FileExplorerPanel
         var isActive: Bool
@@ -1114,17 +1120,24 @@ private struct FileExplorerKeyHandler: NSViewRepresentable {
         }
 
         deinit {
-            if let monitor {
-                NSEvent.removeMonitor(monitor)
+            // `monitor` is a stored property on a MainActor-isolated class; copy it into
+            // a local first (nonisolated `deinit` runs on whichever thread released the
+            // last reference). `NSEvent.removeMonitor` itself is thread-safe.
+            let local = monitor
+            if let local {
+                NSEvent.removeMonitor(local)
             }
         }
 
         private func install() {
-            // The local monitor closure runs on the main thread (AppKit dispatches event
-            // handling there), so reading `panel`/`isActive` and calling `panel`'s
-            // MainActor-isolated methods is safe without explicit isolation.
+            // AppKit dispatches event monitor closures on the main thread, so calling
+            // MainActor-isolated `handle` via `assumeIsolated` is safe. We can't simply
+            // mark the closure `@MainActor` because `addLocalMonitorForEvents` takes a
+            // nonisolated closure type.
             monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-                self?.handle(event) ?? event
+                MainActor.assumeIsolated {
+                    self?.handle(event) ?? event
+                }
             }
         }
 
@@ -1144,37 +1157,83 @@ private struct FileExplorerKeyHandler: NSViewRepresentable {
             guard panel.sidebarMode == .files else { return event }
 
             let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-            guard mods == .command else { return event }
             let chars = (event.charactersIgnoringModifiers ?? "").lowercased()
+            // The "active" row is the row visually selected (file or folder) — falls back
+            // to the open file or the active folder when no row was clicked.
+            let activeTarget: String? = panel.selectedPath
+                ?? panel.selectedFile
+                ?? panel.activeFolder
 
-            // The "active" row for clipboard/delete is the open file when there is one,
-            // otherwise the last-clicked folder. Mirrors VSCode's "selected explorer
-            // item" semantics.
-            let activeTarget: String? = panel.selectedFile ?? panel.activeFolder
-
-            switch chars {
-            case "c":
-                guard let target = activeTarget else { return event }
-                panel.copyToClipboard([target])
-                return nil
-            case "x":
-                guard let target = activeTarget else { return event }
-                panel.cutToClipboard([target])
-                return nil
-            case "v":
-                let dest = panel.activeFolder
-                    ?? panel.selectedFile.map { ($0 as NSString).deletingLastPathComponent }
-                _ = panel.pasteClipboard(into: dest)
-                return nil
-            default:
-                break
+            // Modifier-less navigation + activation keys (arrow keys, Enter, F2).
+            if mods.isEmpty || mods == [.numericPad, .function] || mods == [.function] {
+                switch event.keyCode {
+                case 126: // Up arrow
+                    panel.moveSelection(by: -1)
+                    return nil
+                case 125: // Down arrow
+                    panel.moveSelection(by: 1)
+                    return nil
+                case 123: // Left arrow
+                    panel.arrowLeft()
+                    return nil
+                case 124: // Right arrow
+                    panel.arrowRight()
+                    return nil
+                case 36, 76: // Return / Enter — Finder convention: rename selection.
+                    if let target = activeTarget {
+                        panel.beginRename(path: target)
+                    }
+                    return nil
+                case 49: // Space → activate (open file / toggle folder), matches Finder.
+                    panel.activateSelection()
+                    return nil
+                case 120: // F2 → rename selected
+                    if let target = activeTarget {
+                        panel.beginRename(path: target)
+                    }
+                    return nil
+                case 117: // Forward Delete (fn+Backspace) → trash
+                    if let target = activeTarget {
+                        _ = panel.deleteItem(at: target)
+                        return nil
+                    }
+                default:
+                    break
+                }
             }
 
-            // cmd+Delete (Backspace) → move to Trash, matches Finder.
-            if chars == "\u{7F}" || chars == "\u{8}" || event.keyCode == 51 {
-                guard let target = activeTarget else { return event }
-                _ = panel.deleteItem(at: target)
-                return nil
+            // Command-modified shortcuts.
+            if mods == .command {
+                switch chars {
+                case "c":
+                    guard let target = activeTarget else { return event }
+                    panel.copyToClipboard([target])
+                    return nil
+                case "x":
+                    guard let target = activeTarget else { return event }
+                    panel.cutToClipboard([target])
+                    return nil
+                case "v":
+                    let dest = panel.activeFolder
+                        ?? panel.selectedFile.map { ($0 as NSString).deletingLastPathComponent }
+                    _ = panel.pasteClipboard(into: dest)
+                    return nil
+                case "z":
+                    if panel.canUndo {
+                        _ = panel.undoLastOperation()
+                        return nil
+                    }
+                    return event
+                default:
+                    break
+                }
+
+                // cmd+Delete (Backspace) → move to Trash, matches Finder.
+                if chars == "\u{7F}" || chars == "\u{8}" || event.keyCode == 51 {
+                    guard let target = activeTarget else { return event }
+                    _ = panel.deleteItem(at: target)
+                    return nil
+                }
             }
 
             return event
