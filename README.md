@@ -1,29 +1,17 @@
-<h1 align="center">zmux</h1>
-<p align="center">A Ghostty-based macOS terminal with vertical tabs and notifications for AI coding agents</p>
+<h1 align="center">Zmux</h1>
+<p align="center">An improved Cmux-inspired macOS terminal workspace for AI coding agents, powered by Ghostty</p>
 
 <p align="center">
-  <a href="https://github.com/manaflow-ai/zmux/releases/latest/download/zmux-macos.dmg">
-    <img src="./docs/assets/macos-badge.png" alt="Download zmux for macOS" width="180" />
-  </a>
+  <img src="./docs/assets/main-first-image.png" alt="Zmux screenshot" width="900" />
 </p>
 
-<p align="center">
-  English | <a href="README.ja.md">日本語</a> | <a href="README.vi.md">Tiếng Việt</a> | <a href="README.zh-CN.md">简体中文</a> | <a href="README.zh-TW.md">繁體中文</a> | <a href="README.ko.md">한국어</a> | <a href="README.de.md">Deutsch</a> | <a href="README.es.md">Español</a> | <a href="README.fr.md">Français</a> | <a href="README.it.md">Italiano</a> | <a href="README.da.md">Dansk</a> | <a href="README.pl.md">Polski</a> | <a href="README.ru.md">Русский</a> | <a href="README.bs.md">Bosanski</a> | <a href="README.ar.md">العربية</a> | <a href="README.no.md">Norsk</a> | <a href="README.pt-BR.md">Português (Brasil)</a> | <a href="README.th.md">ไทย</a> | <a href="README.tr.md">Türkçe</a> | <a href="README.km.md">ភាសាខ្មែរ</a> | <a href="README.uk.md">Українська</a>
-</p>
+## Roadmap
 
-<p align="center">
-  <a href="https://x.com/manaflowai"><img src="https://img.shields.io/badge/@manaflow-555?logo=x" alt="X / Twitter" /></a>
-  <a href="https://discord.gg/xsgFEVrWCZ"><img src="https://img.shields.io/badge/Discord-555?logo=discord" alt="Discord" /></a>
-  <a href="https://github.com/manaflow-ai/zmux"><img src="https://img.shields.io/github/stars/manaflow-ai/zmux?style=flat&logo=github&label=stars&color=4c71f2" alt="GitHub stars" /></a>
-</p>
+Zmux is a native macOS terminal workspace inspired by Cmux, with tighter Ghostty rendering, browser automation, notifications, and project context built in.
 
-<p align="center">
-  <img src="./docs/assets/main-first-image.png" alt="zmux screenshot" width="900" />
-</p>
-
-<p align="center">
-  <a href="https://www.youtube.com/watch?v=i-WxO5YUTOs">▶ Demo video</a> · <a href="https://zmux.com/blog/zen-of-zmux">The Zen of zmux</a>
-</p>
+- **File explorer** — available now in the right sidebar for browsing the current workspace.
+- **Git diff viewer** — planned panel for reviewing working tree, staged, branch, and commit diffs inside Zmux.
+- **Docs and plans organization** — ongoing cleanup of product docs and design plans under `docs/plans`.
 
 ## Features
 
@@ -85,7 +73,7 @@ Sidebar shows git branch, linked PR status/number, working directory, listening 
 </table>
 
 - **Browser import** — Import cookies, history, and sessions from Chrome, Firefox, Arc, and 20+ browsers so browser panes start authenticated
-- **Custom commands** — Define project-specific actions in [`zmux.json`](https://zmux.com/docs/custom-commands) that launch from the command palette
+- **Custom commands** — Define project-specific actions in `zmux.json` that launch from the command palette
 - **Scriptable** — CLI and socket API to create workspaces, split panes, send keystrokes, and automate the browser
 - **Native macOS app** — Built with Swift and AppKit, not Electron. Fast startup, low memory.
 - **Ghostty compatible** — Reads your existing `~/.config/ghostty/config` for themes, fonts, and colors
@@ -93,34 +81,28 @@ Sidebar shows git branch, linked PR status/number, working directory, listening 
 
 ## Install
 
-### DMG (recommended)
-
-<a href="https://github.com/manaflow-ai/zmux/releases/latest/download/zmux-macos.dmg">
-  <img src="./docs/assets/macos-badge.png" alt="Download zmux for macOS" width="180" />
-</a>
-
-Open the `.dmg` and drag zmux to your Applications folder. zmux auto-updates via Sparkle, so you only need to download once.
-
-### Homebrew
+Build from source. Requires macOS, Xcode (with command-line tools), and [Zig](https://ziglang.org/download/) on `PATH` to compile the bundled libghostty.
 
 ```bash
-brew tap manaflow-ai/zmux
-brew install --cask zmux
+git clone https://github.com/sanztheo/Zmux.git
+cd Zmux
+./scripts/setup.sh
+./scripts/reloadp.sh
 ```
 
-To update later:
+`setup.sh` initialises submodules and builds `GhosttyKit.xcframework`. `reloadp.sh` produces a Release build of `zmux.app` and launches it. The script prints the absolute `.app` path inside `~/Library/Developer/Xcode/DerivedData/...`; copy it into `/Applications` if you want a stable location.
+
+For day-to-day development, use a tagged Debug build instead:
 
 ```bash
-brew upgrade --cask zmux
+./scripts/reload.sh --tag dev --launch
 ```
 
-On first launch, macOS may ask you to confirm opening an app from an identified developer. Click **Open** to proceed.
-
-## Why zmux?
+## Why Zmux?
 
 I run a lot of Claude Code and Codex sessions in parallel. I was using Ghostty with a bunch of split panes, and relying on native macOS notifications to know when an agent needed me. But Claude Code's notification body is always just "Claude is waiting for your input" with no context, and with enough tabs open I couldn't even read the titles anymore.
 
-I tried a few coding orchestrators but most of them were Electron/Tauri apps and the performance bugged me. I also just prefer the terminal since GUI orchestrators lock you into their workflow. So I built zmux as a native macOS app in Swift/AppKit. It uses libghostty for terminal rendering and reads your existing Ghostty config for themes, fonts, and colors.
+I tried a few coding orchestrators but most of them were Electron/Tauri apps and the performance bugged me. I also just prefer the terminal since GUI orchestrators lock you into their workflow. So I built Zmux as a native macOS app in Swift/AppKit. It uses libghostty for terminal rendering and reads your existing Ghostty config for themes, fonts, and colors.
 
 The main additions are the sidebar and notification system. The sidebar has vertical tabs that show git branch, linked PR status/number, working directory, listening ports, and the latest notification text for each workspace. The notification system picks up terminal sequences (OSC 9/99/777) and has a CLI (`zmux notify`) you can wire into agent hooks for Claude Code, OpenCode, etc. When an agent is waiting, its pane gets a blue ring and the tab lights up in the sidebar, so I can tell which one needs me across splits and tabs. Cmd+Shift+U jumps to the most recent unread.
 
@@ -128,19 +110,15 @@ The in-app browser has a scriptable API ported from [agent-browser](https://gith
 
 Everything is scriptable through the CLI and socket API — create workspaces/tabs, split panes, send keystrokes, open URLs in the browser.
 
-## The Zen of zmux
+## The Zen of Zmux
 
-zmux is not prescriptive about how developers hold their tools. It's a terminal and browser with a CLI, and the rest is up to you.
+Zmux is not prescriptive about how developers hold their tools. It's a terminal and browser with a CLI, and the rest is up to you.
 
-zmux is a primitive, not a solution. It gives you a terminal, a browser, notifications, workspaces, splits, tabs, and a CLI to control all of it. zmux doesn't force you into an opinionated way to use coding agents. What you build with the primitives is yours.
+Zmux is a primitive, not a solution. It gives you a terminal, a browser, notifications, workspaces, splits, tabs, and a CLI to control all of it. Zmux doesn't force you into an opinionated way to use coding agents. What you build with the primitives is yours.
 
 The best developers have always built their own tools. Nobody has figured out the best way to work with agents yet, and the teams building closed products definitely haven't either. The developers closest to their own codebases will figure it out first.
 
 Give a million developers composable primitives and they'll collectively find the most efficient workflows faster than any product team could design top-down.
-
-## Documentation
-
-For more info on how to configure zmux, [head over to our docs](https://zmux.com/docs/getting-started?utm_source=readme).
 
 ## Keyboard Shortcuts
 
@@ -232,29 +210,21 @@ Browser developer-tool shortcuts follow Safari defaults and are customizable in 
 | ⌘ ⇧ , | Reload configuration |
 | ⌘ Q | Quit |
 
-## Nightly Builds
-
-[Download zmux NIGHTLY](https://github.com/manaflow-ai/zmux/releases/download/nightly/zmux-nightly-macos.dmg)
-
-zmux NIGHTLY is a separate app with its own bundle ID, so it runs alongside the stable version. Built automatically from the latest `main` commit and auto-updates via its own Sparkle feed.
-
-Report nightly bugs on [GitHub Issues](https://github.com/manaflow-ai/zmux/issues) or in [#nightly-bugs on Discord](https://discord.gg/xsgFEVrWCZ).
-
 ## Session restore
 
-Quitting zmux saves the current session. On relaunch, zmux restores:
+Quitting Zmux saves the current session. On relaunch, Zmux restores:
 - Window/workspace/pane layout
 - Working directories
 - Terminal scrollback (best effort)
 - Browser URL and navigation history
-- Saved Claude Code and Codex sessions, when zmux has a resume token for the panel
+- Saved Claude Code and Codex sessions, when Zmux has a resume token for the panel
 
 If you need to reapply the last saved snapshot manually, use:
 - `File > Reopen Previous Session`
 - `⌘ ⇧ O`
 - `zmux restore-session`
 
-zmux does **not** restore arbitrary live terminal process state. tmux, vim, shells, and other tools without a zmux resume flow still reopen as normal terminals rather than resuming in-process state.
+Zmux does **not** restore arbitrary live terminal process state. tmux, vim, shells, and other tools without a Zmux resume flow still reopen as normal terminals rather than resuming in-process state.
 
 ## Star History
 
@@ -273,7 +243,7 @@ Ways to get involved:
 - Follow us on X for updates [@manaflowai](https://x.com/manaflowai), [@lawrencecchen](https://x.com/lawrencecchen), and [@austinywang](https://x.com/austinywang)
 - Join the conversation on [Discord](https://discord.gg/xsgFEVrWCZ)
 - Create and participate in [GitHub issues](https://github.com/manaflow-ai/zmux/issues) and [discussions](https://github.com/manaflow-ai/zmux/discussions)
-- Let us know what you're building with zmux
+- Let us know what you're building with Zmux
 
 ## Community
 
@@ -286,12 +256,12 @@ Ways to get involved:
 
 ## Founder's Edition
 
-zmux is free, open source, and always will be. If you'd like to support development and get early access to what's coming next:
+Zmux is free, open source, and always will be. If you'd like to support development and get early access to what's coming next:
 
 **[Get Founder's Edition](https://buy.stripe.com/3cI00j2Ld0it5OU33r5EY0q)**
 
 - **Prioritized feature requests/bug fixes**
-- **Early access: zmux AI that gives you context on every workspace, tab and panel**
+- **Early access: Zmux AI that gives you context on every workspace, tab and panel**
 - **Early access: iOS app with terminals synced between desktop and phone**
 - **Early access: Cloud VMs**
 - **Early access: Voice mode**
@@ -299,6 +269,6 @@ zmux is free, open source, and always will be. If you'd like to support developm
 
 ## License
 
-zmux is open source under [GPL-3.0-or-later](LICENSE).
+Zmux is open source under [GPL-3.0-or-later](LICENSE).
 
 If your organization cannot comply with GPL, a commercial license is available. Contact [founders@manaflow.com](mailto:founders@manaflow.com) for details.
