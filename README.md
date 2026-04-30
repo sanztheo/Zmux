@@ -1,5 +1,5 @@
 <h1 align="center">Zmux</h1>
-<p align="center">An improved Cmux-inspired macOS terminal workspace for AI coding agents, powered by Ghostty</p>
+<p align="center">A native macOS terminal workspace for AI coding agents, powered by Ghostty</p>
 
 <p align="center">
   <img src="./docs/assets/main-first-image.png" alt="Zmux screenshot" width="900" />
@@ -7,7 +7,7 @@
 
 ## Roadmap
 
-Zmux is a native macOS terminal workspace inspired by Cmux, with tighter Ghostty rendering, browser automation, notifications, and project context built in.
+Zmux is a native macOS terminal workspace with tighter Ghostty rendering, browser automation, notifications, and project context built in.
 
 - **File explorer** — available now in the right sidebar for browsing the current workspace.
 - **Git diff viewer** — planned panel for reviewing working tree, staged, branch, and commit diffs inside Zmux.
