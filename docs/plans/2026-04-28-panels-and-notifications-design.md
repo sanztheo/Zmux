@@ -1,8 +1,16 @@
 # Zmux Roadmap: panels, docs/plans et notifications
 
 **Date:** 2026-04-28
+**Last updated:** 2026-05-01
 **Produit:** Zmux — une version inspirée de Cmux, améliorée pour les agents de code avec Ghostty, panneaux natifs, notifications et contexte projet.
-**Priority order:** Bug fix → Notifications → Git Diff → File Explorer
+**Priority order:** Bug fix → Notifications → Git Diff → ~~File Explorer~~ ✅
+
+## Statut
+
+- ✅ **File Explorer Panel — terminé (2026-05-01)**
+- ⏳ Bug terminal noir (single-pane)
+- ⏳ Notification Blocklist
+- ⏳ Git Diff Panel
 
 ---
 
@@ -296,7 +304,16 @@ class GitDiffCache {
 
 ---
 
-## 4. File Explorer Panel
+## 4. File Explorer Panel ✅ TERMINÉ (2026-05-01)
+
+> **État final:** panel implémenté, intégré au workspace, avec arbre de fichiers VSCode-style, éditeur de code (CodeEditSourceEditor), recherche, drag-and-drop AppKit (NSDraggingDestination + DragDropOverlayView), rename inline, opérations CRUD, raccourci "Open in Integrated Terminal", icônes Material, sélection right-click, et hidden files visibles par défaut. Voir `Sources/Panels/FileExplorer*.swift` + `CodeEditorView.swift` + `SyntaxHighlighter.swift` + `FileIndex.swift`.
+>
+> **Écarts vs design initial:**
+> - Éditeur: `CodeEditSourceEditor` (SPM) au lieu d'un wrapper `NSTextView` custom — meilleur highlighting + features.
+> - Drag-drop: `DragDropOverlayView` AppKit single-overlay (SwiftUI `.onDrop` cassé sur LazyVStack macOS, `.dropDestination` API peu fiable) — voir notes Apr 30.
+> - Right-click selection: `RightClickCatcher` NSViewRepresentable + `isContextMenuTarget` flag (FileNodeRow ne peut pas se self-select depuis parent flattenedNodes).
+> - Sidebar mode: enum `FileExplorerSidebarMode` ajouté pour toggle VSCode-style tab bar + section header + collapseAll + drag-drop moveItems.
+> - RenameField: auto-focus async + outside-click via `NSEvent.addLocalMonitorForEvents` (régressions focus-stealing résolues).
 
 ### Nouveau type de panel: `.fileExplorer`
 
@@ -453,18 +470,28 @@ class FileExplorerCache {
 - Detecte auto le git root depuis le cwd du terminal actif
 - Depuis Git Diff panel: clic sur fichier → ouvre en File Explorer
 
-#### Fichiers a creer
+#### Fichiers créés ✅
 
-- `Sources/Panels/FileExplorerPanel.swift` — modele + cache
-- `Sources/Panels/FileExplorerPanelView.swift` — vue SwiftUI (arbre + header + footer)
-- `Sources/Panels/CodeEditorView.swift` — NSViewRepresentable NSTextView wrapper
-- `Sources/Panels/SyntaxHighlighter.swift` — regex patterns par langage
+- ✅ `Sources/Panels/FileExplorerPanel.swift` — modèle + cache + sidebarMode + contextMenuPath + drag-drop moveItems
+- ✅ `Sources/Panels/FileExplorerPanelView.swift` — vue SwiftUI (arbre + header + footer + tab bar VSCode-style)
+- ✅ `Sources/Panels/CodeEditorView.swift` — wrapper `CodeEditSourceEditor` (pivot depuis NSTextView custom)
+- ✅ `Sources/Panels/SyntaxHighlighter.swift` — patterns par langage (utilisé en complément CodeEdit)
+- ✅ `Sources/Panels/FileIndex.swift` — recherche fichiers (FileSearchRow component)
 
-#### Fichiers a modifier
+#### Fichiers modifiés ✅
 
-- `Sources/Panels/Panel.swift` — ajouter `.fileExplorer` a `PanelType`
-- `Sources/Panels/PanelContentView.swift` — route vers `FileExplorerPanelView`
-- `Sources/Workspace.swift` — `newFileExplorerSurface()` creation method
+- ✅ `Sources/Panels/Panel.swift` — case `.fileExplorer` ajouté
+- ✅ `Sources/Panels/PanelContentView.swift` — routing vers `FileExplorerPanelView`
+- ✅ `Sources/Workspace.swift` — `newFileExplorerSurface()` + spawn terminal avec `workingDirectory` (Open in Integrated Terminal)
+- ✅ `Resources/Localizable.xcstrings` — strings UI traduites
+
+#### Bugs résolus pendant l'implémentation
+
+- `EditorTheme.Attribute` type mismatch après upgrade CodeEditSourceEditor (NSColor incompatible) — fix Apr 30 6:11p
+- `Cmd+Delete` / `Cmd+ForwardDelete` non interceptés par `CodeEditTextView.performKeyEquivalent` (NSView, pas NSTextView) — routé via `CodeEditorKeyMonitor`
+- Right-click ne déclenchait pas le highlight bleu — `isContextMenuTarget` + `RightClickCatcher` overlay
+- `RenameField` auto-focus async + commit-on-blur bugs — fix Apr 30 10:58p
+- Drag-drop macOS LazyVStack cassé — pivot vers `DragDropOverlayView` AppKit single-overlay (3 itérations: per-row → single-overlay → hitTest conditional gating)
 
 ---
 
@@ -501,22 +528,23 @@ class SharedGitCache {
 ## Resume des fichiers
 
 ### A creer (7 fichiers)
-| Fichier | Responsabilite |
-|---------|---------------|
-| `Sources/Panels/GitDiffPanel.swift` | Modele, cache diff, git commands |
-| `Sources/Panels/GitDiffPanelView.swift` | Vue diff: header + file list + diff content |
-| `Sources/Panels/FileExplorerPanel.swift` | Modele, cache FS, tree loading |
-| `Sources/Panels/FileExplorerPanelView.swift` | Vue: tree sidebar + file content area |
-| `Sources/Panels/CodeEditorView.swift` | NSTextView wrapper, edit/save/undo |
-| `Sources/Panels/SyntaxHighlighter.swift` | Regex patterns par langage |
-| `Sources/SharedGitCache.swift` | Cache git status partage |
+| Fichier | Responsabilite | Statut |
+|---------|---------------|--------|
+| `Sources/Panels/GitDiffPanel.swift` | Modele, cache diff, git commands | ⏳ |
+| `Sources/Panels/GitDiffPanelView.swift` | Vue diff: header + file list + diff content | ⏳ |
+| `Sources/Panels/FileExplorerPanel.swift` | Modele, cache FS, tree loading | ✅ |
+| `Sources/Panels/FileExplorerPanelView.swift` | Vue: tree sidebar + file content area | ✅ |
+| `Sources/Panels/CodeEditorView.swift` | Wrapper `CodeEditSourceEditor` | ✅ |
+| `Sources/Panels/SyntaxHighlighter.swift` | Regex patterns par langage | ✅ |
+| `Sources/Panels/FileIndex.swift` | Recherche fichiers (bonus) | ✅ |
+| `Sources/SharedGitCache.swift` | Cache git status partage | ⏳ |
 
 ### A modifier (5 fichiers)
-| Fichier | Modification |
-|---------|-------------|
-| `Sources/Panels/Panel.swift` | +2 cases dans `PanelType` enum |
-| `Sources/Panels/PanelContentView.swift` | +2 cases dans switch routing |
-| `Sources/Workspace.swift` | +2 methodes creation panel |
-| `Sources/TerminalNotificationStore.swift` | +champ source, +blocklist filtering |
-| `Sources/TerminalController.swift` | +param source dans V2 commands |
-| `Sources/zmuxApp.swift` | +section blocklist dans Settings UI |
+| Fichier | Modification | Statut |
+|---------|-------------|--------|
+| `Sources/Panels/Panel.swift` | +2 cases dans `PanelType` enum | ✅ `.fileExplorer` / ⏳ `.gitDiff` |
+| `Sources/Panels/PanelContentView.swift` | +2 cases dans switch routing | ✅ `.fileExplorer` / ⏳ `.gitDiff` |
+| `Sources/Workspace.swift` | +2 methodes creation panel | ✅ `newFileExplorerSurface` / ⏳ `newGitDiffSurface` |
+| `Sources/TerminalNotificationStore.swift` | +champ source, +blocklist filtering | ⏳ |
+| `Sources/TerminalController.swift` | +param source dans V2 commands | ⏳ |
+| `Sources/zmuxApp.swift` | +section blocklist dans Settings UI | ⏳ |

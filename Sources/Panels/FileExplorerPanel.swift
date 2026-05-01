@@ -15,10 +15,11 @@ struct FileNode: Identifiable, Hashable {
 }
 
 /// Top-level mode for the file explorer sidebar — VSCode activity-bar style toggle between
-/// the file tree and the search panel.
+/// the file tree, the search panel, and the git source control view.
 enum FileExplorerSidebarMode: String, Hashable {
     case files
     case search
+    case gitDiff
 }
 
 @MainActor
@@ -56,6 +57,10 @@ final class FileExplorerPanel: Panel, ObservableObject {
 
     /// Activity-bar tab: file tree vs full-text search.
     @Published var sidebarMode: FileExplorerSidebarMode = .files
+
+    /// Git change currently selected in the source control sidebar — drives the diff
+    /// content view in the right pane when `sidebarMode == .gitDiff`.
+    @Published var selectedGitChange: GitDiffSelection?
 
     /// Path currently targeted by an open context menu — drives the row highlight while
     /// a right-click menu is open (matches Finder/VSCode behavior).

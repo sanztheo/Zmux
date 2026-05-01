@@ -85,6 +85,8 @@
 		A5009003 /* material-icons.json in Resources */ = {isa = PBXBuildFile; fileRef = A5009002 /* material-icons.json */; };
 		A5009011 /* Panels/MaterialIconResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5009010 /* Panels/MaterialIconResolver.swift */; };
 		A5009021 /* Panels/FileIndex.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5009020 /* Panels/FileIndex.swift */; };
+		A5009031 /* Panels/GitSourceControl.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5009030 /* Panels/GitSourceControl.swift */; };
+		A5009041 /* Panels/GitSourceControlView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5009040 /* Panels/GitSourceControlView.swift */; };
 		A5001424 /* Panels/SyntaxHighlighter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A500141C /* Panels/SyntaxHighlighter.swift */; };
 		A5001425 /* Panels/CodeEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A500141D /* Panels/CodeEditorView.swift */; };
 		A5001500 /* Panels/ZmuxWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5001510 /* Panels/ZmuxWebView.swift */; };
@@ -342,6 +344,8 @@
 		A5009002 /* material-icons.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "material-icons.json"; sourceTree = "<group>"; };
 		A5009010 /* Panels/MaterialIconResolver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/MaterialIconResolver.swift; sourceTree = "<group>"; };
 		A5009020 /* Panels/FileIndex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/FileIndex.swift; sourceTree = "<group>"; };
+		A5009030 /* Panels/GitSourceControl.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/GitSourceControl.swift; sourceTree = "<group>"; };
+		A5009040 /* Panels/GitSourceControlView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/GitSourceControlView.swift; sourceTree = "<group>"; };
 		A500141C /* Panels/SyntaxHighlighter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/SyntaxHighlighter.swift; sourceTree = "<group>"; };
 		A500141D /* Panels/CodeEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/CodeEditorView.swift; sourceTree = "<group>"; };
 		A5001510 /* Panels/ZmuxWebView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Panels/ZmuxWebView.swift; sourceTree = "<group>"; };
@@ -638,6 +642,8 @@
 				A500141B /* Panels/FileExplorerPanelView.swift */,
 				A5009010 /* Panels/MaterialIconResolver.swift */,
 				A5009020 /* Panels/FileIndex.swift */,
+				A5009030 /* Panels/GitSourceControl.swift */,
+				A5009040 /* Panels/GitSourceControlView.swift */,
 				A500141C /* Panels/SyntaxHighlighter.swift */,
 				A500141D /* Panels/CodeEditorView.swift */,
 				A5001510 /* Panels/ZmuxWebView.swift */,
@@ -1055,6 +1061,8 @@
 				A5001423 /* Panels/FileExplorerPanelView.swift in Sources */,
 				A5009011 /* Panels/MaterialIconResolver.swift in Sources */,
 				A5009021 /* Panels/FileIndex.swift in Sources */,
+				A5009031 /* Panels/GitSourceControl.swift in Sources */,
+				A5009041 /* Panels/GitSourceControlView.swift in Sources */,
 				A5001424 /* Panels/SyntaxHighlighter.swift in Sources */,
 				A5001425 /* Panels/CodeEditorView.swift in Sources */,
 				A5001500 /* Panels/ZmuxWebView.swift in Sources */,

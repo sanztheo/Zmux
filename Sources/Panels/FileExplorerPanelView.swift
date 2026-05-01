@@ -9,6 +9,10 @@ struct FileExplorerTabView: View {
 
     @Environment(\.colorScheme) private var colorScheme
 
+    /// Persisted user choice: render `.md` files as rendered preview or as raw source.
+    /// Default is `false` (raw markdown source) to preserve current behavior.
+    @AppStorage("fileExplorer.markdownPreviewEnabled") private var markdownPreviewEnabled: Bool = false
+
     /// Single `NSEvent` local monitor that commits any in-flight rename when the user clicks
     /// outside the inline `TextField`. Lifetime is tied to `panel.renamingPath`: installed
     /// only while a rename is active, removed the instant it ends or the view goes away.
@@ -130,10 +134,13 @@ struct FileExplorerTabView: View {
         VStack(spacing: 0) {
             sidebarTabBar
             Divider()
-            if panel.sidebarMode == .files {
+            switch panel.sidebarMode {
+            case .files:
                 filesView
-            } else {
+            case .search:
                 searchModeView
+            case .gitDiff:
+                GitSourceControlView(panel: panel)
             }
         }
         // Background-attached AppKit key monitor: when the sidebar is the focused
@@ -157,6 +164,11 @@ struct FileExplorerTabView: View {
                 mode: .search,
                 systemImage: "magnifyingglass",
                 label: String(localized: "fileExplorer.tab.search", defaultValue: "Search")
+            )
+            sidebarTabButton(
+                mode: .gitDiff,
+                systemImage: "arrow.triangle.branch",
+                label: String(localized: "fileExplorer.tab.git", defaultValue: "Source Control")
             )
             Spacer()
         }
@@ -548,7 +560,9 @@ struct FileExplorerTabView: View {
 
     private var contentArea: some View {
         VStack(spacing: 0) {
-            if let path = panel.selectedFile {
+            if panel.sidebarMode == .gitDiff, let selection = panel.selectedGitChange {
+                GitDiffContentView(selection: selection)
+            } else if let path = panel.selectedFile {
                 fileHeaderBar(path: path)
                 Divider()
                 if panel.isFileBinary {
@@ -570,6 +584,13 @@ struct FileExplorerTabView: View {
                         .buttonStyle(.bordered)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if panel.fileLanguage == .markdown && markdownPreviewEnabled {
+                    MarkdownInlinePreviewView(
+                        content: panel.fileContent,
+                        filePath: path,
+                        showFilePathHeader: false
+                    )
+                    .id(path)
                 } else {
                     FileCodeEditorView(
                         content: $panel.fileContent,
@@ -615,9 +636,30 @@ struct FileExplorerTabView: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.small)
             }
+            if panel.fileLanguage == .markdown {
+                markdownModeToggle
+            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
+    }
+
+    /// Segmented toggle to switch between rendered Preview and raw Markdown source
+    /// for `.md` files. Choice is persisted via `@AppStorage`.
+    private var markdownModeToggle: some View {
+        Picker(
+            String(localized: "fileExplorer.markdownMode.label", defaultValue: "Markdown view"),
+            selection: $markdownPreviewEnabled
+        ) {
+            Text(String(localized: "fileExplorer.markdownMode.preview", defaultValue: "Preview"))
+                .tag(true)
+            Text(String(localized: "fileExplorer.markdownMode.markdown", defaultValue: "Markdown"))
+                .tag(false)
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        .controlSize(.small)
+        .fixedSize()
     }
 
     private func placeholderView(icon: String, title: String) -> some View {
@@ -1055,6 +1097,7 @@ private struct RenameField: View {
         .textFieldStyle(.plain)
         .font(.system(size: 12))
         .focused($focused)
+        .background(RenameFieldFocusForcer())
         .onAppear {
             // Dispatch async so the underlying NSTextField is fully attached to the
             // responder chain before we try to make it first responder. Without this, the
@@ -1074,6 +1117,71 @@ private struct RenameField: View {
             RoundedRectangle(cornerRadius: 3)
                 .strokeBorder(Color.accentColor, lineWidth: 1)
         )
+    }
+}
+
+/// AppKit-level backup focus driver. SwiftUI's `@FocusState` is unreliable inside
+/// `LazyVStack` rows on macOS — when a new file is created and the row is mounted in
+/// the same runloop tick, `@FocusState = true` sometimes lands before the underlying
+/// `NSTextField` is in the responder chain and gets dropped silently. This view walks
+/// up to the row's hosting view, finds the editable `NSTextField`, and explicitly
+/// `makeFirstResponder`s it with a few retries while the row finishes mounting.
+private struct RenameFieldFocusForcer: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView(frame: .zero)
+        view.setAccessibilityHidden(true)
+        DispatchQueue.main.async {
+            Self.requestFocus(from: view, retries: 6)
+        }
+        return view
+    }
+
+    func updateNSView(_: NSView, context: Context) {}
+
+    private static func requestFocus(from view: NSView, retries: Int) {
+        guard let window = view.window else {
+            scheduleRetry(view: view, retries: retries)
+            return
+        }
+        guard let textField = findEditableTextField(near: view) else {
+            scheduleRetry(view: view, retries: retries)
+            return
+        }
+        if window.firstResponder === textField || window.firstResponder === textField.currentEditor() {
+            return
+        }
+        if !window.makeFirstResponder(textField) {
+            scheduleRetry(view: view, retries: retries)
+        }
+    }
+
+    private static func scheduleRetry(view: NSView, retries: Int) {
+        guard retries > 0 else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.04) {
+            requestFocus(from: view, retries: retries - 1)
+        }
+    }
+
+    /// Walk up to the row container, then find the unique editable NSTextField inside.
+    /// Non-editable Text views in sibling rows render as NSTextField with isEditable=false,
+    /// so the editable filter uniquely identifies the inline rename field.
+    private static func findEditableTextField(near view: NSView) -> NSTextField? {
+        var ancestor: NSView? = view.superview
+        while let v = ancestor {
+            if let tf = firstEditableTextField(in: v) { return tf }
+            ancestor = v.superview
+        }
+        return nil
+    }
+
+    private static func firstEditableTextField(in view: NSView) -> NSTextField? {
+        if let tf = view as? NSTextField, tf.isEditable {
+            return tf
+        }
+        for sub in view.subviews {
+            if let found = firstEditableTextField(in: sub) { return found }
+        }
+        return nil
     }
 }
 
@@ -1145,11 +1253,25 @@ private struct FileExplorerKeyHandler: NSViewRepresentable {
             guard isActive else { return event }
             // Don't intercept while the user is typing in any text field — covers the
             // search field, the inline rename field, and the code editor.
+            // CodeEditTextView is an NSView subclass (not NSText/NSTextView), so the
+            // standard isa check misses it; without the className walk below, Cmd+Delete
+            // inside the source editor falls through to `panel.deleteItem` and trashes
+            // the open file.
             if let firstResponder = event.window?.firstResponder {
                 if firstResponder is NSText
                     || firstResponder is NSTextField
                     || firstResponder is NSTextView {
                     return event
+                }
+                var current: NSResponder? = firstResponder
+                while let resp = current {
+                    let name = String(describing: type(of: resp))
+                    if name == "TextView"
+                        || name.hasSuffix(".TextView")
+                        || name.contains("CodeEdit") {
+                        return event
+                    }
+                    current = resp.nextResponder
                 }
             }
             // Only operate while the file tree tab is showing — search mode hands its
