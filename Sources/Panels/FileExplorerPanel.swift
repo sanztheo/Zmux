@@ -487,6 +487,11 @@ final class FileExplorerPanel: Panel, ObservableObject {
     /// Move an item to the macOS Trash. Returns true on success.
     @discardableResult
     func deleteItem(at path: String) -> Bool {
+        // Defense in depth: never trash the workspace root, no matter which
+        // call path produced `path`. Cmd+Delete used to fall back to the
+        // root when nothing was explicitly selected, which trashed the
+        // whole project folder.
+        guard path != rootPath else { return false }
         let url = URL(fileURLWithPath: path)
         var trashed: NSURL?
         do {
