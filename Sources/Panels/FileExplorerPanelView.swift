@@ -1285,6 +1285,13 @@ private struct FileExplorerKeyHandler: NSViewRepresentable {
             let activeTarget: String? = panel.selectedPath
                 ?? panel.selectedFile
                 ?? panel.activeFolder
+            // Destructive shortcuts (Cmd+Delete, fn+Backspace) must NOT use the
+            // activeFolder fallback — that path is set whenever the user merely
+            // navigates the tree, so an empty-selection delete would otherwise
+            // trash the project root or the last folder the user clicked.
+            // Match Finder / VSCode: only fire on an explicit row selection
+            // or the currently open file.
+            let deleteTarget: String? = panel.selectedPath ?? panel.selectedFile
 
             // Modifier-less navigation + activation keys (arrow keys, Enter, F2).
             if mods.isEmpty || mods == [.numericPad, .function] || mods == [.function] {
@@ -1315,10 +1322,11 @@ private struct FileExplorerKeyHandler: NSViewRepresentable {
                     }
                     return nil
                 case 117: // Forward Delete (fn+Backspace) → trash
-                    if let target = activeTarget {
+                    if let target = deleteTarget {
                         _ = panel.deleteItem(at: target)
                         return nil
                     }
+                    return event
                 default:
                     break
                 }
@@ -1352,7 +1360,7 @@ private struct FileExplorerKeyHandler: NSViewRepresentable {
 
                 // cmd+Delete (Backspace) → move to Trash, matches Finder.
                 if chars == "\u{7F}" || chars == "\u{8}" || event.keyCode == 51 {
-                    guard let target = activeTarget else { return event }
+                    guard let target = deleteTarget else { return event }
                     _ = panel.deleteItem(at: target)
                     return nil
                 }
