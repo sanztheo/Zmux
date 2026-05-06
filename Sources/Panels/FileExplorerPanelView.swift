@@ -1,3 +1,4 @@
+import CodeEditSourceEditor
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -12,6 +13,14 @@ struct FileExplorerTabView: View {
     /// Persisted user choice: render `.md` files as rendered preview or as raw source.
     /// Default is `false` (raw markdown source) to preserve current behavior.
     @AppStorage("fileExplorer.markdownPreviewEnabled") private var markdownPreviewEnabled: Bool = false
+    @AppStorage(CodeEditorSettings.showMinimapKey)
+    private var editorShowMinimap = CodeEditorSettings.defaultShowMinimap
+    @AppStorage(CodeEditorSettings.showFoldingRibbonKey)
+    private var editorShowFoldingRibbon = CodeEditorSettings.defaultShowFoldingRibbon
+    @AppStorage(CodeEditorSettings.showReformattingGuideKey)
+    private var editorShowReformattingGuide = CodeEditorSettings.defaultShowReformattingGuide
+    @AppStorage(CodeEditorSettings.showInvisibleCharactersKey)
+    private var editorShowInvisibleCharacters = CodeEditorSettings.defaultShowInvisibleCharacters
 
     /// Single `NSEvent` local monitor that commits any in-flight rename when the user clicks
     /// outside the inline `TextField`. Lifetime is tied to `panel.renamingPath`: installed
@@ -19,6 +28,8 @@ struct FileExplorerTabView: View {
     /// Per-row monitors leak under `LazyVStack` recycling, so we own it here at the panel
     /// level — exactly one monitor exists at a time.
     @State private var renameOutsideClickMonitor: Any?
+    @State private var pendingWorktreeSwitch: GitWorktreeSnapshot?
+    @State private var showingDirtyWorktreeAlert = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -48,7 +59,33 @@ struct FileExplorerTabView: View {
                 removeRenameOutsideClickMonitor()
             }
         }
+        .onAppear { panel.refreshWorktrees() }
         .onDisappear { removeRenameOutsideClickMonitor() }
+        .alert(
+            String(localized: "fileExplorer.worktree.dirtyAlert.title", defaultValue: "Switch worktree?"),
+            isPresented: $showingDirtyWorktreeAlert
+        ) {
+            Button(String(localized: "fileExplorer.worktree.dirtyAlert.save", defaultValue: "Save")) {
+                guard let pending = pendingWorktreeSwitch else { return }
+                if panel.saveFile() {
+                    panel.switchRoot(to: pending.path)
+                }
+                pendingWorktreeSwitch = nil
+            }
+            Button(String(localized: "fileExplorer.worktree.dirtyAlert.discard", defaultValue: "Discard"), role: .destructive) {
+                guard let pending = pendingWorktreeSwitch else { return }
+                panel.switchRoot(to: pending.path)
+                pendingWorktreeSwitch = nil
+            }
+            Button(String(localized: "fileExplorer.worktree.dirtyAlert.cancel", defaultValue: "Cancel"), role: .cancel) {
+                pendingWorktreeSwitch = nil
+            }
+        } message: {
+            Text(String(
+                localized: "fileExplorer.worktree.dirtyAlert.message",
+                defaultValue: "The current file has unsaved changes. Save or discard them before switching worktrees."
+            ))
+        }
     }
 
     /// Install the global click monitor. Every leftMouseDown/rightMouseDown is hit-tested
@@ -106,6 +143,7 @@ struct FileExplorerTabView: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
                 .frame(maxWidth: .infinity, alignment: .leading)
+            worktreeSelector
             Button {
                 panel.showHiddenFiles.toggle()
                 panel.refresh()
@@ -120,6 +158,73 @@ struct FileExplorerTabView: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
+    }
+
+    @ViewBuilder
+    private var worktreeSelector: some View {
+        if !panel.availableWorktrees.isEmpty {
+            Menu {
+                ForEach(panel.availableWorktrees) { worktree in
+                    Button {
+                        requestWorktreeSwitch(worktree)
+                    } label: {
+                        HStack {
+                            Text(worktree.displayName)
+                            Text(worktreeSubtitle(for: worktree))
+                        }
+                    }
+                    .disabled(worktree.path == panel.selectedWorktreePath)
+                }
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: "arrow.triangle.branch")
+                        .font(.system(size: 11))
+                    Text(selectedWorktreeTitle)
+                        .font(.system(size: 11))
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize(horizontal: true, vertical: false)
+            .help(String(localized: "fileExplorer.worktree.selector.help", defaultValue: "Switch worktree"))
+        }
+    }
+
+    private var selectedWorktreeTitle: String {
+        if let selected = panel.availableWorktrees.first(where: { $0.path == panel.selectedWorktreePath }) {
+            return selected.displayName
+        }
+        return (panel.rootPath as NSString).lastPathComponent
+    }
+
+    private func worktreeSubtitle(for worktree: GitWorktreeSnapshot) -> String {
+        if worktree.isBare {
+            return String(localized: "fileExplorer.worktree.bare", defaultValue: "bare")
+        }
+        if worktree.isDetached {
+            return String(
+                format: String(localized: "fileExplorer.worktree.detachedFormat", defaultValue: "detached %@"),
+                worktree.head.map { String($0.prefix(8)) } ?? ""
+            )
+        }
+        if let branch = worktree.branch, !branch.isEmpty {
+            if branch.hasPrefix("refs/heads/") {
+                return String(branch.dropFirst("refs/heads/".count))
+            }
+            return branch
+        }
+        return String(localized: "fileExplorer.worktree.item", defaultValue: "worktree")
+    }
+
+    private func requestWorktreeSwitch(_ worktree: GitWorktreeSnapshot) {
+        guard worktree.path != panel.selectedWorktreePath else { return }
+        if panel.isDirty {
+            pendingWorktreeSwitch = worktree
+            showingDirtyWorktreeAlert = true
+        } else {
+            panel.switchRoot(to: worktree.path)
+        }
     }
 
     /// Default parent for "new file/folder" toolbar actions. Prefers the user's last-clicked
@@ -597,6 +702,24 @@ struct FileExplorerTabView: View {
                         isEditable: true,
                         language: panel.fileLanguage,
                         isDarkMode: colorScheme == .dark,
+                        filePath: path,
+                        rootPath: panel.rootPath,
+                        performanceMode: panel.isFilePerformanceMode,
+                        fileSuggestions: { query, limit in
+                            await panel.fileSuggestions(matching: query, limit: limit)
+                        },
+                        onOpenLocalDefinition: { destinationPath, cursorPosition in
+                            if let cursorPosition {
+                                CodeEditorStateCache.store(
+                                    SourceEditorState(cursorPositions: [cursorPosition]),
+                                    for: destinationPath
+                                )
+                            }
+                            panel.openFile(destinationPath)
+                        },
+                        onCursorPositionChange: { status in
+                            panel.editorCursorStatus = status
+                        },
                         onSave: { panel.saveFile() }
                     )
                     .id(path)
@@ -681,12 +804,19 @@ struct FileExplorerTabView: View {
                 Text(panel.fileLanguage.rawValue.capitalized)
                 Text("UTF-8")
                 Text("\(lineCount) " + String(localized: "fileExplorer.linesUnit", defaultValue: "lines"))
+                if let cursorStatus = panel.editorCursorStatus {
+                    Text(cursorStatusText(cursorStatus))
+                }
                 if panel.isDirty {
                     Circle()
                         .fill(.orange)
                         .frame(width: 8, height: 8)
                     Text(String(localized: "fileExplorer.modified", defaultValue: "Modified"))
                 }
+                if panel.isFilePerformanceMode {
+                    Text(String(localized: "fileExplorer.editor.performanceMode", defaultValue: "Performance mode"))
+                }
+                editorFooterToggles
             }
             Spacer()
         }
@@ -696,10 +826,73 @@ struct FileExplorerTabView: View {
         .padding(.vertical, 4)
     }
 
+    private var editorFooterToggles: some View {
+        HStack(spacing: 4) {
+            editorToggleButton(
+                systemImage: "map",
+                isOn: editorShowMinimap && !panel.isFilePerformanceMode,
+                help: String(localized: "fileExplorer.editor.toggleMinimap", defaultValue: "Toggle minimap")
+            ) {
+                editorShowMinimap.toggle()
+            }
+            editorToggleButton(
+                systemImage: "sidebar.leading",
+                isOn: editorShowFoldingRibbon && !panel.isFilePerformanceMode,
+                help: String(localized: "fileExplorer.editor.toggleFolding", defaultValue: "Toggle folding controls")
+            ) {
+                editorShowFoldingRibbon.toggle()
+            }
+            editorToggleButton(
+                systemImage: "ruler",
+                isOn: editorShowReformattingGuide && !panel.isFilePerformanceMode,
+                help: String(localized: "fileExplorer.editor.toggleGuide", defaultValue: "Toggle reformatting guide")
+            ) {
+                editorShowReformattingGuide.toggle()
+            }
+            editorToggleButton(
+                systemImage: "paragraphsign",
+                isOn: editorShowInvisibleCharacters && !panel.isFilePerformanceMode,
+                help: String(localized: "fileExplorer.editor.toggleInvisibles", defaultValue: "Toggle invisible characters")
+            ) {
+                editorShowInvisibleCharacters.toggle()
+            }
+        }
+        .disabled(panel.isFilePerformanceMode)
+    }
+
+    private func editorToggleButton(
+        systemImage: String,
+        isOn: Bool,
+        help: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.system(size: 10, weight: .semibold))
+                .frame(width: 18, height: 18)
+                .foregroundStyle(isOn ? Color.accentColor : Color.secondary)
+                .background(
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(isOn ? Color.accentColor.opacity(0.16) : Color.clear)
+                )
+        }
+        .buttonStyle(.plain)
+        .help(help)
+        .accessibilityLabel(help)
+    }
+
     // MARK: - Helpers
 
     private var lineCount: Int {
         panel.fileContent.isEmpty ? 0 : panel.fileContent.components(separatedBy: "\n").count
+    }
+
+    private func cursorStatusText(_ status: CodeEditorCursorStatus) -> String {
+        String(
+            format: String(localized: "fileExplorer.editor.cursorPositionFormat", defaultValue: "Ln %d, Col %d"),
+            status.line,
+            status.column
+        )
     }
 
     private var backgroundColor: Color {

@@ -5295,6 +5295,22 @@ struct SettingsView: View {
     @AppStorage(TelemetrySettings.sendAnonymousTelemetryKey)
     private var sendAnonymousTelemetry = TelemetrySettings.defaultSendAnonymousTelemetry
     @AppStorage(PreferredEditorSettings.key) private var preferredEditorCommand = ""
+    @AppStorage(CodeEditorSettings.showMinimapKey)
+    private var codeEditorShowMinimap = CodeEditorSettings.defaultShowMinimap
+    @AppStorage(CodeEditorSettings.showFoldingRibbonKey)
+    private var codeEditorShowFoldingRibbon = CodeEditorSettings.defaultShowFoldingRibbon
+    @AppStorage(CodeEditorSettings.showReformattingGuideKey)
+    private var codeEditorShowReformattingGuide = CodeEditorSettings.defaultShowReformattingGuide
+    @AppStorage(CodeEditorSettings.showInvisibleCharactersKey)
+    private var codeEditorShowInvisibleCharacters = CodeEditorSettings.defaultShowInvisibleCharacters
+    @AppStorage(CodeEditorSettings.showWarningCharactersKey)
+    private var codeEditorShowWarningCharacters = CodeEditorSettings.defaultShowWarningCharacters
+    @AppStorage(CodeEditorSettings.wrapLinesKey)
+    private var codeEditorWrapLines = CodeEditorSettings.defaultWrapLines
+    @AppStorage(CodeEditorSettings.tabWidthKey)
+    private var codeEditorTabWidth = CodeEditorSettings.defaultTabWidth
+    @AppStorage(CodeEditorSettings.reformatColumnKey)
+    private var codeEditorReformatColumn = CodeEditorSettings.defaultReformatColumn
     @AppStorage(CmdClickMarkdownRouteSettings.key) private var openMarkdownInZmuxViewer = CmdClickMarkdownRouteSettings.defaultValue
     @AppStorage("zmuxPortBase") private var zmuxPortBase = 9100
     @AppStorage("zmuxPortRange") private var zmuxPortRange = 10
@@ -6467,6 +6483,113 @@ struct SettingsView: View {
                                 .controlSize(.small)
                         }
                         .disabled(sidebarHideAllDetails)
+                    }
+
+                    SettingsSectionHeader(title: String(localized: "settings.section.editor", defaultValue: "Editor"))
+                    SettingsCard {
+                        SettingsCardRow(
+                            configurationReview: .settingsOnly,
+                            String(localized: "settings.editor.minimap", defaultValue: "Minimap"),
+                            subtitle: String(localized: "settings.editor.minimap.subtitle", defaultValue: "Show the right-side source overview for normal-sized files.")
+                        ) {
+                            Toggle("", isOn: $codeEditorShowMinimap)
+                                .labelsHidden()
+                                .controlSize(.small)
+                        }
+
+                        SettingsCardDivider()
+
+                        SettingsCardRow(
+                            configurationReview: .settingsOnly,
+                            String(localized: "settings.editor.folding", defaultValue: "Folding Controls"),
+                            subtitle: String(localized: "settings.editor.folding.subtitle", defaultValue: "Show the gutter folding ribbon when the editor can compute fold regions.")
+                        ) {
+                            Toggle("", isOn: $codeEditorShowFoldingRibbon)
+                                .labelsHidden()
+                                .controlSize(.small)
+                        }
+
+                        SettingsCardDivider()
+
+                        SettingsCardRow(
+                            configurationReview: .settingsOnly,
+                            String(localized: "settings.editor.reformattingGuide", defaultValue: "Reformatting Guide"),
+                            subtitle: String(localized: "settings.editor.reformattingGuide.subtitle", defaultValue: "Draw a vertical guide at the configured formatting column.")
+                        ) {
+                            Toggle("", isOn: $codeEditorShowReformattingGuide)
+                                .labelsHidden()
+                                .controlSize(.small)
+                        }
+
+                        SettingsCardDivider()
+
+                        SettingsCardRow(
+                            configurationReview: .settingsOnly,
+                            String(localized: "settings.editor.invisibleCharacters", defaultValue: "Invisible Characters"),
+                            subtitle: String(localized: "settings.editor.invisibleCharacters.subtitle", defaultValue: "Render spaces and tabs with subtle markers.")
+                        ) {
+                            Toggle("", isOn: $codeEditorShowInvisibleCharacters)
+                                .labelsHidden()
+                                .controlSize(.small)
+                        }
+
+                        SettingsCardDivider()
+
+                        SettingsCardRow(
+                            configurationReview: .settingsOnly,
+                            String(localized: "settings.editor.warningCharacters", defaultValue: "Suspicious Characters"),
+                            subtitle: String(localized: "settings.editor.warningCharacters.subtitle", defaultValue: "Highlight zero-width spaces, no-break spaces, and smart quotes.")
+                        ) {
+                            Toggle("", isOn: $codeEditorShowWarningCharacters)
+                                .labelsHidden()
+                                .controlSize(.small)
+                        }
+
+                        SettingsCardDivider()
+
+                        SettingsCardRow(
+                            configurationReview: .settingsOnly,
+                            String(localized: "settings.editor.wrapLines", defaultValue: "Wrap Lines"),
+                            subtitle: String(localized: "settings.editor.wrapLines.subtitle", defaultValue: "Soft-wrap long lines to the editor width.")
+                        ) {
+                            Toggle("", isOn: $codeEditorWrapLines)
+                                .labelsHidden()
+                                .controlSize(.small)
+                        }
+
+                        SettingsCardDivider()
+
+                        SettingsCardRow(
+                            configurationReview: .settingsOnly,
+                            String(localized: "settings.editor.tabWidth", defaultValue: "Tab Width"),
+                            subtitle: String(localized: "settings.editor.tabWidth.subtitle", defaultValue: "Number of spaces inserted and shown for indentation."),
+                            controlWidth: 110
+                        ) {
+                            HStack(spacing: 8) {
+                                Text("\(codeEditorTabWidth)")
+                                    .font(.system(size: 12, design: .monospaced))
+                                    .frame(width: 24, alignment: .trailing)
+                                Stepper("", value: $codeEditorTabWidth, in: 2...8, step: 1)
+                                    .labelsHidden()
+                            }
+                        }
+
+                        SettingsCardDivider()
+
+                        SettingsCardRow(
+                            configurationReview: .settingsOnly,
+                            String(localized: "settings.editor.reformatColumn", defaultValue: "Reformat Column"),
+                            subtitle: String(localized: "settings.editor.reformatColumn.subtitle", defaultValue: "Column used by the reformatting guide."),
+                            controlWidth: 120
+                        ) {
+                            HStack(spacing: 8) {
+                                Text("\(codeEditorReformatColumn)")
+                                    .font(.system(size: 12, design: .monospaced))
+                                    .frame(width: 34, alignment: .trailing)
+                                Stepper("", value: $codeEditorReformatColumn, in: 40...160, step: 4)
+                                    .labelsHidden()
+                            }
+                        }
                     }
 
                     SettingsSectionHeader(title: String(localized: "settings.section.terminal", defaultValue: "Terminal"))

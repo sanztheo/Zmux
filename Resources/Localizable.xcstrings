@@ -95674,6 +95674,237 @@
           }
         }
       }
+    },
+    "codeEditor.suggestions.documentWord": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Document word" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ドキュメント内の単語" } }
+      }
+    },
+    "fileExplorer.editor.cursorPositionFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Ln %d, Col %d" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "行 %d、列 %d" } }
+      }
+    },
+    "fileExplorer.editor.performanceMode": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Performance mode" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "パフォーマンスモード" } }
+      }
+    },
+    "fileExplorer.editor.toggleFolding": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Toggle folding controls" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "折りたたみコントロールを切り替え" } }
+      }
+    },
+    "fileExplorer.editor.toggleGuide": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Toggle reformatting guide" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "整形ガイドを切り替え" } }
+      }
+    },
+    "fileExplorer.editor.toggleInvisibles": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Toggle invisible characters" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "不可視文字を切り替え" } }
+      }
+    },
+    "fileExplorer.editor.toggleMinimap": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Toggle minimap" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ミニマップを切り替え" } }
+      }
+    },
+    "fileExplorer.worktree.bare": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "bare" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ベア" } }
+      }
+    },
+    "fileExplorer.worktree.detachedFormat": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "detached %@" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "detached %@" } }
+      }
+    },
+    "fileExplorer.worktree.dirtyAlert.cancel": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Cancel" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "キャンセル" } }
+      }
+    },
+    "fileExplorer.worktree.dirtyAlert.discard": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Discard" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "破棄" } }
+      }
+    },
+    "fileExplorer.worktree.dirtyAlert.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "The current file has unsaved changes. Save or discard them before switching worktrees." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "現在のファイルに未保存の変更があります。worktree を切り替える前に保存するか破棄してください。" } }
+      }
+    },
+    "fileExplorer.worktree.dirtyAlert.save": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Save" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "保存" } }
+      }
+    },
+    "fileExplorer.worktree.dirtyAlert.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Switch worktree?" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "worktree を切り替えますか？" } }
+      }
+    },
+    "fileExplorer.worktree.item": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "worktree" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "worktree" } }
+      }
+    },
+    "fileExplorer.worktree.selector.help": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Switch worktree" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "worktree を切り替え" } }
+      }
+    },
+    "settings.editor.folding": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Folding Controls" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "折りたたみコントロール" } }
+      }
+    },
+    "settings.editor.folding.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Show the gutter folding ribbon when the editor can compute fold regions." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "エディタが折りたたみ範囲を計算できる場合に、ガターの折りたたみリボンを表示します。" } }
+      }
+    },
+    "settings.editor.invisibleCharacters": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Invisible Characters" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "不可視文字" } }
+      }
+    },
+    "settings.editor.invisibleCharacters.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Render spaces and tabs with subtle markers." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "スペースとタブを控えめなマーカーで表示します。" } }
+      }
+    },
+    "settings.editor.minimap": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Minimap" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ミニマップ" } }
+      }
+    },
+    "settings.editor.minimap.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Show the right-side source overview for normal-sized files." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "通常サイズのファイルで右側のソース概要を表示します。" } }
+      }
+    },
+    "settings.editor.reformatColumn": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Reformat Column" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "整形列" } }
+      }
+    },
+    "settings.editor.reformatColumn.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Column used by the reformatting guide." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "整形ガイドで使用する列です。" } }
+      }
+    },
+    "settings.editor.reformattingGuide": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Reformatting Guide" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "整形ガイド" } }
+      }
+    },
+    "settings.editor.reformattingGuide.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Draw a vertical guide at the configured formatting column." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "設定した整形列に縦のガイドを描画します。" } }
+      }
+    },
+    "settings.editor.tabWidth": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Tab Width" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "タブ幅" } }
+      }
+    },
+    "settings.editor.tabWidth.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Number of spaces inserted and shown for indentation." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "インデントとして挿入・表示するスペース数です。" } }
+      }
+    },
+    "settings.editor.warningCharacters": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Suspicious Characters" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "注意が必要な文字" } }
+      }
+    },
+    "settings.editor.warningCharacters.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Highlight zero-width spaces, no-break spaces, and smart quotes." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ゼロ幅スペース、ノーブレークスペース、スマート引用符を強調表示します。" } }
+      }
+    },
+    "settings.editor.wrapLines": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Wrap Lines" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "行を折り返す" } }
+      }
+    },
+    "settings.editor.wrapLines.subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Soft-wrap long lines to the editor width." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "長い行をエディタ幅でソフトラップします。" } }
+      }
+    },
+    "settings.section.editor": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Editor" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "エディタ" } }
+      }
     }
   }
 }

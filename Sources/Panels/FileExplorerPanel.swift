@@ -14,6 +14,117 @@ struct FileNode: Identifiable, Hashable {
     static func == (lhs: FileNode, rhs: FileNode) -> Bool { lhs.id == rhs.id }
 }
 
+struct GitWorktreeSnapshot: Identifiable, Hashable, Sendable {
+    let path: String
+    let head: String?
+    let branch: String?
+    let isDetached: Bool
+    let isBare: Bool
+
+    var id: String { path }
+
+    var displayName: String {
+        let name = (path as NSString).lastPathComponent
+        return name.isEmpty ? path : name
+    }
+
+    var branchDisplayName: String {
+        if let branch, !branch.isEmpty {
+            if branch.hasPrefix("refs/heads/") {
+                return String(branch.dropFirst("refs/heads/".count))
+            }
+            return branch
+        }
+        if isDetached, let head, !head.isEmpty {
+            return String(head.prefix(8))
+        }
+        if isBare {
+            return "bare"
+        }
+        return "worktree"
+    }
+}
+
+enum GitWorktreeListParser {
+    static func parse(_ output: String) -> [GitWorktreeSnapshot] {
+        var snapshots: [GitWorktreeSnapshot] = []
+        var builder: Builder?
+
+        func finishCurrent() {
+            guard let current = builder else { return }
+            snapshots.append(current.snapshot)
+            builder = nil
+        }
+
+        for rawLine in output.components(separatedBy: .newlines) {
+            let line = rawLine.trimmingCharacters(in: .newlines)
+            if line.isEmpty {
+                finishCurrent()
+                continue
+            }
+
+            if line.hasPrefix("worktree ") {
+                finishCurrent()
+                builder = Builder(path: String(line.dropFirst("worktree ".count)))
+            } else if line.hasPrefix("HEAD ") {
+                builder?.head = String(line.dropFirst("HEAD ".count))
+            } else if line.hasPrefix("branch ") {
+                builder?.branch = String(line.dropFirst("branch ".count))
+            } else if line == "detached" {
+                builder?.isDetached = true
+            } else if line == "bare" {
+                builder?.isBare = true
+            }
+        }
+
+        finishCurrent()
+        return snapshots
+    }
+
+    private struct Builder {
+        let path: String
+        var head: String?
+        var branch: String?
+        var isDetached = false
+        var isBare = false
+
+        var snapshot: GitWorktreeSnapshot {
+            GitWorktreeSnapshot(
+                path: path,
+                head: head,
+                branch: branch,
+                isDetached: isDetached,
+                isBare: isBare
+            )
+        }
+    }
+}
+
+private enum GitWorktreeDiscovery {
+    static func listWorktrees(repositoryPath: String) -> [GitWorktreeSnapshot] {
+        let process = Process()
+        let output = Pipe()
+        let errorOutput = Pipe()
+
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/env")
+        process.arguments = ["git", "-C", repositoryPath, "worktree", "list", "--porcelain"]
+        process.standardOutput = output
+        process.standardError = errorOutput
+
+        do {
+            try process.run()
+            let data = output.fileHandleForReading.readDataToEndOfFile()
+            process.waitUntilExit()
+            guard process.terminationStatus == 0,
+                  let text = String(data: data, encoding: .utf8)
+            else { return [] }
+            return GitWorktreeListParser.parse(text)
+        } catch {
+            return []
+        }
+    }
+}
+
 /// Top-level mode for the file explorer sidebar — VSCode activity-bar style toggle between
 /// the file tree, the search panel, and the git source control view.
 enum FileExplorerSidebarMode: String, Hashable {
@@ -43,6 +154,10 @@ final class FileExplorerPanel: Panel, ObservableObject {
     @Published var fileLanguage: FileLanguage = .unknown
     @Published var isFileBinary: Bool = false
     @Published var isFileTooLarge: Bool = false
+    @Published var isFilePerformanceMode: Bool = false
+    @Published var editorCursorStatus: CodeEditorCursorStatus?
+    @Published private(set) var availableWorktrees: [GitWorktreeSnapshot] = []
+    @Published private(set) var selectedWorktreePath: String?
 
     /// Path currently being renamed inline (nil when no rename in progress).
     @Published var renamingPath: String?
@@ -96,12 +211,10 @@ final class FileExplorerPanel: Panel, ObservableObject {
     private static let binaryCheckSize = 8192
     private static let cacheTTL: TimeInterval = 5
 
-    // Files above these thresholds skip syntax highlighting. CodeEditorView's
-    // tokeniser is regex-based and re-runs on every edit, so disabling it on
-    // large files keeps typing snappy. Tuned conservatively: well below the
-    // 1MB hard cap, but high enough to keep colours on most real source files.
-    private static let highlightMaxBytes = 100_000
-    private static let highlightMaxLines = 3000
+    // Files above these thresholds keep their detected language but disable
+    // expensive editor peripherals. The 1MB hard cap remains unchanged.
+    private static let richEditorMaxBytes = 100_000
+    private static let richEditorMaxLines = 3000
 
     private static let searchDebounceNanos: UInt64 = 60_000_000
     private static let searchLimit = 200
@@ -122,8 +235,13 @@ final class FileExplorerPanel: Panel, ObservableObject {
         self.workspaceId = workspaceId
         self.rootPath = rootPath
         self.displayTitle = (rootPath as NSString).lastPathComponent
+        self.selectedWorktreePath = rootPath
+        self.availableWorktrees = [
+            GitWorktreeSnapshot(path: rootPath, head: nil, branch: nil, isDetached: false, isBare: false)
+        ]
         loadRootDirectory()
         rebuildIndex()
+        refreshWorktrees()
     }
 
     // MARK: - Panel protocol
@@ -264,6 +382,61 @@ final class FileExplorerPanel: Panel, ObservableObject {
         }
     }
 
+    func fileSuggestions(matching query: String, limit: Int = 20) async -> [IndexedFile] {
+        guard let activeIndex = index else { return [] }
+        return await activeIndex.search(query: query, limit: limit).map(\.entry)
+    }
+
+    func refreshWorktrees() {
+        let path = rootPath
+        Task { [weak self] in
+            var snapshots = await Task.detached(priority: .utility) {
+                GitWorktreeDiscovery.listWorktrees(repositoryPath: path)
+            }.value
+            if snapshots.isEmpty {
+                snapshots = [
+                    GitWorktreeSnapshot(path: path, head: nil, branch: nil, isDetached: false, isBare: false)
+                ]
+            }
+
+            guard let self, self.rootPath == path else { return }
+            self.availableWorktrees = snapshots
+            let standardizedPath = URL(fileURLWithPath: path).standardizedFileURL.path
+            self.selectedWorktreePath = snapshots.first { snapshot in
+                URL(fileURLWithPath: snapshot.path).standardizedFileURL.path == standardizedPath
+            }?.path ?? path
+        }
+    }
+
+    @discardableResult
+    func switchRoot(to path: String) -> Bool {
+        let standardizedPath = URL(fileURLWithPath: path).standardizedFileURL.path
+        var isDirectory: ObjCBool = false
+        guard FileManager.default.fileExists(atPath: standardizedPath, isDirectory: &isDirectory),
+              isDirectory.boolValue
+        else { return false }
+
+        stopFileWatcher()
+        indexTask?.cancel()
+        searchTask?.cancel()
+        dirCache.removeAll()
+        expandedDirs.removeAll()
+        searchResults = []
+        filterQuery = ""
+        cutPaths.removeAll()
+        contextMenuPath = nil
+        selectedGitChange = nil
+
+        rootPath = standardizedPath
+        displayTitle = (standardizedPath as NSString).lastPathComponent
+        selectedWorktreePath = standardizedPath
+        deselectFile()
+        loadRootDirectory()
+        rebuildIndex()
+        refreshWorktrees()
+        return true
+    }
+
     func scheduleSearch(query: String) {
         searchTask?.cancel()
 
@@ -297,6 +470,8 @@ final class FileExplorerPanel: Panel, ObservableObject {
     func openFile(_ path: String) {
         isFileBinary = false
         isFileTooLarge = false
+        isFilePerformanceMode = false
+        editorCursorStatus = nil
 
         let url = URL(fileURLWithPath: path)
         guard let attrs = try? FileManager.default.attributesOfItem(atPath: path),
@@ -305,6 +480,7 @@ final class FileExplorerPanel: Panel, ObservableObject {
         if size > Self.maxFileSize {
             stopFileWatcher()
             isFileTooLarge = true
+            isFilePerformanceMode = false
             fileLanguage = FileLanguage.detect(from: url.pathExtension)
             isDirtyFlag = false
             selectedFile = path
@@ -320,6 +496,7 @@ final class FileExplorerPanel: Panel, ObservableObject {
         if checkSlice.contains(0) {
             stopFileWatcher()
             isFileBinary = true
+            isFilePerformanceMode = false
             fileLanguage = FileLanguage.detect(from: url.pathExtension)
             isDirtyFlag = false
             selectedFile = path
@@ -341,9 +518,9 @@ final class FileExplorerPanel: Panel, ObservableObject {
         stopFileWatcher()
         let detected = FileLanguage.detect(from: url.pathExtension)
         let lineCount = decoded.utf8.lazy.filter { $0 == 0x0A }.count
-        let tooBigForHighlight = data.count > Self.highlightMaxBytes
-            || lineCount > Self.highlightMaxLines
-        fileLanguage = tooBigForHighlight ? .unknown : detected
+        isFilePerformanceMode = data.count > Self.richEditorMaxBytes
+            || lineCount > Self.richEditorMaxLines
+        fileLanguage = detected
         isDirtyFlag = false
         selectedFile = path
         selectedPath = path
@@ -352,12 +529,18 @@ final class FileExplorerPanel: Panel, ObservableObject {
         startFileWatcher(for: path)
     }
 
-    func saveFile() {
-        guard let path = selectedFile else { return }
+    @discardableResult
+    func saveFile() -> Bool {
+        guard let path = selectedFile else { return false }
         let url = URL(fileURLWithPath: path)
-        try? fileContent.data(using: .utf8)?.write(to: url, options: .atomic)
+        do {
+            try fileContent.data(using: .utf8)?.write(to: url, options: .atomic)
+        } catch {
+            return false
+        }
         cleanFileContent = fileContent
         isDirtyFlag = false
+        return true
     }
 
     func deselectFile() {
@@ -371,6 +554,8 @@ final class FileExplorerPanel: Panel, ObservableObject {
         isDirtyFlag = false
         isFileBinary = false
         isFileTooLarge = false
+        isFilePerformanceMode = false
+        editorCursorStatus = nil
     }
 
     func toggleEditing() {
@@ -385,6 +570,7 @@ final class FileExplorerPanel: Panel, ObservableObject {
             updateChildren(at: dir, with: children, in: &fileTree)
         }
         rebuildIndex()
+        refreshWorktrees()
         if let path = selectedFile {
             openFile(path)
         }

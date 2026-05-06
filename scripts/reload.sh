@@ -20,6 +20,28 @@ LAST_SOCKET_PATH_DIR="$HOME/Library/Application Support/zmux"
 LAST_SOCKET_PATH_FILE="${LAST_SOCKET_PATH_DIR}/last-socket-path"
 AUTO_SKIP_ZIG_BUILD_REASON=""
 
+prefer_required_zig() {
+  local required_version="0.15.2"
+  local current_version candidate
+
+  current_version="$(zig version 2>/dev/null || true)"
+  if [[ "$current_version" == "$required_version" ]]; then
+    return 0
+  fi
+
+  for candidate in \
+    "${ZMUX_ZIG_BIN:-}" \
+    "/opt/homebrew/opt/zig@0.15/bin/zig" \
+    "/usr/local/opt/zig@0.15/bin/zig"
+  do
+    [[ -n "$candidate" && -x "$candidate" ]] || continue
+    if [[ "$("$candidate" version 2>/dev/null || true)" == "$required_version" ]]; then
+      export PATH="$(dirname "$candidate"):$PATH"
+      return 0
+    fi
+  done
+}
+
 should_skip_ghostty_cli_helper_zig_build() {
   if [[ "${ZMUX_SKIP_ZIG_BUILD:-}" == "1" ]]; then
     AUTO_SKIP_ZIG_BUILD_REASON="ZMUX_SKIP_ZIG_BUILD=1"
@@ -422,6 +444,8 @@ trap reload_finalize EXIT
 # Tell the user we're starting (visible even though body output is redirected).
 echo "==> reload starting (tag: ${TAG}, log: ${RELOAD_LOG})" >&3
 
+prefer_required_zig
+
 "$PWD/scripts/ensure-ghosttykit.sh"
 
 if should_skip_ghostty_cli_helper_zig_build; then
@@ -436,6 +460,7 @@ XCODEBUILD_ARGS=(
   -scheme zmux
   -configuration Debug
   -destination 'platform=macOS'
+  -skipPackagePluginValidation
 )
 if [[ -n "$DERIVED_DATA" ]]; then
   XCODEBUILD_ARGS+=(-derivedDataPath "$DERIVED_DATA")
@@ -452,6 +477,10 @@ fi
 if [[ "${ZMUX_SKIP_ZIG_BUILD:-}" == "1" ]]; then
   XCODEBUILD_ARGS+=(ZMUX_SKIP_ZIG_BUILD=1)
 fi
+XCODEBUILD_ARGS+=(
+  CODE_SIGN_IDENTITY=-
+  CODE_SIGNING_REQUIRED=NO
+)
 XCODEBUILD_ARGS+=(build)
 
 XCODEBUILD_LOCK="${TMPDIR:-/tmp}/zmux-xcodebuild-$(id -u).lock"
