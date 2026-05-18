@@ -5217,6 +5217,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         return restoreFocusedMainPanelFocusFromRightSidebar(preferredWindow: preferredWindow)
     }
 
+    @discardableResult
+    private func requestFocusedFileExplorerQuickOpen(preferredWindow: NSWindow?) -> Bool {
+        guard let context = preferredRegisteredMainWindowContext(preferredWindow: preferredWindow),
+              let workspace = context.tabManager.selectedWorkspace,
+              let focusedPanelId = workspace.focusedPanelId,
+              let fileExplorerPanel = workspace.panels[focusedPanelId] as? FileExplorerPanel else {
+            return false
+        }
+        let window = context.window ?? windowForMainWindowId(context.windowId) ?? preferredWindow
+        if let responder = window?.firstResponder,
+           isRightSidebarFocusResponder(responder, in: window) {
+            return false
+        }
+        fileExplorerPanel.showQuickOpen()
+        return true
+    }
+
     func keyboardFocusCoordinator(for window: NSWindow?) -> MainWindowFocusController? {
         guard let window else { return nil }
         return contextForMainWindow(window)?.keyboardFocusCoordinator
@@ -10330,6 +10347,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
             let targetWindow = commandPaletteTargetWindow ?? event.window ?? NSApp.keyWindow ?? NSApp.mainWindow
             requestCommandPaletteCommands(preferredWindow: targetWindow, source: "shortcut.commandPalette")
             return true
+        }
+
+        if matchConfiguredShortcut(event: event, action: .quickOpenFileExplorer) {
+            let targetWindow = commandPaletteTargetWindow ?? event.window ?? NSApp.keyWindow ?? NSApp.mainWindow
+            if requestFocusedFileExplorerQuickOpen(preferredWindow: targetWindow) {
+                return true
+            }
         }
 
         if !hasFocusedAddressBarInShortcutContext,

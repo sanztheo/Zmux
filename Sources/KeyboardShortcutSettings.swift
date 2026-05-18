@@ -85,6 +85,7 @@ enum KeyboardShortcutSettings {
         // File Explorer
         case toggleFileExplorer
         case openFileExplorer
+        case quickOpenFileExplorer
 
         // Panels
         case openBrowser
@@ -156,6 +157,7 @@ enum KeyboardShortcutSettings {
             case .splitBrowserDown: return String(localized: "shortcut.splitBrowserDown.label", defaultValue: "Split Browser Down")
             case .toggleFileExplorer: return String(localized: "shortcut.toggleFileExplorer.label", defaultValue: "Toggle File Explorer")
             case .openFileExplorer: return String(localized: "shortcut.openFileExplorer.label", defaultValue: "Open File Explorer")
+            case .quickOpenFileExplorer: return String(localized: "shortcut.quickOpenFileExplorer.label", defaultValue: "Quick Open File")
             case .openBrowser: return String(localized: "shortcut.openBrowser.label", defaultValue: "Open Browser")
             case .focusBrowserAddressBar: return String(localized: "command.browserFocusAddressBar.title", defaultValue: "Focus Address Bar")
             case .browserBack: return String(localized: "menu.view.back", defaultValue: "Back")
@@ -179,11 +181,14 @@ enum KeyboardShortcutSettings {
 
         private enum ConflictScope {
             case application
+            case fileExplorerFocus
             case rightSidebarFocus
         }
 
         private var conflictScope: ConflictScope {
             switch self {
+            case .quickOpenFileExplorer:
+                return .fileExplorerFocus
             case .switchRightSidebarToFiles, .switchRightSidebarToFind, .switchRightSidebarToSessions, .switchRightSidebarToFeed:
                 return .rightSidebarFocus
             default:
@@ -293,6 +298,8 @@ enum KeyboardShortcutSettings {
                 return StoredShortcut(key: "b", command: true, shift: false, option: true, control: false)
             case .openFileExplorer:
                 return StoredShortcut(key: "e", command: true, shift: true, option: false, control: false)
+            case .quickOpenFileExplorer:
+                return StoredShortcut(key: "p", command: true, shift: false, option: false, control: false)
             case .openBrowser:
                 return StoredShortcut(key: "l", command: true, shift: true, option: false, control: false)
             case .focusBrowserAddressBar:

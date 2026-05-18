@@ -5,6 +5,8 @@ struct IndexedFile: Sendable, Hashable {
     let name: String
     let lowerName: String
     let parentPath: String
+    let relativePath: String
+    let lowerRelativePath: String
 }
 
 struct SearchHit: Sendable, Hashable {
@@ -86,7 +88,9 @@ actor FileIndex {
                         path: itemURL.path,
                         name: name,
                         lowerName: name.lowercased(),
-                        parentPath: dir
+                        parentPath: dir,
+                        relativePath: Self.relativePath(for: itemURL.path, rootPath: rootPath),
+                        lowerRelativePath: Self.relativePath(for: itemURL.path, rootPath: rootPath).lowercased()
                     )
                 )
 
@@ -103,6 +107,8 @@ actor FileIndex {
     }
 
     func search(query: String, limit: Int) -> [SearchHit] {
+        guard limit > 0 else { return [] }
+
         let trimmed = query.trimmingCharacters(in: .whitespaces)
         guard !trimmed.isEmpty else { return [] }
 
@@ -119,10 +125,7 @@ actor FileIndex {
 
         // Glob shortcut: contains * or ?
         if lowerQuery.contains("*") || lowerQuery.contains("?") {
-            let escaped = NSRegularExpression.escapedPattern(for: lowerQuery)
-                .replacingOccurrences(of: "\\*", with: ".*")
-                .replacingOccurrences(of: "\\?", with: ".")
-            guard let regex = try? NSRegularExpression(pattern: "^" + escaped + "$", options: [.caseInsensitive]) else {
+            guard let regex = try? NSRegularExpression(pattern: Self.globRegexPattern(from: lowerQuery), options: [.caseInsensitive]) else {
                 return []
             }
             return regexMatches(regex: regex, limit: limit, scoreBase: 200)
@@ -142,8 +145,10 @@ actor FileIndex {
         var hits: [SearchHit] = []
         hits.reserveCapacity(limit * 2)
         for entry in entries {
-            let range = NSRange(entry.name.startIndex..., in: entry.name)
-            if regex.firstMatch(in: entry.name, range: range) != nil {
+            let nameRange = NSRange(entry.name.startIndex..., in: entry.name)
+            let pathRange = NSRange(entry.relativePath.startIndex..., in: entry.relativePath)
+            if regex.firstMatch(in: entry.name, range: nameRange) != nil
+                || regex.firstMatch(in: entry.relativePath, range: pathRange) != nil {
                 hits.append(SearchHit(entry: entry, score: scoreBase))
             }
         }
@@ -164,7 +169,7 @@ actor FileIndex {
         hits.reserveCapacity(limit * 4)
 
         for entry in entries {
-            guard let score = score(name: entry.name, lowerName: entry.lowerName, query: query, lowerQuery: lowerQuery) else {
+            guard let score = score(entry: entry, query: query, lowerQuery: lowerQuery) else {
                 continue
             }
             hits.append(SearchHit(entry: entry, score: score))
@@ -179,29 +184,55 @@ actor FileIndex {
             if lhs.entry.name.count != rhs.entry.name.count {
                 return lhs.entry.name.count < rhs.entry.name.count
             }
-            return lhs.entry.path < rhs.entry.path
+            if lhs.entry.relativePath.count != rhs.entry.relativePath.count {
+                return lhs.entry.relativePath.count < rhs.entry.relativePath.count
+            }
+            return lhs.entry.relativePath < rhs.entry.relativePath
         }
         return Array(sorted.prefix(limit))
     }
 
     // MARK: - Scoring
 
-    private func score(name: String, lowerName: String, query: String, lowerQuery: String) -> Int? {
+    private func score(entry: IndexedFile, query: String, lowerQuery: String) -> Int? {
+        let nameScore = scoreName(name: entry.name, lowerName: entry.lowerName, query: query, lowerQuery: lowerQuery)
+        let pathScore = scorePath(relativePath: entry.relativePath, lowerRelativePath: entry.lowerRelativePath, query: query, lowerQuery: lowerQuery)
+
+        switch (nameScore, pathScore) {
+        case let (name?, path?):
+            return max(name, path)
+        case let (name?, nil):
+            return name
+        case let (nil, path?):
+            return path
+        case (nil, nil):
+            return nil
+        }
+    }
+
+    private func scorePath(relativePath: String, lowerRelativePath: String, query: String, lowerQuery: String) -> Int? {
+        if lowerRelativePath == lowerQuery { return 9_000 }
+        if lowerRelativePath.hasPrefix(lowerQuery) { return 4_500 }
+
+        if let r = lowerRelativePath.range(of: lowerQuery) {
+            let pos = lowerRelativePath.distance(from: lowerRelativePath.startIndex, to: r.lowerBound)
+            let boundaryBonus = isBoundaryStart(in: lowerRelativePath, at: r.lowerBound) ? 200 : 0
+            return 850 - min(pos, 500) + boundaryBonus
+        }
+
+        if let humps = camelHumpsScore(name: relativePath, query: query) {
+            return humps - 50
+        }
+        return nil
+    }
+
+    private func scoreName(name: String, lowerName: String, query: String, lowerQuery: String) -> Int? {
         if lowerName == lowerQuery { return 10_000 }
         if lowerName.hasPrefix(lowerQuery) { return 5_000 }
 
         if let r = lowerName.range(of: lowerQuery) {
             let pos = lowerName.distance(from: lowerName.startIndex, to: r.lowerBound)
-            var bonus = 0
-            if pos > 0 {
-                let prevIdx = lowerName.index(r.lowerBound, offsetBy: -1)
-                let prev = lowerName[prevIdx]
-                if prev == "_" || prev == "-" || prev == "." || prev == "/" || prev == " " {
-                    bonus = 200
-                }
-            } else {
-                bonus = 200
-            }
+            let bonus = isBoundaryStart(in: lowerName, at: r.lowerBound) ? 200 : 0
             return 1_000 - min(pos, 500) + bonus
         }
 
@@ -234,5 +265,51 @@ actor FileIndex {
             lastWasBoundary = false
         }
         return qi == queryChars.count ? 300 : nil
+    }
+
+    private func isBoundaryStart(in text: String, at index: String.Index) -> Bool {
+        if index == text.startIndex { return true }
+        let prev = text[text.index(before: index)]
+        return prev == "_" || prev == "-" || prev == "." || prev == "/" || prev == " "
+    }
+
+    private static func relativePath(for path: String, rootPath: String) -> String {
+        if path == rootPath { return (path as NSString).lastPathComponent }
+        if path.hasPrefix(rootPath + "/") {
+            return String(path.dropFirst(rootPath.count + 1))
+        }
+        return path
+    }
+
+    private static func globRegexPattern(from glob: String) -> String {
+        var pattern = "^"
+        var index = glob.startIndex
+        while index < glob.endIndex {
+            let ch = glob[index]
+            if ch == "*" {
+                let next = glob.index(after: index)
+                if next < glob.endIndex, glob[next] == "*" {
+                    let afterDouble = glob.index(after: next)
+                    if afterDouble < glob.endIndex, glob[afterDouble] == "/" {
+                        pattern += "(?:.*/)?"
+                        index = glob.index(after: afterDouble)
+                    } else {
+                        pattern += ".*"
+                        index = afterDouble
+                    }
+                } else {
+                    pattern += "[^/]*"
+                    index = next
+                }
+            } else if ch == "?" {
+                pattern += "[^/]"
+                index = glob.index(after: index)
+            } else {
+                pattern += NSRegularExpression.escapedPattern(for: String(ch))
+                index = glob.index(after: index)
+            }
+        }
+        pattern += "$"
+        return pattern
     }
 }

@@ -17,7 +17,8 @@ private struct GitRepoSnapshot: Identifiable, Equatable {
     let totalCount: Int
     let commitMessage: String
     let isFocused: Bool
-    let selectedKey: String?
+    let selectedChangeKey: String?
+    let selectedCommitKey: String?
     let lastError: String?
 
     let staged: [GitChange]
@@ -42,9 +43,17 @@ private struct GitRepoActions {
     let onUnstage: (GitChange) -> Void
     let onDiscard: (GitChange) -> Void
     let onSelectChange: (GitChange) -> Void
+    let onSelectCommit: (GitCommit) -> Void
     let onOpenFile: (GitChange) -> Void
     let onFocusInput: () -> Void
     let onClearError: () -> Void
+}
+
+private struct GitRepoPresentation: Identifiable {
+    let snapshot: GitRepoSnapshot
+    let actions: GitRepoActions
+
+    var id: UUID { snapshot.id }
 }
 
 private enum CommitButtonMode {
@@ -72,22 +81,10 @@ struct GitSourceControlView: View {
             Divider()
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
-                    ForEach(workspace.visibleRepositories) { repo in
+                    ForEach(repoPresentations) { presentation in
                         GitRepoSection(
-                            repo: repo,
-                            workspace: workspace,
-                            selectedKey: panel.selectedGitChange?.diffKey,
-                            onSelect: { change in
-                                panel.selectedGitChange = GitDiffSelection(
-                                    absolutePath: change.absolutePath,
-                                    repoRoot: repo.root,
-                                    path: change.path,
-                                    isStaged: change.isStaged,
-                                    status: change.status,
-                                    originalPath: change.originalPath
-                                )
-                                workspace.focusedRepoID = repo.id
-                            }
+                            snapshot: presentation.snapshot,
+                            actions: presentation.actions
                         )
                     }
                     if workspace.visibleRepositories.isEmpty {
@@ -99,6 +96,113 @@ struct GitSourceControlView: View {
         .onAppear {
             Task { await workspace.discover() }
         }
+    }
+
+    private var repoPresentations: [GitRepoPresentation] {
+        workspace.visibleRepositories.map { repo in
+            GitRepoPresentation(
+                snapshot: makeSnapshot(for: repo),
+                actions: makeActions(for: repo)
+            )
+        }
+    }
+
+    private func makeSnapshot(for repo: GitRepository) -> GitRepoSnapshot {
+        GitRepoSnapshot(
+            id: repo.id,
+            repoRoot: repo.root,
+            displayName: repo.displayName,
+            isSubmodule: repo.isSubmodule,
+            head: repo.headBranch,
+            upstream: repo.upstream,
+            isDirty: repo.isDirty,
+            ahead: repo.ahead,
+            behind: repo.behind,
+            isSyncing: repo.isSyncing,
+            totalCount: repo.totalChangeCount,
+            commitMessage: repo.commitMessage,
+            isFocused: workspace.focusedRepoID == repo.id,
+            selectedChangeKey: panel.selectedGitChange?.diffKey,
+            selectedCommitKey: panel.selectedGitCommit?.selectionKey,
+            lastError: repo.lastError,
+            staged: repo.indexChanges,
+            unstaged: repo.workingTreeChanges,
+            untracked: repo.untrackedChanges,
+            conflicted: repo.mergeChanges,
+            availableBranches: repo.availableBranches,
+            commits: repo.commits
+        )
+    }
+
+    private func makeActions(for repo: GitRepository) -> GitRepoActions {
+        GitRepoActions(
+            onCommitMessageChange: { message in
+                repo.commitMessage = message
+            },
+            onCommit: {
+                Task { await repo.commit() }
+            },
+            onPush: {
+                Task { await repo.push() }
+            },
+            onPull: {
+                Task { await repo.pull() }
+            },
+            onSync: {
+                Task { await repo.sync() }
+            },
+            onRefresh: {
+                Task { await repo.refresh() }
+            },
+            onStageAll: {
+                Task { await repo.stageAll() }
+            },
+            onUnstageAll: {
+                Task { await repo.unstageAll() }
+            },
+            onCheckout: { branch in
+                Task { await repo.checkout(branch: branch) }
+            },
+            onStage: { change in
+                Task { await repo.stage(change) }
+            },
+            onUnstage: { change in
+                Task { await repo.unstage(change) }
+            },
+            onDiscard: { change in
+                Task { await repo.discard(change) }
+            },
+            onSelectChange: { change in
+                panel.selectedGitChange = GitDiffSelection(
+                    absolutePath: change.absolutePath,
+                    repoRoot: repo.root,
+                    path: change.path,
+                    isStaged: change.isStaged,
+                    status: change.status,
+                    originalPath: change.originalPath
+                )
+                panel.selectedGitCommit = nil
+                workspace.focusedRepoID = repo.id
+            },
+            onSelectCommit: { commit in
+                panel.selectedGitChange = nil
+                panel.selectedGitCommit = GitCommitSelection(
+                    repoRoot: repo.root,
+                    sha: commit.id,
+                    shortSha: commit.shortSha
+                )
+                workspace.focusedRepoID = repo.id
+            },
+            onOpenFile: { change in
+                NSWorkspace.shared.open(URL(fileURLWithPath: change.absolutePath))
+            },
+            onFocusInput: {
+                workspace.focusedRepoID = repo.id
+            },
+            onClearError: {
+                repo.clearError()
+            }
+        )
     }
 
     private var sectionHeader: some View {
@@ -176,18 +280,13 @@ struct GitSourceControlView: View {
 // MARK: - Per-repo section
 
 private struct GitRepoSection: View {
-    @ObservedObject var repo: GitRepository
-    @ObservedObject var workspace: GitWorkspace
-    let selectedKey: String?
-    let onSelect: (GitChange) -> Void
+    let snapshot: GitRepoSnapshot
+    let actions: GitRepoActions
 
     @State private var isExpanded: Bool = true
     @State private var isGraphExpanded: Bool = false
 
     var body: some View {
-        let snapshot = makeSnapshot()
-        let actions = makeActions()
-
         VStack(alignment: .leading, spacing: 0) {
             header(snapshot: snapshot, actions: actions)
             if isExpanded {
@@ -196,7 +295,7 @@ private struct GitRepoSection: View {
                     errorBanner(text: err, actions: actions)
                 }
                 changesList(snapshot: snapshot, actions: actions)
-                graphSection(snapshot: snapshot)
+                graphSection(snapshot: snapshot, actions: actions)
             }
         }
         .padding(.vertical, 4)
@@ -399,7 +498,7 @@ private struct GitRepoSection: View {
     }
 
     @ViewBuilder
-    private func graphSection(snapshot: GitRepoSnapshot) -> some View {
+    private func graphSection(snapshot: GitRepoSnapshot, actions: GitRepoActions) -> some View {
         if !snapshot.commits.isEmpty {
             VStack(alignment: .leading, spacing: 0) {
                 Button {
@@ -425,7 +524,11 @@ private struct GitRepoSection: View {
 
                 if isGraphExpanded {
                     ForEach(snapshot.commits) { commit in
-                        GitCommitRow(commit: commit)
+                        GitCommitRow(
+                            commit: commit,
+                            isSelected: "\(snapshot.repoRoot)|commit|\(commit.id)" == snapshot.selectedCommitKey,
+                            onSelect: { actions.onSelectCommit(commit) }
+                        )
                     }
                 }
             }
@@ -447,6 +550,7 @@ private struct GitRepoSection: View {
                     count: snapshot.conflicted.count,
                     changes: snapshot.conflicted,
                     isStaged: false,
+                    selectedChangeKey: snapshot.selectedChangeKey,
                     actions: actions
                 )
             }
@@ -456,6 +560,7 @@ private struct GitRepoSection: View {
                     count: snapshot.staged.count,
                     changes: snapshot.staged,
                     isStaged: true,
+                    selectedChangeKey: snapshot.selectedChangeKey,
                     actions: actions
                 )
             }
@@ -465,6 +570,7 @@ private struct GitRepoSection: View {
                     count: snapshot.unstaged.count,
                     changes: snapshot.unstaged,
                     isStaged: false,
+                    selectedChangeKey: snapshot.selectedChangeKey,
                     actions: actions
                 )
             }
@@ -474,6 +580,7 @@ private struct GitRepoSection: View {
                     count: snapshot.untracked.count,
                     changes: snapshot.untracked,
                     isStaged: false,
+                    selectedChangeKey: snapshot.selectedChangeKey,
                     actions: actions
                 )
             }
@@ -485,6 +592,7 @@ private struct GitRepoSection: View {
         count: Int,
         changes: [GitChange],
         isStaged: Bool,
+        selectedChangeKey: String?,
         actions: GitRepoActions
     ) -> some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -508,7 +616,7 @@ private struct GitRepoSection: View {
                 GitChangeRow(
                     change: change,
                     isStaged: isStaged,
-                    isSelected: rowDiffKey(for: change, isStaged: isStaged) == selectedKey,
+                    isSelected: rowDiffKey(for: change, isStaged: isStaged) == selectedChangeKey,
                     actions: actions
                 )
             }
@@ -517,90 +625,6 @@ private struct GitRepoSection: View {
 
     private func rowDiffKey(for change: GitChange, isStaged: Bool) -> String {
         "\(change.absolutePath)|\(isStaged ? "staged" : "wt")|\(change.status.rawValue)"
-    }
-
-    // MARK: - Snapshot building
-
-    private func makeSnapshot() -> GitRepoSnapshot {
-        GitRepoSnapshot(
-            id: repo.id,
-            repoRoot: repo.root,
-            displayName: repo.displayName,
-            isSubmodule: repo.isSubmodule,
-            head: repo.headBranch,
-            upstream: repo.upstream,
-            isDirty: repo.isDirty,
-            ahead: repo.ahead,
-            behind: repo.behind,
-            isSyncing: repo.isSyncing,
-            totalCount: repo.totalChangeCount,
-            commitMessage: repo.commitMessage,
-            isFocused: workspace.focusedRepoID == repo.id,
-            selectedKey: selectedKey,
-            lastError: repo.lastError,
-            staged: repo.indexChanges,
-            unstaged: repo.workingTreeChanges,
-            untracked: repo.untrackedChanges,
-            conflicted: repo.mergeChanges,
-            availableBranches: repo.availableBranches,
-            commits: repo.commits
-        )
-    }
-
-    private func makeActions() -> GitRepoActions {
-        let repo = self.repo
-        let workspace = self.workspace
-        let select = self.onSelect
-        return GitRepoActions(
-            onCommitMessageChange: { message in
-                repo.commitMessage = message
-            },
-            onCommit: {
-                Task { await repo.commit() }
-            },
-            onPush: {
-                Task { await repo.push() }
-            },
-            onPull: {
-                Task { await repo.pull() }
-            },
-            onSync: {
-                Task { await repo.sync() }
-            },
-            onRefresh: {
-                Task { await repo.refresh() }
-            },
-            onStageAll: {
-                Task { await repo.stageAll() }
-            },
-            onUnstageAll: {
-                Task { await repo.unstageAll() }
-            },
-            onCheckout: { branch in
-                Task { await repo.checkout(branch: branch) }
-            },
-            onStage: { change in
-                Task { await repo.stage(change) }
-            },
-            onUnstage: { change in
-                Task { await repo.unstage(change) }
-            },
-            onDiscard: { change in
-                Task { await repo.discard(change) }
-            },
-            onSelectChange: { change in
-                select(change)
-            },
-            onOpenFile: { change in
-                NSWorkspace.shared.open(URL(fileURLWithPath: change.absolutePath))
-            },
-            onFocusInput: {
-                workspace.focusedRepoID = repo.id
-            },
-            onClearError: {
-                repo.clearError()
-            }
-        )
     }
 
     private func commitButtonMode(_ snapshot: GitRepoSnapshot) -> CommitButtonMode {
@@ -799,6 +823,10 @@ private struct GitChangeRow: View {
 
 private struct GitCommitRow: View {
     let commit: GitCommit
+    let isSelected: Bool
+    let onSelect: () -> Void
+
+    @State private var isHovering = false
 
     var body: some View {
         HStack(spacing: 8) {
@@ -818,7 +846,17 @@ private struct GitCommitRow: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 2)
+        .contentShape(Rectangle())
+        .background(rowBackground)
+        .onHover { isHovering = $0 }
+        .onTapGesture(perform: onSelect)
         .help("\(commit.shortSha) — \(commit.author) — \(commit.dateRelative)\n\(commit.subject)")
+    }
+
+    private var rowBackground: Color {
+        if isSelected { return Color.accentColor.opacity(0.25) }
+        if isHovering { return Color.primary.opacity(0.05) }
+        return Color.clear
     }
 }
 
@@ -827,7 +865,7 @@ private struct GitCommitRow: View {
 struct GitDiffContentView: View {
     let selection: GitDiffSelection
 
-    @State private var diffText: String = ""
+    @State private var diffLines: [GitRenderedDiffLine] = []
     @State private var isLoading: Bool = true
     @State private var error: String?
 
@@ -839,11 +877,11 @@ struct GitDiffContentView: View {
                 placeholder(icon: "ellipsis.circle", title: String(localized: "git.diff.loading", defaultValue: "Loading diff…"))
             } else if let err = error {
                 placeholder(icon: "exclamationmark.triangle", title: err)
-            } else if diffText.isEmpty {
+            } else if diffLines.isEmpty {
                 placeholder(icon: "doc", title: String(localized: "git.diff.empty", defaultValue: "No diff to display"))
             } else {
                 ScrollView([.vertical, .horizontal]) {
-                    DiffLinesView(text: diffText)
+                    DiffLinesView(lines: diffLines)
                         .padding(.vertical, 4)
                 }
             }
@@ -896,41 +934,38 @@ struct GitDiffContentView: View {
         isLoading = true
         error = nil
         let sel = selection
-        let outcome: (text: String, error: String?) = await Task.detached(priority: .userInitiated) { () -> (String, String?) in
+        let outcome: (lines: [GitRenderedDiffLine], error: String?) = await Task.detached(priority: .userInitiated) { () -> ([GitRenderedDiffLine], String?) in
             switch sel.status {
             case .untracked:
                 guard let content = try? String(contentsOfFile: sel.absolutePath, encoding: .utf8) else {
-                    return ("", String(localized: "git.diff.cantRead", defaultValue: "Cannot read file"))
+                    return ([], String(localized: "git.diff.cantRead", defaultValue: "Cannot read file"))
                 }
-                let lines = content.split(separator: "\n", omittingEmptySubsequences: false)
-                let prefixed = lines.map { "+" + $0 }.joined(separator: "\n")
-                let header = "+++ \(sel.path)\n@@ untracked file @@\n"
-                return (header + prefixed, nil)
+                let diff = GitUnifiedDiffParser.untrackedDiff(path: sel.path, content: content)
+                return (GitUnifiedDiffParser.parse(diff), nil)
             default:
                 let args: [String]
                 if sel.isStaged {
-                    args = ["diff", "--cached", "--no-color", "--", sel.path]
+                    args = ["diff", "--cached", "--no-color", "--find-renames", "--", sel.path]
                 } else {
-                    args = ["diff", "--no-color", "--", sel.path]
+                    args = ["diff", "--no-color", "--find-renames", "--", sel.path]
                 }
                 let out = GitRepository.runGit(in: sel.repoRoot, args: args) ?? ""
-                return (out, nil)
+                return (GitUnifiedDiffParser.parse(out), nil)
             }
         }.value
 
-        diffText = outcome.text
+        diffLines = outcome.lines
         error = outcome.error
         isLoading = false
     }
 }
 
 private struct DiffLinesView: View {
-    let text: String
+    let lines: [GitRenderedDiffLine]
 
     var body: some View {
-        let lines = text.components(separatedBy: "\n")
         LazyVStack(alignment: .leading, spacing: 0) {
-            ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
+            ForEach(lines) { line in
                 DiffLineRow(line: line)
             }
         }
@@ -938,38 +973,299 @@ private struct DiffLinesView: View {
 }
 
 private struct DiffLineRow: View {
-    let line: String
+    let line: GitRenderedDiffLine
 
     var body: some View {
         HStack(spacing: 0) {
-            Text(line.isEmpty ? " " : line)
+            Text(numberText(line.oldLineNumber))
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundStyle(gutterTextColor)
+                .frame(width: 46, alignment: .trailing)
+                .padding(.trailing, 8)
+                .background(gutterBackground)
+            Text(numberText(line.newLineNumber))
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundStyle(gutterTextColor)
+                .frame(width: 46, alignment: .trailing)
+                .padding(.trailing, 8)
+                .background(gutterBackground)
+            Text(line.text.isEmpty ? " " : line.text)
                 .font(.system(size: 12, design: .monospaced))
                 .foregroundStyle(textColor)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 0)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 1)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: true, vertical: false)
         }
         .background(rowBackground)
+        .frame(minWidth: 760, maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func numberText(_ number: Int?) -> String {
+        guard let number else { return "" }
+        return "\(number)"
     }
 
     private var textColor: Color {
-        if line.hasPrefix("+++") || line.hasPrefix("---") || line.hasPrefix("diff ") || line.hasPrefix("index ") {
-            return .secondary
+        switch line.kind {
+        case .fileHeader: return .secondary
+        case .hunk: return .blue
+        case .addition: return .green
+        case .deletion: return .red
+        case .context: return .primary
         }
-        if line.hasPrefix("@@") { return .blue }
-        if line.hasPrefix("+") { return .green }
-        if line.hasPrefix("-") { return .red }
-        return .primary
     }
 
     private var rowBackground: Color {
-        if line.hasPrefix("+++") || line.hasPrefix("---") || line.hasPrefix("diff ") || line.hasPrefix("index ") {
-            return Color.clear
+        switch line.kind {
+        case .fileHeader: return Color.primary.opacity(0.035)
+        case .hunk: return Color.blue.opacity(0.10)
+        case .addition: return Color.green.opacity(0.13)
+        case .deletion: return Color.red.opacity(0.13)
+        case .context: return Color.clear
         }
-        if line.hasPrefix("@@") { return Color.blue.opacity(0.08) }
-        if line.hasPrefix("+") { return Color.green.opacity(0.12) }
-        if line.hasPrefix("-") { return Color.red.opacity(0.12) }
-        return Color.clear
+    }
+
+    private var gutterBackground: Color {
+        switch line.kind {
+        case .hunk: return Color.blue.opacity(0.08)
+        case .addition: return Color.green.opacity(0.09)
+        case .deletion: return Color.red.opacity(0.09)
+        case .fileHeader: return Color.primary.opacity(0.04)
+        case .context: return Color.primary.opacity(0.025)
+        }
+    }
+
+    private var gutterTextColor: Color {
+        switch line.kind {
+        case .addition: return .green.opacity(0.9)
+        case .deletion: return .red.opacity(0.9)
+        case .hunk: return .blue.opacity(0.9)
+        case .fileHeader: return .clear
+        case .context: return .secondary
+        }
+    }
+}
+
+// MARK: - Commit detail content view (right pane)
+
+struct GitCommitDetailContentView: View {
+    let selection: GitCommitSelection
+
+    @State private var detail: GitCommitDetail?
+    @State private var isLoading = true
+    @State private var error: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            header
+            Divider()
+            if isLoading {
+                placeholder(icon: "ellipsis.circle", title: String(localized: "git.commitDetail.loading", defaultValue: "Loading commit…"))
+            } else if let error {
+                placeholder(icon: "exclamationmark.triangle", title: error)
+            } else if let detail {
+                ScrollView([.vertical, .horizontal]) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        commitSummary(detail)
+                        fileList(detail.files)
+                        if detail.diffLines.isEmpty {
+                            Text(String(localized: "git.commitDetail.noPatch", defaultValue: "No patch to display"))
+                                .font(.system(size: 12))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 12)
+                        } else {
+                            DiffLinesView(lines: detail.diffLines)
+                        }
+                    }
+                    .padding(.vertical, 10)
+                }
+            } else {
+                placeholder(icon: "doc", title: String(localized: "git.commitDetail.empty", defaultValue: "No commit to display"))
+            }
+        }
+        .id(selection.selectionKey)
+        .task(id: selection.selectionKey) {
+            await loadCommit()
+        }
+    }
+
+    private var header: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "point.3.connected.trianglepath.dotted")
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+            Text(selection.shortSha)
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundStyle(.secondary)
+            Text(String(localized: "git.commitDetail.title", defaultValue: "Commit"))
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(.secondary)
+            Spacer()
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+    }
+
+    private func commitSummary(_ detail: GitCommitDetail) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(detail.subject)
+                .font(.system(size: 16, weight: .semibold))
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: 8) {
+                Text(detail.shortSha)
+                    .font(.system(size: 11, design: .monospaced))
+                    .foregroundStyle(.secondary)
+                Text(detail.authorLine)
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+            }
+            Text(detail.sha)
+                .font(.system(size: 11, design: .monospaced))
+                .foregroundStyle(.tertiary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+            if !detail.bodyText.isEmpty {
+                Text(detail.bodyText)
+                    .font(.system(size: 12, design: .monospaced))
+                    .foregroundStyle(.primary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.horizontal, 12)
+        .frame(minWidth: 760, maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func fileList(_ files: [GitCommitFileChange]) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(String(localized: "git.commitDetail.filesChanged", defaultValue: "Files changed").uppercased())
+                .font(.system(size: 10, weight: .semibold))
+                .foregroundStyle(.secondary)
+            if files.isEmpty {
+                Text(String(localized: "git.commitDetail.noFiles", defaultValue: "No changed files reported"))
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(files) { file in
+                    HStack(spacing: 8) {
+                        Text(file.displayStatus)
+                            .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                            .foregroundStyle(statusColor(file.displayStatus))
+                            .frame(width: 20, alignment: .leading)
+                        Text(fileLabel(file))
+                            .font(.system(size: 12, design: .monospaced))
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .frame(minWidth: 760, maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func fileLabel(_ file: GitCommitFileChange) -> String {
+        if let oldPath = file.oldPath, oldPath != file.path {
+            return "\(oldPath) → \(file.path)"
+        }
+        return file.path
+    }
+
+    private func statusColor(_ status: String) -> Color {
+        switch status {
+        case "A": return .green
+        case "D": return .red
+        case "R": return .purple
+        case "C": return .teal
+        default: return .orange
+        }
+    }
+
+    private func placeholder(icon: String, title: String) -> some View {
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 28))
+                .foregroundStyle(.tertiary)
+            Text(title)
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.horizontal, 24)
+    }
+
+    private func loadCommit() async {
+        isLoading = true
+        error = nil
+        detail = nil
+
+        let selection = self.selection
+        let outcome: (detail: GitCommitDetail?, error: String?) = await Task.detached(priority: .userInitiated) {
+            let metadataFormat = "%H%x1f%h%x1f%an%x1f%ae%x1f%ad%x1f%B"
+            guard let metadata = GitRepository.runGit(
+                in: selection.repoRoot,
+                args: ["show", "-s", "--date=local", "--format=\(metadataFormat)", selection.sha]
+            ) else {
+                return (nil, String(localized: "git.commitDetail.cantLoad", defaultValue: "Cannot load commit"))
+            }
+
+            let parts = metadata.components(separatedBy: "\u{001f}")
+            guard parts.count >= 6 else {
+                return (nil, String(localized: "git.commitDetail.cantParse", defaultValue: "Cannot parse commit"))
+            }
+
+            let message = parts.dropFirst(5).joined(separator: "\u{001f}")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            let subject = message.components(separatedBy: .newlines).first?.trimmingCharacters(in: .whitespacesAndNewlines)
+                ?? selection.shortSha
+
+            let nameStatus = GitRepository.runGit(
+                in: selection.repoRoot,
+                args: ["show", "--format=", "--name-status", "--find-renames", "--find-copies", "--root", selection.sha]
+            ) ?? ""
+            let files = GitCommitNameStatusParser.parse(nameStatus)
+
+            let patch = GitRepository.runGit(
+                in: selection.repoRoot,
+                args: ["show", "--format=", "--patch", "--no-color", "--find-renames", "--find-copies", "--root", selection.sha]
+            ) ?? ""
+
+            let detail = GitCommitDetail(
+                sha: parts[0].trimmingCharacters(in: .whitespacesAndNewlines),
+                shortSha: parts[1],
+                subject: subject,
+                author: parts[2],
+                authorEmail: parts[3],
+                date: parts[4],
+                message: message,
+                files: files,
+                diffLines: GitUnifiedDiffParser.parse(patch)
+            )
+            return (detail, nil)
+        }.value
+
+        detail = outcome.detail
+        error = outcome.error
+        isLoading = false
+    }
+
+}
+
+private extension GitCommitDetail {
+    var authorLine: String {
+        if authorEmail.isEmpty {
+            return "\(author) · \(date)"
+        }
+        return "\(author) <\(authorEmail)> · \(date)"
+    }
+
+    var bodyText: String {
+        let lines = message.components(separatedBy: .newlines)
+        guard lines.count > 1 else { return "" }
+        return lines.dropFirst()
+            .joined(separator: "\n")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

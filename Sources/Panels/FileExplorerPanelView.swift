@@ -21,6 +21,8 @@ struct FileExplorerTabView: View {
     private var editorShowReformattingGuide = CodeEditorSettings.defaultShowReformattingGuide
     @AppStorage(CodeEditorSettings.showInvisibleCharactersKey)
     private var editorShowInvisibleCharacters = CodeEditorSettings.defaultShowInvisibleCharacters
+    @AppStorage("fileExplorer.internalSidebarWidth")
+    private var persistedSidebarWidth: Double = 240
 
     /// Single `NSEvent` local monitor that commits any in-flight rename when the user clicks
     /// outside the inline `TextField`. Lifetime is tied to `panel.renamingPath`: installed
@@ -30,28 +32,50 @@ struct FileExplorerTabView: View {
     @State private var renameOutsideClickMonitor: Any?
     @State private var pendingWorktreeSwitch: GitWorktreeSnapshot?
     @State private var showingDirtyWorktreeAlert = false
+    @State private var sidebarDragStartWidth: Double?
+
+    private static let minSidebarWidth: CGFloat = 180
+    private static let maxSidebarWidth: CGFloat = 420
+    private static let minEditorWidth: CGFloat = 360
+    private static let resizeHandleWidth: CGFloat = 6
 
     var body: some View {
-        VStack(spacing: 0) {
-            headerBar
-            Divider()
-            GeometryReader { geo in
-                HStack(spacing: 0) {
-                    sidebar
-                        .frame(width: min(280, max(220, geo.size.width * 0.25)))
-                    Divider()
-                    contentArea
-                        .frame(width: geo.size.width - min(280, max(220, geo.size.width * 0.25)) - 1)
+        ZStack(alignment: .top) {
+            VStack(spacing: 0) {
+                headerBar
+                Divider()
+                GeometryReader { geo in
+                    let sidebarWidth = constrainedSidebarWidth(totalWidth: geo.size.width)
+                    HStack(spacing: 0) {
+                        sidebar
+                            .frame(width: sidebarWidth)
+                        FileExplorerSidebarResizeHandle(
+                            onDragChanged: { translation in
+                                resizeSidebar(translation: translation, totalWidth: geo.size.width)
+                            },
+                            onDragEnded: {
+                                sidebarDragStartWidth = nil
+                                persistedSidebarWidth = Double(constrainedSidebarWidth(totalWidth: geo.size.width))
+                            }
+                        )
+                        .frame(width: Self.resizeHandleWidth)
+                        contentArea
+                            .frame(width: max(0, geo.size.width - sidebarWidth - Self.resizeHandleWidth))
+                    }
                 }
+                Divider()
+                footerBar
             }
-            Divider()
-            footerBar
+            .background(backgroundColor)
+            .simultaneousGesture(
+                TapGesture()
+                    .onEnded { onRequestPanelFocus() }
+            )
+
+            if panel.isQuickOpenPresented {
+                quickOpenOverlay
+            }
         }
-        .background(backgroundColor)
-        .simultaneousGesture(
-            TapGesture()
-                .onEnded { onRequestPanelFocus() }
-        )
         .onChange(of: panel.renamingPath) { newPath in
             if newPath != nil {
                 installRenameOutsideClickMonitor()
@@ -86,6 +110,41 @@ struct FileExplorerTabView: View {
                 defaultValue: "The current file has unsaved changes. Save or discard them before switching worktrees."
             ))
         }
+    }
+
+    private var quickOpenOverlay: some View {
+        ZStack(alignment: .top) {
+            Color.black.opacity(0.18)
+                .onTapGesture { panel.dismissQuickOpen() }
+            FileExplorerQuickOpenPalette(
+                query: $panel.quickOpenQuery,
+                results: quickOpenEntries,
+                isIndexing: panel.isIndexing,
+                onQueryChange: { panel.scheduleQuickOpenSearch(query: $0) },
+                onDismiss: { panel.dismissQuickOpen() }
+            )
+            .frame(width: 560)
+            .frame(maxWidth: .infinity)
+            .padding(.top, 34)
+            .padding(.horizontal, 24)
+        }
+    }
+
+    private func constrainedSidebarWidth(totalWidth: CGFloat) -> CGFloat {
+        let availableMax = max(Self.minSidebarWidth, totalWidth - Self.minEditorWidth - Self.resizeHandleWidth)
+        let maxWidth = min(Self.maxSidebarWidth, availableMax)
+        return min(max(CGFloat(persistedSidebarWidth), Self.minSidebarWidth), maxWidth)
+    }
+
+    private func resizeSidebar(translation: CGFloat, totalWidth: CGFloat) {
+        if sidebarDragStartWidth == nil {
+            sidebarDragStartWidth = persistedSidebarWidth
+        }
+        let startWidth = CGFloat(sidebarDragStartWidth ?? persistedSidebarWidth)
+        let nextWidth = startWidth + translation
+        let availableMax = max(Self.minSidebarWidth, totalWidth - Self.minEditorWidth - Self.resizeHandleWidth)
+        let maxWidth = min(Self.maxSidebarWidth, availableMax)
+        persistedSidebarWidth = Double(min(max(nextWidth, Self.minSidebarWidth), maxWidth))
     }
 
     /// Install the global click monitor. Every leftMouseDown/rightMouseDown is hit-tested
@@ -554,6 +613,21 @@ struct FileExplorerTabView: View {
         }
     }
 
+    private var quickOpenEntries: [QuickOpenEntry] {
+        panel.quickOpenResults.enumerated().map { index, entry in
+            let capturedPath = entry.path
+            return QuickOpenEntry(
+                id: entry.path,
+                name: entry.name,
+                relativePath: entry.relativePath,
+                isSelected: index == panel.quickOpenSelectionIndex,
+                onOpen: { [weak panel] in
+                    panel?.openQuickOpenFile(capturedPath)
+                }
+            )
+        }
+    }
+
     private func relativeDirectory(parent: String, root: String) -> String {
         if parent == root { return "" }
         if parent.hasPrefix(root + "/") {
@@ -665,7 +739,9 @@ struct FileExplorerTabView: View {
 
     private var contentArea: some View {
         VStack(spacing: 0) {
-            if panel.sidebarMode == .gitDiff, let selection = panel.selectedGitChange {
+            if panel.sidebarMode == .gitDiff, let selection = panel.selectedGitCommit {
+                GitCommitDetailContentView(selection: selection)
+            } else if panel.sidebarMode == .gitDiff, let selection = panel.selectedGitChange {
                 GitDiffContentView(selection: selection)
             } else if let path = panel.selectedFile {
                 fileHeaderBar(path: path)
@@ -1192,6 +1268,194 @@ private struct FileSearchRow: View {
     }
 }
 
+// MARK: - Quick Open
+
+private struct QuickOpenEntry {
+    let id: String
+    let name: String
+    let relativePath: String
+    let isSelected: Bool
+    let onOpen: () -> Void
+}
+
+private struct FileExplorerQuickOpenPalette: View {
+    @Binding var query: String
+    let results: [QuickOpenEntry]
+    let isIndexing: Bool
+    let onQueryChange: (String) -> Void
+    let onDismiss: () -> Void
+
+    @FocusState private var focused: Bool
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 9) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.secondary)
+                TextField(
+                    String(localized: "fileExplorer.quickOpen.placeholder", defaultValue: "Search files by name or path"),
+                    text: $query
+                )
+                .textFieldStyle(.plain)
+                .font(.system(size: 14))
+                .focused($focused)
+                .onChange(of: query) { newValue in
+                    onQueryChange(newValue)
+                }
+                if !query.isEmpty {
+                    Button {
+                        query = ""
+                        onQueryChange("")
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.tertiary)
+                    }
+                    .buttonStyle(.plain)
+                    .help(String(localized: "fileExplorer.quickOpen.clear", defaultValue: "Clear search"))
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+
+            Divider()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    if query.trimmingCharacters(in: .whitespaces).isEmpty {
+                        quickOpenMessage(
+                            String(localized: "fileExplorer.quickOpen.empty", defaultValue: "Type a file name, path, glob, extension, or /regex/")
+                        )
+                    } else if results.isEmpty {
+                        quickOpenMessage(isIndexing
+                            ? String(localized: "fileExplorer.quickOpen.indexing", defaultValue: "Indexing files...")
+                            : String(localized: "fileExplorer.quickOpen.noMatches", defaultValue: "No matching files")
+                        )
+                    } else {
+                        ForEach(results, id: \.id) { entry in
+                            QuickOpenResultRow(entry: entry)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(maxHeight: 320)
+        }
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .strokeBorder(Color.primary.opacity(0.12), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.28), radius: 24, x: 0, y: 12)
+        .onAppear {
+            DispatchQueue.main.async { focused = true }
+        }
+        .onExitCommand {
+            onDismiss()
+        }
+    }
+
+    private func quickOpenMessage(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 12))
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+private struct QuickOpenResultRow: View {
+    let entry: QuickOpenEntry
+
+    var body: some View {
+        Button(action: entry.onOpen) {
+            HStack(spacing: 8) {
+                MaterialIconView(
+                    iconID: MaterialIconResolver.shared.iconID(forFile: entry.name),
+                    fallbackSystemName: fallbackSystemName,
+                    size: 17
+                )
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(entry.name)
+                        .font(.system(size: 13))
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                    Text(entry.relativePath)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+                Spacer(minLength: 8)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .background(entry.isSelected ? Color.accentColor.opacity(0.18) : Color.clear)
+    }
+
+    private var fallbackSystemName: String {
+        let ext = (entry.name as NSString).pathExtension.lowercased()
+        switch ext {
+        case "swift": return "swift"
+        case "ts", "tsx": return "t.square"
+        case "js", "jsx", "mjs", "cjs": return "j.square"
+        case "py": return "p.square"
+        case "json": return "curlybraces"
+        case "md", "markdown": return "doc.richtext"
+        default: return "doc"
+        }
+    }
+}
+
+// MARK: - Sidebar resize
+
+private struct FileExplorerSidebarResizeHandle: View {
+    let onDragChanged: (CGFloat) -> Void
+    let onDragEnded: () -> Void
+
+    @State private var isHovering = false
+
+    var body: some View {
+        Rectangle()
+            .fill(isHovering ? Color.accentColor.opacity(0.35) : Color.primary.opacity(0.10))
+            .frame(maxHeight: .infinity)
+            .contentShape(Rectangle())
+            .background(FileExplorerResizeCursorArea())
+            .onHover { hovering in
+                isHovering = hovering
+            }
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        onDragChanged(value.translation.width)
+                    }
+                    .onEnded { _ in
+                        onDragEnded()
+                    }
+            )
+            .accessibilityLabel(String(localized: "fileExplorer.sidebarResizeHandle", defaultValue: "Resize file explorer sidebar"))
+    }
+}
+
+private struct FileExplorerResizeCursorArea: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        CursorView(frame: .zero)
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
+
+    private final class CursorView: NSView {
+        override func resetCursorRects() {
+            addCursorRect(bounds, cursor: .resizeLeftRight)
+        }
+    }
+}
 
 // MARK: - Right-click catcher
 
@@ -1444,6 +1708,40 @@ private struct FileExplorerKeyHandler: NSViewRepresentable {
 
         private func handle(_ event: NSEvent) -> NSEvent? {
             guard isActive else { return event }
+            let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+            let chars = (event.charactersIgnoringModifiers ?? "").lowercased()
+            let isQuickOpenShortcut = KeyboardShortcutSettings.shortcut(for: .quickOpenFileExplorer).matches(event: event)
+
+            if panel.isQuickOpenPresented {
+                if isQuickOpenShortcut {
+                    return nil
+                }
+                if mods.isEmpty || mods == [.numericPad, .function] || mods == [.function] {
+                    switch event.keyCode {
+                    case 126: // Up arrow
+                        panel.moveQuickOpenSelection(by: -1)
+                        return nil
+                    case 125: // Down arrow
+                        panel.moveQuickOpenSelection(by: 1)
+                        return nil
+                    case 36, 76: // Return / Enter
+                        panel.openSelectedQuickOpenFile()
+                        return nil
+                    case 53: // Escape
+                        panel.dismissQuickOpen()
+                        return nil
+                    default:
+                        break
+                    }
+                }
+                return event
+            }
+
+            if isQuickOpenShortcut {
+                panel.showQuickOpen()
+                return nil
+            }
+
             // Don't intercept while the user is typing in any text field — covers the
             // search field, the inline rename field, and the code editor.
             // CodeEditTextView is an NSView subclass (not NSText/NSTextView), so the
@@ -1471,8 +1769,6 @@ private struct FileExplorerKeyHandler: NSViewRepresentable {
             // own keys to the search field and shouldn't react to clipboard shortcuts.
             guard panel.sidebarMode == .files else { return event }
 
-            let mods = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
-            let chars = (event.charactersIgnoringModifiers ?? "").lowercased()
             // The "active" row is the row visually selected (file or folder) — falls back
             // to the open file or the active folder when no row was clicked.
             let activeTarget: String? = panel.selectedPath

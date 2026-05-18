@@ -50,6 +50,15 @@ struct GitDiffSelection: Equatable, Hashable {
     var diffKey: String { "\(absolutePath)|\(isStaged ? "staged" : "wt")|\(status.rawValue)" }
 }
 
+/// Lightweight value snapshot for a commit selected from the graph.
+struct GitCommitSelection: Equatable, Hashable {
+    let repoRoot: String
+    let sha: String
+    let shortSha: String
+
+    var selectionKey: String { "\(repoRoot)|commit|\(sha)" }
+}
+
 /// One row in the per-repo "Graph" (commit history) section.
 struct GitCommit: Identifiable, Hashable {
     let id: String  // full sha
@@ -57,6 +66,226 @@ struct GitCommit: Identifiable, Hashable {
     let subject: String
     let author: String
     let dateRelative: String
+}
+
+struct GitCommitFileChange: Identifiable, Hashable {
+    let id: String
+    let status: String
+    let path: String
+    let oldPath: String?
+
+    var displayStatus: String {
+        if status.hasPrefix("R") { return "R" }
+        if status.hasPrefix("C") { return "C" }
+        return status
+    }
+}
+
+struct GitCommitDetail: Hashable {
+    let sha: String
+    let shortSha: String
+    let subject: String
+    let author: String
+    let authorEmail: String
+    let date: String
+    let message: String
+    let files: [GitCommitFileChange]
+    let diffLines: [GitRenderedDiffLine]
+}
+
+enum GitDiffLineKind: Hashable {
+    case fileHeader
+    case hunk
+    case context
+    case addition
+    case deletion
+}
+
+struct GitRenderedDiffLine: Identifiable, Hashable {
+    let id: Int
+    let kind: GitDiffLineKind
+    let oldLineNumber: Int?
+    let newLineNumber: Int?
+    let text: String
+}
+
+enum GitUnifiedDiffParser {
+    static func parse(_ text: String) -> [GitRenderedDiffLine] {
+        var rawLines = text.components(separatedBy: "\n")
+        if rawLines.last == "" {
+            rawLines.removeLast()
+        }
+
+        var lines: [GitRenderedDiffLine] = []
+        var oldLine: Int?
+        var newLine: Int?
+        var inHunk = false
+
+        for (offset, rawLine) in rawLines.enumerated() {
+            if let hunk = parseHunkHeader(rawLine) {
+                oldLine = hunk.oldStart
+                newLine = hunk.newStart
+                inHunk = true
+                lines.append(GitRenderedDiffLine(
+                    id: offset,
+                    kind: .hunk,
+                    oldLineNumber: nil,
+                    newLineNumber: nil,
+                    text: rawLine
+                ))
+                continue
+            }
+
+            if inHunk, rawLine.hasPrefix("+") {
+                lines.append(GitRenderedDiffLine(
+                    id: offset,
+                    kind: .addition,
+                    oldLineNumber: nil,
+                    newLineNumber: newLine,
+                    text: rawLine
+                ))
+                newLine = newLine.map { $0 + 1 }
+                continue
+            }
+
+            if inHunk, rawLine.hasPrefix("-") {
+                lines.append(GitRenderedDiffLine(
+                    id: offset,
+                    kind: .deletion,
+                    oldLineNumber: oldLine,
+                    newLineNumber: nil,
+                    text: rawLine
+                ))
+                oldLine = oldLine.map { $0 + 1 }
+                continue
+            }
+
+            if inHunk, rawLine.hasPrefix("\\") {
+                lines.append(GitRenderedDiffLine(
+                    id: offset,
+                    kind: .fileHeader,
+                    oldLineNumber: nil,
+                    newLineNumber: nil,
+                    text: rawLine
+                ))
+                continue
+            }
+
+            if isFileHeader(rawLine) {
+                inHunk = false
+                lines.append(GitRenderedDiffLine(
+                    id: offset,
+                    kind: .fileHeader,
+                    oldLineNumber: nil,
+                    newLineNumber: nil,
+                    text: rawLine
+                ))
+                continue
+            }
+
+            if inHunk {
+                lines.append(GitRenderedDiffLine(
+                    id: offset,
+                    kind: .context,
+                    oldLineNumber: oldLine,
+                    newLineNumber: newLine,
+                    text: rawLine
+                ))
+                oldLine = oldLine.map { $0 + 1 }
+                newLine = newLine.map { $0 + 1 }
+                continue
+            }
+
+            lines.append(GitRenderedDiffLine(
+                id: offset,
+                kind: .fileHeader,
+                oldLineNumber: nil,
+                newLineNumber: nil,
+                text: rawLine
+            ))
+        }
+
+        return lines
+    }
+
+    static func untrackedDiff(path: String, content: String) -> String {
+        var lines = content.components(separatedBy: "\n")
+        if lines.last == "" {
+            lines.removeLast()
+        }
+        let count = max(lines.count, 1)
+        let header = [
+            "diff --git a/\(path) b/\(path)",
+            "new file mode 100644",
+            "--- /dev/null",
+            "+++ b/\(path)",
+            "@@ -0,0 +1,\(count) @@"
+        ].joined(separator: "\n")
+        guard !lines.isEmpty else { return header + "\n+" }
+        return header + "\n" + lines.map { "+\($0)" }.joined(separator: "\n")
+    }
+
+    private static func isFileHeader(_ line: String) -> Bool {
+        line.hasPrefix("diff --git ")
+            || line.hasPrefix("index ")
+            || line.hasPrefix("--- ")
+            || line.hasPrefix("+++ ")
+            || line.hasPrefix("new file mode ")
+            || line.hasPrefix("deleted file mode ")
+            || line.hasPrefix("old mode ")
+            || line.hasPrefix("new mode ")
+            || line.hasPrefix("similarity index ")
+            || line.hasPrefix("dissimilarity index ")
+            || line.hasPrefix("rename from ")
+            || line.hasPrefix("rename to ")
+            || line.hasPrefix("copy from ")
+            || line.hasPrefix("copy to ")
+            || line.hasPrefix("Binary files ")
+            || line.hasPrefix("GIT binary patch")
+            || line.hasPrefix("literal ")
+            || line.hasPrefix("delta ")
+    }
+
+    private static func parseHunkHeader(_ line: String) -> (oldStart: Int, newStart: Int)? {
+        guard line.hasPrefix("@@") else { return nil }
+        let parts = line.split(separator: " ")
+        guard parts.count >= 3 else { return nil }
+        guard let oldStart = parseRangeStart(parts[1], prefix: "-"),
+              let newStart = parseRangeStart(parts[2], prefix: "+")
+        else { return nil }
+        return (oldStart, newStart)
+    }
+
+    private static func parseRangeStart(_ token: Substring, prefix: Character) -> Int? {
+        guard token.first == prefix else { return nil }
+        let body = token.dropFirst()
+        let start = body.split(separator: ",", maxSplits: 1).first ?? body
+        return Int(start)
+    }
+}
+
+enum GitCommitNameStatusParser {
+    static func parse(_ text: String) -> [GitCommitFileChange] {
+        text.components(separatedBy: "\n").compactMap { line in
+            let parts = line.split(separator: "\t", omittingEmptySubsequences: false).map(String.init)
+            guard parts.count >= 2 else { return nil }
+            let status = parts[0]
+            if (status.hasPrefix("R") || status.hasPrefix("C")), parts.count >= 3 {
+                return GitCommitFileChange(
+                    id: "\(status)|\(parts[1])|\(parts[2])",
+                    status: status,
+                    path: parts[2],
+                    oldPath: parts[1]
+                )
+            }
+            return GitCommitFileChange(
+                id: "\(status)|\(parts[1])",
+                status: status,
+                path: parts[1],
+                oldPath: nil
+            )
+        }
+    }
 }
 
 // MARK: - Per-repository model
@@ -508,6 +737,7 @@ final class GitWorkspace: ObservableObject {
     @Published var hiddenRepoIDs: Set<UUID> = []
 
     let workspaceRoot: String
+    private var repositoryCancellables: [UUID: AnyCancellable] = [:]
 
     init(workspaceRoot: String) {
         self.workspaceRoot = workspaceRoot
@@ -541,6 +771,7 @@ final class GitWorkspace: ObservableObject {
         // Remove repos no longer present (e.g. submodule deinit)
         let stillPresent = Set(roots.map(\.path))
         repositories.removeAll { !stillPresent.contains($0.root) }
+        syncRepositorySubscriptions()
 
         if focusedRepoID == nil, let first = visibleRepositories.first {
             focusedRepoID = first.id
@@ -562,6 +793,19 @@ final class GitWorkspace: ObservableObject {
             hiddenRepoIDs.remove(repoID)
         } else {
             hiddenRepoIDs.insert(repoID)
+        }
+    }
+
+    private func syncRepositorySubscriptions() {
+        let liveIDs = Set(repositories.map(\.id))
+        repositoryCancellables = repositoryCancellables.filter { liveIDs.contains($0.key) }
+
+        for repo in repositories where repositoryCancellables[repo.id] == nil {
+            repositoryCancellables[repo.id] = repo.objectWillChange.sink { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.objectWillChange.send()
+                }
+            }
         }
     }
 

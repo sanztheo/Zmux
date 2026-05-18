@@ -9,8 +9,8 @@
 
 Zmux is a native macOS terminal workspace with tighter Ghostty rendering, browser automation, notifications, and project context built in.
 
-- **File explorer** — available now in the right sidebar for browsing the current workspace.
-- **Git diff viewer** — planned panel for reviewing working tree, staged, branch, and commit diffs inside Zmux.
+- **File explorer** — browse, resize, and quick-open files from the right sidebar with fuzzy matching, path filters, glob filters, extensions, and regex queries.
+- **Git diff viewer** — review working tree changes with structured diffs, line gutters, and a clickable commit graph with commit details.
 - **Docs and plans organization** — ongoing cleanup of product docs and design plans under `docs/plans`.
 
 ## Features
@@ -67,6 +67,9 @@ Sidebar shows git branch, linked PR status/number, working directory, listening 
 </table>
 
 - **Browser import** — Import cookies, history, and sessions from Chrome, Firefox, Arc, and 20+ browsers so browser panes start authenticated
+- **File explorer quick open** — Press `⌘ P` while the file explorer is focused to search by filename, path, `*.glob`, `.extension`, or `/regex/`, then open the selected file immediately
+- **Resizable file explorer** — Drag the file explorer split to rebalance the tree and editor with guarded minimum and maximum widths
+- **Source control panel** — Review cleaner VS Code-style diffs, select files from Git status, and click commits in the graph to inspect metadata, changed files, and patch details
 - **Custom commands** — Define project-specific actions in `zmux.json` that launch from the command palette
 - **Scriptable** — CLI and socket API to create workspaces, split panes, send keystrokes, and automate the browser
 - **Native macOS app** — Built with Swift and AppKit, not Electron. Fast startup, low memory.
@@ -131,6 +134,7 @@ Give a million developers composable primitives and they'll collectively find th
 | ⌘ B | Toggle sidebar |
 | ⌘ ⇧ E | Focus right sidebar |
 | ⌃ 1 / ⌃ 2 / ⌃ 3 | Switch Files / Sessions / Feed when the right sidebar is focused |
+| ⌘ P | Quick open files when the file explorer is focused |
 
 ### Surfaces
 

@@ -151,6 +151,10 @@ final class FileExplorerPanel: Panel, ObservableObject {
     @Published var filterQuery: String = ""
     @Published private(set) var searchResults: [IndexedFile] = []
     @Published private(set) var isIndexing: Bool = false
+    @Published var isQuickOpenPresented: Bool = false
+    @Published var quickOpenQuery: String = ""
+    @Published private(set) var quickOpenResults: [IndexedFile] = []
+    @Published private(set) var quickOpenSelectionIndex: Int = 0
     @Published var fileLanguage: FileLanguage = .unknown
     @Published var isFileBinary: Bool = false
     @Published var isFileTooLarge: Bool = false
@@ -176,6 +180,7 @@ final class FileExplorerPanel: Panel, ObservableObject {
     /// Git change currently selected in the source control sidebar — drives the diff
     /// content view in the right pane when `sidebarMode == .gitDiff`.
     @Published var selectedGitChange: GitDiffSelection?
+    @Published var selectedGitCommit: GitCommitSelection?
 
     /// Path currently targeted by an open context menu — drives the row highlight while
     /// a right-click menu is open (matches Finder/VSCode behavior).
@@ -218,6 +223,8 @@ final class FileExplorerPanel: Panel, ObservableObject {
 
     private static let searchDebounceNanos: UInt64 = 60_000_000
     private static let searchLimit = 200
+    private static let quickOpenDebounceNanos: UInt64 = 35_000_000
+    private static let quickOpenLimit = 80
 
     private var dirCache: [String: (nodes: [FileNode], date: Date)] = [:]
     private nonisolated(unsafe) var fileWatchSource: DispatchSourceFileSystemObject?
@@ -229,6 +236,7 @@ final class FileExplorerPanel: Panel, ObservableObject {
     private var index: FileIndex?
     private var indexTask: Task<Void, Never>?
     private var searchTask: Task<Void, Never>?
+    private var quickOpenSearchTask: Task<Void, Never>?
 
     init(workspaceId: UUID, rootPath: String) {
         self.id = UUID()
@@ -252,6 +260,7 @@ final class FileExplorerPanel: Panel, ObservableObject {
         dirCache.removeAll()
         indexTask?.cancel()
         searchTask?.cancel()
+        quickOpenSearchTask?.cancel()
     }
 
     func focus() {}
@@ -360,6 +369,7 @@ final class FileExplorerPanel: Panel, ObservableObject {
     func rebuildIndex() {
         indexTask?.cancel()
         searchTask?.cancel()
+        quickOpenSearchTask?.cancel()
 
         let path = rootPath
         let hidden = showHiddenFiles
@@ -377,6 +387,9 @@ final class FileExplorerPanel: Panel, ObservableObject {
                 self.isIndexing = false
                 if !pendingQuery.isEmpty, self.filterQuery == pendingQuery {
                     self.scheduleSearch(query: pendingQuery)
+                }
+                if self.isQuickOpenPresented, !self.quickOpenQuery.isEmpty {
+                    self.scheduleQuickOpenSearch(query: self.quickOpenQuery)
                 }
             }
         }
@@ -419,13 +432,16 @@ final class FileExplorerPanel: Panel, ObservableObject {
         stopFileWatcher()
         indexTask?.cancel()
         searchTask?.cancel()
+        quickOpenSearchTask?.cancel()
         dirCache.removeAll()
         expandedDirs.removeAll()
         searchResults = []
         filterQuery = ""
+        dismissQuickOpen()
         cutPaths.removeAll()
         contextMenuPath = nil
         selectedGitChange = nil
+        selectedGitCommit = nil
 
         rootPath = standardizedPath
         displayTitle = (standardizedPath as NSString).lastPathComponent
@@ -463,6 +479,75 @@ final class FileExplorerPanel: Panel, ObservableObject {
                 self.searchResults = hits.map(\.entry)
             }
         }
+    }
+
+    func showQuickOpen() {
+        isQuickOpenPresented = true
+        quickOpenSelectionIndex = 0
+        if !quickOpenQuery.isEmpty {
+            scheduleQuickOpenSearch(query: quickOpenQuery)
+        }
+    }
+
+    func dismissQuickOpen() {
+        quickOpenSearchTask?.cancel()
+        isQuickOpenPresented = false
+        quickOpenQuery = ""
+        quickOpenResults = []
+        quickOpenSelectionIndex = 0
+    }
+
+    func scheduleQuickOpenSearch(query: String) {
+        quickOpenSearchTask?.cancel()
+        quickOpenSelectionIndex = 0
+
+        let trimmed = query.trimmingCharacters(in: .whitespaces)
+        if trimmed.isEmpty {
+            quickOpenResults = []
+            return
+        }
+        quickOpenResults = []
+
+        guard let activeIndex = index else { return }
+        let limit = Self.quickOpenLimit
+
+        quickOpenSearchTask = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: Self.quickOpenDebounceNanos)
+            if Task.isCancelled { return }
+
+            let hits = await activeIndex.search(query: trimmed, limit: limit)
+            if Task.isCancelled { return }
+
+            await MainActor.run {
+                guard let self else { return }
+                guard self.index === activeIndex else { return }
+                guard self.quickOpenQuery == query else { return }
+                self.quickOpenResults = hits.map(\.entry)
+                self.quickOpenSelectionIndex = min(self.quickOpenSelectionIndex, max(self.quickOpenResults.count - 1, 0))
+            }
+        }
+    }
+
+    func moveQuickOpenSelection(by delta: Int) {
+        guard !quickOpenResults.isEmpty else { return }
+        let next = quickOpenSelectionIndex + delta
+        if next < 0 {
+            quickOpenSelectionIndex = quickOpenResults.count - 1
+        } else if next >= quickOpenResults.count {
+            quickOpenSelectionIndex = 0
+        } else {
+            quickOpenSelectionIndex = next
+        }
+    }
+
+    func openSelectedQuickOpenFile() {
+        guard quickOpenResults.indices.contains(quickOpenSelectionIndex) else { return }
+        openQuickOpenFile(quickOpenResults[quickOpenSelectionIndex].path)
+    }
+
+    func openQuickOpenFile(_ path: String) {
+        openFile(path)
+        dismissQuickOpen()
     }
 
     // MARK: - File operations

@@ -65,6 +65,12 @@ export const shortcutCategories: ShortcutCategory[] = [
       { id: "editWorkspaceDescription", combos: [["⌥", "⌘", "E"]], description: { en: "Edit workspace description", ja: "ワークスペースの説明を編集" } },
       { id: "focusRightSidebar", combos: [["⌘", "⇧", "E"]], description: { en: "Focus right sidebar", ja: "右サイドバーにフォーカス" } },
       {
+        id: "quickOpenFileExplorer",
+        combos: [["⌘", "P"]],
+        description: { en: "Quick open file", ja: "ファイルをクイックオープン" },
+        note: { en: "when a File Explorer surface is focused", ja: "ファイルエクスプローラーサーフェスにフォーカス中" },
+      },
+      {
         id: "switchRightSidebarMode",
         combos: [["⌃", "1 / 2 / 3 / 4"]],
         description: { en: "Switch Files / Find / Sessions / Feed", ja: "ファイル / 検索 / セッション / フィードを切り替え" },

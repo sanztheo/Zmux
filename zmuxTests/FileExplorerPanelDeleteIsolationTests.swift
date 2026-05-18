@@ -168,4 +168,49 @@ final class FileExplorerPanelDeleteIsolationTests: XCTestCase {
 
         XCTAssertEqual(suggestions, ["rename", "render", "renderLine"])
     }
+
+    func testFileIndexSearchMatchesNamesRelativePathsGlobsExtensionsAndRegex() async throws {
+        let sourcesDir = tempRoot
+            .appendingPathComponent("Sources", isDirectory: true)
+            .appendingPathComponent("Panels", isDirectory: true)
+        try FileManager.default.createDirectory(at: sourcesDir, withIntermediateDirectories: true)
+
+        let appDir = tempRoot.appendingPathComponent("Sources", isDirectory: true)
+        let docsDir = tempRoot.appendingPathComponent("Docs", isDirectory: true)
+        try FileManager.default.createDirectory(at: docsDir, withIntermediateDirectories: true)
+
+        let panelFile = sourcesDir.appendingPathComponent("FileExplorerPanelView.swift")
+        let appFile = appDir.appendingPathComponent("AppDelegate.swift")
+        let notesFile = docsDir.appendingPathComponent("release-notes.txt")
+        let readmeFile = tempRoot.appendingPathComponent("README.md")
+
+        try Data("struct FileExplorerPanelView {}\n".utf8).write(to: panelFile)
+        try Data("final class AppDelegate {}\n".utf8).write(to: appFile)
+        try Data("notes\n".utf8).write(to: notesFile)
+        try Data("# Readme\n".utf8).write(to: readmeFile)
+
+        let index = FileIndex(rootPath: tempRoot.path, includeHidden: true)
+        await index.rebuild()
+
+        let relativePathHits = await index.search(query: "Panels/FileExplorer", limit: 5).map(\.entry.relativePath)
+        XCTAssertEqual(relativePathHits.first, "Sources/Panels/FileExplorerPanelView.swift")
+
+        let globHits = Set(await index.search(query: "Sources/**/*.swift", limit: 10).map(\.entry.relativePath))
+        XCTAssertEqual(globHits, [
+            "Sources/AppDelegate.swift",
+            "Sources/Panels/FileExplorerPanelView.swift",
+        ])
+
+        let extensionHits = Set(await index.search(query: ".swift", limit: 10).map(\.entry.relativePath))
+        XCTAssertEqual(extensionHits, globHits)
+
+        let nameGlobHits = await index.search(query: "*.txt", limit: 10).map(\.entry.relativePath)
+        XCTAssertEqual(nameGlobHits, ["Docs/release-notes.txt"])
+
+        let regexHits = await index.search(query: "/release-notes/", limit: 10).map(\.entry.relativePath)
+        XCTAssertEqual(regexHits, ["Docs/release-notes.txt"])
+
+        let limitedHits = await index.search(query: ".swift", limit: 1)
+        XCTAssertEqual(limitedHits.count, 1)
+    }
 }

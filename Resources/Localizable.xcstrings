@@ -73578,6 +73578,29 @@
         }
       }
     },
+    "shortcut.quickOpenFileExplorer.label": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quick Open File"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ファイルをクイックオープン"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "파일 빠른 열기"
+          }
+        }
+      }
+    },
     "fileExplorer.empty": {
       "extractionState": "manual",
       "localizations": {
@@ -95904,6 +95927,104 @@
       "localizations": {
         "en": { "stringUnit": { "state": "translated", "value": "Editor" } },
         "ja": { "stringUnit": { "state": "translated", "value": "エディタ" } }
+      }
+    },
+    "git.commitDetail.cantLoad": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Cannot load commit" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "コミットを読み込めません" } }
+      }
+    },
+    "git.commitDetail.cantParse": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Cannot parse commit" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "コミットを解析できません" } }
+      }
+    },
+    "git.commitDetail.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No commit to display" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "表示するコミットがありません" } }
+      }
+    },
+    "git.commitDetail.filesChanged": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Files changed" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "変更されたファイル" } }
+      }
+    },
+    "git.commitDetail.loading": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Loading commit..." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "コミットを読み込み中..." } }
+      }
+    },
+    "git.commitDetail.noFiles": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No changed files reported" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "変更ファイルは報告されていません" } }
+      }
+    },
+    "git.commitDetail.noPatch": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No patch to display" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "表示するパッチがありません" } }
+      }
+    },
+    "git.commitDetail.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Commit" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "コミット" } }
+      }
+    },
+    "fileExplorer.quickOpen.clear": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Clear search" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "検索をクリア" } }
+      }
+    },
+    "fileExplorer.quickOpen.empty": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Type a file name, path, glob, extension, or /regex/" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ファイル名、パス、glob、拡張子、または /regex/ を入力" } }
+      }
+    },
+    "fileExplorer.quickOpen.indexing": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Indexing files..." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ファイルをインデックス中..." } }
+      }
+    },
+    "fileExplorer.quickOpen.noMatches": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "No matching files" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "一致するファイルがありません" } }
+      }
+    },
+    "fileExplorer.quickOpen.placeholder": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Search files by name or path" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ファイル名またはパスで検索" } }
+      }
+    },
+    "fileExplorer.sidebarResizeHandle": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": { "stringUnit": { "state": "translated", "value": "Resize file explorer sidebar" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ファイルエクスプローラーのサイドバーサイズを変更" } }
       }
     }
   }
